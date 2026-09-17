@@ -1,0 +1,251 @@
+/* ═══════════════════════════════════════════════════════
+   components.css
+   Responsabilidad: Componentes reutilizables
+   product-card, collection-card, review-card
+   Cada componente es independiente y portátil
+   ═══════════════════════════════════════════════════════ */
+
+
+/* ────────────────────────────────────────────────────────
+   PRODUCT CARD
+   Uso: catálogo, página de inicio, favoritos
+   ──────────────────────────────────────────────────────── */
+.product-card {
+  cursor: pointer;
+}
+
+/* ── Media (imagen) ── */
+.product-card__media {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 3 / 4;
+  background: var(--color-marfil-alt);
+  margin-bottom: 16px;
+}
+
+.product-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .65s ease;
+  display: block;
+}
+
+.product-card:hover .product-card__media img {
+  transform: scale(1.06);
+}
+
+/* ── Badge ── */
+.product-card__badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.product-card__badge--new {
+  background: var(--color-cacao);
+  color: var(--color-text-on-dark);
+}
+
+.product-card__badge--fav {
+  background: var(--color-oro);
+  color: var(--color-text-dark);
+}
+
+/* ── Acciones flotantes (favorito, vista rápida) ── */
+.product-card__actions {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  /* Ocultas por defecto */
+  opacity: 0;
+  transform: translateX(8px);
+  transition: opacity var(--ease-smooth), transform var(--ease-smooth);
+}
+
+.product-card:hover .product-card__actions {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.product-card__btn {
+  width: 36px;
+  height: 36px;
+  background: rgba(246,237,210,.92);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--color-text-dark);
+  cursor: pointer;
+  transition: background .2s, color .2s;
+}
+
+.product-card__btn:hover,
+.product-card__btn.is-active {
+  background: var(--color-cacao);
+  color: var(--color-text-on-dark);
+}
+
+/* ── Barra "Añadir al carrito" ── */
+.product-card__bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-cacao);
+  color: var(--color-text-on-dark);
+  padding: 14px;
+  text-align: center;
+  font-size: 9px;
+  letter-spacing: 3.5px;
+  text-transform: uppercase;
+
+  transform: translateY(100%);
+  transition: transform var(--ease-smooth);
+}
+
+.product-card:hover .product-card__bar {
+  transform: translateY(0);
+}
+
+/* ── Info del producto ── */
+.product-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.product-card__label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--color-cacao);
+}
+
+.product-card__name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--color-text-dark);
+  line-height: 1.2;
+}
+
+.product-card__price {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.product-card__price strong {
+  color: var(--color-cacao);
+  font-weight: 600;
+}
+
+/* ────────────────────────────────────────────────────────
+   COLLECTION CARD
+   Uso: sección de colecciones con nombre
+   ──────────────────────────────────────────────────────── */
+.collection-card {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  aspect-ratio: 3 / 4;
+}
+
+.collection-card__media {
+  position: absolute;
+  inset: 0;
+}
+
+.collection-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(.72) saturate(.9);
+  transition: filter .7s ease, transform .7s ease;
+}
+
+.collection-card:hover .collection-card__media img {
+  filter: brightness(.52) saturate(.8);
+  transform: scale(1.06);
+}
+
+/* ── Info sobre imagen ── */
+.collection-card__info {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 40px 32px 36px;
+  background: linear-gradient(to top, rgba(44,26,16,.9) 0%, transparent 55%);
+}
+
+.collection-card__season {
+  font-size: 9px;
+  letter-spacing: 3.5px;
+  text-transform: uppercase;
+  color: var(--color-oro);
+  margin-bottom: 10px;
+}
+
+.collection-card__name {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 300;
+  color: var(--color-text-on-dark);
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+
+.collection-card__desc {
+  font-size: 11px;
+  color: rgba(246,237,210,.45);
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+}
+
+/* ── CTA oculto — aparece al hover ── */
+.collection-card__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--color-oro);
+  border-bottom: 1px solid rgba(217,199,163,.3);
+  padding-bottom: 3px;
+
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity var(--ease-smooth), transform var(--ease-smooth);
+}
+
+.collection-card:hover .collection-card__cta {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+
+/* ────────────────────────────────────────────────────────
+   REVIEW CARD
+   (Estilos ya en styles.css — aquí solo variantes)
+   ──────────────────────────────────────────────────────── */
+/* Variante destacada (por si se necesita) */
+.review-card--featured {
+  border-top-color: var(--color-oro);
+  background: var(--color-white);
+}

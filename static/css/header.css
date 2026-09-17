@@ -1,0 +1,449 @@
+/* ═══════════════════════════════════════════════════════
+   header.css
+   Responsabilidad: Header + Category Bar + Sidebar
+   No mezclar con hero, secciones ni components
+   ═══════════════════════════════════════════════════════ */
+
+
+/* ────────────────────────────────────────────────────────
+   SITE HEADER
+   ──────────────────────────────────────────────────────── */
+.site-header {
+  /* BLANCO por defecto — sin dependencia del hero */
+  background: var(--color-white);
+  border-bottom: 1px solid rgba(217,199,163,.25);
+  box-shadow: 0 2px 10px rgba(0,0,0,.05);
+
+  /* Sticky: siempre visible en el top */
+  position: sticky;
+  top: 0;
+  z-index: 200;
+
+  /* Transición suave de altura y sombra */
+  transition:
+    box-shadow var(--ease-smooth),
+    border-color var(--ease-smooth);
+}
+
+/* Estado compacto — se activa en JS con window.scrollY > 80 */
+.site-header.is-compact {
+  box-shadow: 0 4px 20px rgba(44,26,16,.12);
+}
+
+.site-header.is-compact .header__inner {
+  height: 52px;
+}
+
+/* ── Layout interno del header ── */
+.header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  height: 68px;
+  max-width: 100%;
+  transition: height var(--ease-smooth);
+}
+
+
+/* ── Logo centrado ── */
+.header__logo {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--color-text-dark);
+
+  /* Centrado absoluto independiente de iconos */
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+
+  transition: font-size var(--ease-smooth);
+}
+
+.header__logo em {
+  font-style: italic;
+  color: var(--color-cacao);
+}
+
+.site-header.is-compact .header__logo {
+  font-size: 17px;
+}
+
+
+/* ── Grupos izquierda y derecha ── */
+.header__left,
+.header__right {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  position: relative;
+  z-index: 1; /* sobre el logo absoluto */
+}
+
+
+/* ── Íconos — SOLO SVG, sin texto ── */
+.header__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: none;
+  border: none;
+  color: var(--color-text-dark);
+  cursor: pointer;
+  transition:
+    color var(--ease-smooth),
+    background var(--ease-smooth);
+}
+
+.header__icon svg {
+  width: 19px;
+  height: 19px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.5;
+  transition:
+    stroke var(--ease-smooth),
+    transform .2s ease;
+}
+
+/* Microinteracción hover — color dorado + escala */
+.header__icon:hover {
+  color: var(--color-cacao);
+}
+
+.header__icon:hover svg {
+  stroke: var(--color-cacao);
+  transform: scale(1.12);
+}
+
+/* Ícono de carrito — tiene badge */
+.header__icon--cart {
+  position: relative;
+}
+
+.header__cart-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  background: var(--color-cacao);
+  color: var(--color-text-on-dark);
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  pointer-events: none;
+}
+
+
+/* ────────────────────────────────────────────────────────
+    BARRA DE CATEGORÍAS
+    Independiente del header — se oculta al hacer scroll
+   ──────────────────────────────────────────────────────── */
+.category-bar {
+  background: var(--color-marfil);
+  border-bottom: 1px solid rgba(217,199,163,.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 40px;
+  padding: 0 40px;
+  height: 44px;
+
+  /* La posición sticky hace que se quede debajo del header */
+  position: sticky;
+  top: 68px; /* igual a la altura del header */
+  z-index: 190;
+
+  /* Transición de ocultamiento */
+  transition:
+    opacity .3s ease,
+    transform .3s ease,
+    height .3s ease,
+    padding .3s ease;
+}
+
+/* Estado oculto — activa en JS con window.scrollY > 120 */
+.category-bar.is-hidden {
+  opacity: 0;
+  transform: translateY(-8px);
+  height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  pointer-events: none;
+}
+
+/* Actualiza top cuando header está compacto */
+.site-header.is-compact ~ .category-bar {
+  top: 52px;
+}
+
+/* ── Links de categoría ── */
+.category-bar__link {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  padding: 4px 0;
+  position: relative;
+  transition: color var(--ease-smooth);
+}
+
+.category-bar__link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1.5px;
+  background: var(--color-cacao);
+  transition: width var(--ease-smooth);
+}
+
+.category-bar__link:hover,
+.category-bar__link--active {
+  color: var(--color-text-dark);
+}
+
+.category-bar__link:hover::after,
+.category-bar__link--active::after {
+  width: 100%;
+}
+
+/* Link de mayoristas — destacado */
+.category-bar__link--cta {
+  color: var(--color-cacao);
+  font-weight: 500;
+}
+
+.category-bar__link--cta:hover {
+  color: var(--color-cacao-hover);
+}
+
+
+/* ────────────────────────────────────────────────────────
+   SIDEBAR
+   ──────────────────────────────────────────────────────── */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(44,26,16,.45);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--ease-smooth);
+}
+
+.sidebar-overlay.is-open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 300px;
+  height: 100vh;
+  background: var(--color-tierra);
+  z-index: 600;
+  transform: translateX(-100%);
+  transition: transform .5s cubic-bezier(.4,0,.2,1);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.sidebar.is-open {
+  transform: translateX(0);
+}
+
+/* Cabecera del sidebar */
+.sidebar__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 32px;
+  border-bottom: 1px solid rgba(217,199,163,.1);
+  flex-shrink: 0;
+}
+
+.sidebar__brand {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--color-text-on-dark);
+}
+
+.sidebar__brand em {
+  font-style: italic;
+  color: var(--color-oro);
+}
+
+.sidebar__close {
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 50%;
+  transition: all .2s;
+}
+.sidebar__close:hover {
+  color: var(--color-text-on-dark);
+  background: rgba(246,237,210,.07);
+}
+
+/* Cuerpo del sidebar */
+.sidebar__body {
+  padding: 28px 0;
+  flex: 1;
+}
+
+.sidebar__label {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 3.5px;
+  text-transform: uppercase;
+  color: var(--color-oro);
+  padding: 0 32px;
+  margin-bottom: 8px;
+  margin-top: 24px;
+}
+
+.sidebar__link {
+  display: block;
+  padding: 11px 32px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 300;
+  color: rgba(246,237,210,.6);
+  position: relative;
+  transition: all var(--ease-smooth);
+}
+
+.sidebar__link::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 1.5px;
+  background: var(--color-oro);
+  transition: width var(--ease-smooth);
+}
+
+.sidebar__link:hover {
+  color: var(--color-text-on-dark);
+  padding-left: 42px;
+}
+
+.sidebar__link:hover::before {
+  width: 8px;
+}
+
+/* Footer del sidebar */
+.sidebar__footer {
+  padding: 24px 32px;
+  border-top: 1px solid rgba(217,199,163,.08);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sidebar__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sidebar__pill {
+  border: 1px solid rgba(217,199,163,.25);
+  color: rgba(246,237,210,.4);
+  padding: 6px 14px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  border-radius: 20px;
+  transition: all var(--ease-smooth);
+}
+
+.sidebar__pill:hover {
+  border-color: var(--color-oro);
+  color: var(--color-oro);
+}
+
+.sidebar__social {
+  display: flex;
+  gap: 20px;
+}
+
+.sidebar__social a {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(246,237,210,.3);
+  transition: color var(--ease-smooth);
+}
+
+.sidebar__social a:hover {
+  color: var(--color-oro);
+}
+
+
+/* ════════════════════════════════════════════════════════
+    RESPONSIVE DEL HEADER
+   ════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .header__inner {
+    padding: 0 20px;
+    height: 60px;
+  }
+
+  .header__logo {
+    font-size: 16px;
+    letter-spacing: 3px;
+  }
+
+  .site-header.is-compact .header__inner {
+    height: 48px;
+  }
+
+  .category-bar {
+    gap: 24px;
+    padding: 0 20px;
+    overflow-x: auto;
+    justify-content: flex-start;
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .category-bar::-webkit-scrollbar { display: none; } /* Chrome */
+
+  .category-bar__link {
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  .sidebar { width: 280px; }
+}
+
+@media (max-width: 480px) {
+  .header__inner { padding: 0 16px; }
+  .header__icon  { width: 36px; height: 36px; }
+  .header__icon svg { width: 17px; height: 17px; }
+}

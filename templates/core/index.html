@@ -1,0 +1,385 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inicio | Joyas Oro del Sol{% endblock %}
+
+{% block content %}
+
+
+    <!-- HERO -->
+    <section class="hero" aria-label="Banner principal">
+      
+      <div class="hero__bg" role="img " aria-label="Anillo de compromiso en oro 18K"></div>
+      <div class="hero__gradient"></div>
+
+      <div class="hero__stats" aria-label="Cifras clave">
+        <div class="hero__stat">
+          <span class="hero__stat-num">500+</span>
+          <span class="hero__stat-label">Familias</span>
+        </div>
+        <div class="hero__stat">
+          <span class="hero__stat-num">18K</span>
+          <span class="hero__stat-label">Certificado</span>
+        </div>
+        <div class="hero__stat">
+          <span class="hero__stat-num">30+</span>
+          <span class="hero__stat-label">Diseños</span>
+        </div>
+      </div>
+
+
+      <div class="hero__content">
+        <span class="eyebrow eyebrow--gold">Colección 2026</span>
+        <h1 class="hero__title">
+          Cada joya,<br>
+          una historia<br>
+          <em>que perdura</em>
+        </h1>
+        <p class="hero__desc">
+          Anillos en oro 18K certificado, diseñados para los
+          momentos más importantes de tu vida.
+        </p>
+        <div class="hero__ctas">
+          <a href="/catalogo" class="btn btn--primary-gold">Explorar Colección</a>
+          <a href="#colecciones" class="btn btn--ghost-light">
+            Ver colecciones
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="13" height="13">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <div class="hero__scroll" aria-hidden="true">
+        <span>Scroll</span>
+        <div class="hero__scroll-line"></div>
+      </div>
+      
+    </section>
+
+
+    <!-- EDITORIAL -->
+    <section class="section section--white editorial" id="nosotros">
+      <div class="editorial__text reveal">
+        <span class="eyebrow">Nuestra filosofía</span>
+        <h2 class="heading">
+          No fabricamos joyas.<br>
+          <em>Creamos recuerdos</em>
+        </h2>
+        <p class="body-text">
+          Cada anillo nace de un molde trabajado con precisión, fundido en oro 18K
+          certificado y terminado a mano. El resultado es una pieza que llevarás toda
+          la vida, y que algún día contará tu historia.
+        </p>
+        <a href="/nosotros" class="btn btn--ghost-dark">
+          Conoce nuestro proceso
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="13" height="13">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
+      <div class="editorial__image reveal" style="transition-delay:.15s">
+        <img src="{% static 'img/bodafoto.webp' %}"
+             alt="Detalle de anillo en oro 18K" loading="lazy">
+        <span class="editorial__tag">Oro 18K · Certificado</span>
+      </div>
+    </section>
+
+
+    <!-- COLECCIONES -->
+    <section class="section section--dark" id="colecciones" aria-labelledby="h-colecciones">
+      <div class="section__header reveal">
+        <h2 class="heading heading--light" id="h-colecciones">
+          Nuestras <em>colecciones</em>
+        </h2>
+        <a href="/catalogo" class="link-underline link-underline--light">Ver todo →</a>
+      </div>
+
+      <div class="collections-grid reveal" style="transition-delay:.1s">
+
+        <article class="collection-card">
+          <div class="collection-card__media">
+            <img src="https://images.unsplash.com/photo-1573408301185-9519f94815b6?w=700&q=80"
+                 alt="Alma Dorada - anillos de compromiso" loading="lazy">
+          </div>
+          <div class="collection-card__info">
+            <span class="collection-card__season">Colección · 2026</span>
+            <h3 class="collection-card__name">Alma Dorada</h3>
+            <span class="collection-card__desc">Anillos de compromiso · 18 diseños</span>
+            <a href="/coleccion/alma-dorada" class="collection-card__cta">
+              Explorar
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="12" height="12">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </a>
+          </div>
+        </article>
+
+        <article class="collection-card">
+          <div class="collection-card__media">
+            <img src="https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=500&q=80"
+                 alt="Luna de Miel - argollas de matrimonio" loading="lazy">
+          </div>
+          <div class="collection-card__info">
+            <span class="collection-card__season">Colección · 2026</span>
+            <h3 class="collection-card__name">Luna de Miel</h3>
+            <span class="collection-card__desc">Argollas de matrimonio · 12 pares</span>
+            <a href="/coleccion/luna-de-miel" class="collection-card__cta">
+              Explorar
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="12" height="12">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </a>
+          </div>
+        </article>
+
+        <article class="collection-card">
+          <div class="collection-card__media">
+            <img src="https://images.unsplash.com/photo-1632653000891-2f7d92d9d3c5?w=500&q=80"
+                 alt="Quince Soles - anillos XV años" loading="lazy">
+          </div>
+          <div class="collection-card__info">
+            <span class="collection-card__season">Colección · 2026</span>
+            <h3 class="collection-card__name">Quince Soles</h3>
+            <span class="collection-card__desc">XV Años · 9 modelos exclusivos</span>
+            <a href="/coleccion/quince-soles" class="collection-card__cta">
+              Explorar
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="12" height="12">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </a>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+
+    <!-- PRODUCTOS -->
+    <section class="section section--white" aria-labelledby="h-productos">
+      <div class="section__header reveal">
+        <h2 class="heading" id="h-productos">Más <em>deseados</em></h2>
+        <a href="/catalogo" class="link-underline">Ver todo →</a>
+      </div>
+
+      <div class="products-grid">
+
+        <article class="product-card reveal" data-id="001">
+          <div class="product-card__media">
+            <img src="https://cdn-media.glamira.com/media/product/newgeneration/view/3/sku/20702tunatisans/diamond/rhodolite_AAA/stone2/labdiamond_AAAA/alloycolour/white.jpg"
+                 alt="Anillo Corazón 18K Oro Blanco Rhodolita" loading="lazy">
+            <span class="product-card__badge product-card__badge--new">Nuevo</span>
+            <div class="product-card__actions">
+              <button class="product-card__btn" aria-label="Añadir a favoritos" data-action="fav">♡</button>
+              <button class="product-card__btn" aria-label="Vista rápida" data-action="quick">⊙</button>
+            </div>
+            <div class="product-card__bar">Añadir al carrito</div>
+          </div>
+          <div class="product-card__info">
+            <span class="product-card__label">18K Oro Blanco · Rhodolita · Alma Dorada</span>
+            <h3 class="product-card__name">Anillo Corazón</h3>
+            <p class="product-card__price"><strong>COP $5.314.482</strong></p>
+          </div>
+        </article>
+
+        <article class="product-card reveal" data-id="002" style="transition-delay:.1s">
+          <div class="product-card__media">
+            <img src="https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=400&q=80"
+                 alt="Solitario Clásico 18K Oro Amarillo Diamante" loading="lazy">
+            <div class="product-card__actions">
+              <button class="product-card__btn" aria-label="Añadir a favoritos" data-action="fav">♡</button>
+              <button class="product-card__btn" aria-label="Vista rápida" data-action="quick">⊙</button>
+            </div>
+            <div class="product-card__bar">Añadir al carrito</div>
+          </div>
+          <div class="product-card__info">
+            <span class="product-card__label">18K Oro Amarillo · Diamante · Alma Dorada</span>
+            <h3 class="product-card__name">Solitario Clásico</h3>
+            <p class="product-card__price"><strong>COP $7.200.000</strong></p>
+          </div>
+        </article>
+
+        <article class="product-card reveal" data-id="003" style="transition-delay:.2s">
+          <div class="product-card__media">
+            <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80"
+                 alt="Eternidad Rosa 18K Oro Rosa Zafiro" loading="lazy">
+            <span class="product-card__badge product-card__badge--fav">Favorito</span>
+            <div class="product-card__actions">
+              <button class="product-card__btn" aria-label="Añadir a favoritos" data-action="fav">♡</button>
+              <button class="product-card__btn" aria-label="Vista rápida" data-action="quick">⊙</button>
+            </div>
+            <div class="product-card__bar">Añadir al carrito</div>
+          </div>
+          <div class="product-card__info">
+            <span class="product-card__label">18K Oro Rosa · Zafiro · Luna de Miel</span>
+            <h3 class="product-card__name">Eternidad Rosa</h3>
+            <p class="product-card__price"><strong>COP $4.850.000</strong></p>
+          </div>
+        </article>
+
+        <article class="product-card reveal" data-id="004" style="transition-delay:.3s">
+          <div class="product-card__media">
+            <img src="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400&q=80"
+                 alt="Trío Diamante 18K Oro Blanco" loading="lazy">
+            <div class="product-card__actions">
+              <button class="product-card__btn" aria-label="Añadir a favoritos" data-action="fav">♡</button>
+              <button class="product-card__btn" aria-label="Vista rápida" data-action="quick">⊙</button>
+            </div>
+            <div class="product-card__bar">Añadir al carrito</div>
+          </div>
+          <div class="product-card__info">
+            <span class="product-card__label">18K Oro Blanco · Trío · Promesa Eterna</span>
+            <h3 class="product-card__name">Trío Diamante</h3>
+            <p class="product-card__price"><strong>COP $9.100.000</strong></p>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+
+    <!-- B2B -->
+    <section class="section section--split" id="mayoristas" aria-labelledby="h-b2b">
+      <div class="b2b__visual">
+        <img src="https://images.unsplash.com/photo-1536502261069-17b0db5cc3ca?w=700&q=80"
+             alt="Taller de producción de joyería" loading="lazy">
+        <div class="b2b__caption">Fundición<br>Moldes<br>Calidad</div>
+      </div>
+      <div class="b2b__panel reveal">
+        <span class="eyebrow eyebrow--gold">Ventas al por mayor</span>
+        <h2 class="heading heading--light" id="h-b2b">
+          Para joyerías<br><em>que exigen calidad</em>
+        </h2>
+        <p class="body-text body-text--muted">
+          Producción por moldes y fundición. Más piezas, mismo estándar,
+          en menos tiempo. Precios exclusivos para distribuidores certificados.
+        </p>
+        <ul class="b2b__list">
+          <li>Pedidos desde 10 unidades por referencia</li>
+          <li>Entrega garantizada en 15–20 días hábiles</li>
+          <li>Certificado de pureza 18K por lote</li>
+          <li>Precios escalonados por volumen</li>
+          <li>Catálogo exclusivo B2B disponible</li>
+        </ul>
+        <a href="/mayoristas" class="btn btn--outline-gold">Solicitar Acceso</a>
+      </div>
+    </section>
+
+
+    <!-- PROCESO -->
+    <section class="section section--cream" id="proceso" aria-labelledby="h-proceso">
+      <div class="section__header section__header--center reveal">
+        <span class="eyebrow">Nuestro proceso</span>
+        <h2 class="heading" id="h-proceso">Del molde <em>a tus manos</em></h2>
+      </div>
+      <div class="process-grid">
+        <div class="process-step reveal">
+          <div class="process-step__num">01</div>
+          <h3 class="process-step__title">Diseño</h3>
+          <p class="process-step__desc">Elige o personaliza: metal, piedra y talla.</p>
+        </div>
+        <div class="process-step reveal" style="transition-delay:.15s">
+          <div class="process-step__num">02</div>
+          <h3 class="process-step__title">Fundición</h3>
+          <p class="process-step__desc">Vaciado en molde con oro 18K certificado.</p>
+        </div>
+        <div class="process-step reveal" style="transition-delay:.3s">
+          <div class="process-step__num">03</div>
+          <h3 class="process-step__title">Engaste</h3>
+          <p class="process-step__desc">Colocación artesanal de la piedra preciosa.</p>
+        </div>
+        <div class="process-step reveal" style="transition-delay:.45s">
+          <div class="process-step__num">04</div>
+          <h3 class="process-step__title">Entrega</h3>
+          <p class="process-step__desc">Empaque de lujo con certificado incluido.</p>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- TESTIMONIOS -->
+    <section class="section section--white reviews-section" aria-labelledby="h-reviews">
+      <div class="section__header section__header--center reveal">
+        <span class="eyebrow">Lo que dicen nuestros clientes</span>
+        <h2 class="heading" id="h-reviews">Historias <em>reales</em></h2>
+      </div>
+      <div class="reviews-track" aria-label="Testimonios de clientes">
+        <div class="review-card">
+          <div class="review-card__stars" aria-label="5 estrellas">★★★★★</div>
+          <p class="review-card__text">"El anillo superó mis expectativas. La rhodolita tiene un brillo precioso."</p>
+          <span class="review-card__author">— Valentina M., Bogotá</span>
+        </div>
+        <div class="review-card">
+          <div class="review-card__stars" aria-label="5 estrellas">★★★★★</div>
+          <p class="review-card__text">"Pedí 30 anillos para mi joyería. Proceso rápido y cada pieza con certificado."</p>
+          <span class="review-card__author">— Joyería Romero, Medellín</span>
+        </div>
+        <div class="review-card">
+          <div class="review-card__stars" aria-label="5 estrellas">★★★★★</div>
+          <p class="review-card__text">"Me ayudaron a personalizar el anillo. El resultado fue exactamente lo que soñaba."</p>
+          <span class="review-card__author">— Carlos A., Cali</span>
+        </div>
+        <div class="review-card">
+          <div class="review-card__stars" aria-label="5 estrellas">★★★★★</div>
+          <p class="review-card__text">"El empaque parece de joyería internacional. Cada peso bien invertido."</p>
+          <span class="review-card__author">— Daniela P., Bucaramanga</span>
+        </div>
+        <!-- Duplicado para loop continuo -->
+        <div class="review-card" aria-hidden="true">
+          <div class="review-card__stars">★★★★★</div>
+          <p class="review-card__text">"El anillo superó mis expectativas. La rhodolita tiene un brillo precioso."</p>
+          <span class="review-card__author">— Valentina M., Bogotá</span>
+        </div>
+        <div class="review-card" aria-hidden="true">
+          <div class="review-card__stars">★★★★★</div>
+          <p class="review-card__text">"Pedí 30 anillos para mi joyería. Proceso rápido y cada pieza con certificado."</p>
+          <span class="review-card__author">— Joyería Romero, Medellín</span>
+        </div>
+        <div class="review-card" aria-hidden="true">
+          <div class="review-card__stars">★★★★★</div>
+          <p class="review-card__text">"Me ayudaron a personalizar el anillo. El resultado fue exactamente lo que soñaba."</p>
+          <span class="review-card__author">— Carlos A., Cali</span>
+        </div>
+        <div class="review-card" aria-hidden="true">
+          <div class="review-card__stars">★★★★★</div>
+          <p class="review-card__text">"El empaque parece de joyería internacional. Cada peso bien invertido."</p>
+          <span class="review-card__author">— Daniela P., Bucaramanga</span>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- TRUST BAR -->
+    <div class="trust-bar" role="list" aria-label="Garantías y beneficios">
+      <div class="trust-bar__item" role="listitem">
+        <span class="trust-bar__icon" aria-hidden="true">⬡</span>
+        <span class="trust-bar__title">Oro 18K Certificado</span>
+        <span class="trust-bar__sub">Certificado incluido</span>
+      </div>
+      <div class="trust-bar__item" role="listitem">
+        <span class="trust-bar__icon" aria-hidden="true">◈</span>
+        <span class="trust-bar__title">Envío Seguro</span>
+        <span class="trust-bar__sub">Rastreo en tiempo real</span>
+      </div>
+      <div class="trust-bar__item" role="listitem">
+        <span class="trust-bar__icon" aria-hidden="true">◇</span>
+        <span class="trust-bar__title">Garantía de Calidad</span>
+        <span class="trust-bar__sub">Revisión artesanal</span>
+      </div>
+      <div class="trust-bar__item" role="listitem">
+        <span class="trust-bar__icon" aria-hidden="true">✦</span>
+        <span class="trust-bar__title">Personalización Total</span>
+        <span class="trust-bar__sub">Metal, piedra y talla</span>
+      </div>
+      <div class="trust-bar__item" role="listitem">
+        <span class="trust-bar__icon" aria-hidden="true">◎</span>
+        <span class="trust-bar__title">Pago Seguro</span>
+        <span class="trust-bar__sub">PSE · Tarjetas · Efectivo</span>
+      </div>
+    </div>
+
+  </main>
+
+
+  
+{% endblock %}
