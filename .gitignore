@@ -26,3 +26,19 @@ Thumbs.db
 # Build
 dist/
 build/
+
+# Ignorar todas las imágenes de un formato específico en cualquier carpeta
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+
+# O mejor aún, ignorar una carpeta completa destinada a subidas o contenido masivo
+#/public/uploads/
+#/src/assets/images/content/
+
+# Python (Archivos compilados)
+__pycache__/
+*.py[cod]
+*$py.class
