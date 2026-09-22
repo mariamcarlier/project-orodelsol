@@ -25,7 +25,132 @@ Thumbs.db
 
 # Build
 dist/
+build/__pycache__/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.bin/
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+
+# Flask stuff
+instance/
+.webassets-cache
+
+# Scrapy stuff
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder stuff
+.pybuilder/
+.target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+# For a library or package, you might want to ignore these files by default,
+# but not for an application repo where you can use pyenv-version:
+.python-version
+
+# pipenv
+# According to pypa/pipenv#598, it is recommended to lock your dependencies:
+# Pipfile.lock
+
+# Poetry
+# Similar to Pipfile.lock, it is recommended to keep poetry.lock in version control
+# https://python-poetry.org
+
+# pdm
+# Similar to Pipfile.lock, it is recommended to keep pdm.lock in version control
+# pypackages/
+
+# PEP 582; used by e.g. PDM, Hatch
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyderworkspace
+
+# Project-local settings
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # Ignorar todas las imágenes de un formato específico en cualquier carpeta
 *.png
@@ -33,12 +158,3 @@ build/
 *.jpeg
 *.gif
 *.webp
-
-# O mejor aún, ignorar una carpeta completa destinada a subidas o contenido masivo
-#/public/uploads/
-#/src/assets/images/content/
-
-# Python (Archivos compilados)
-__pycache__/
-*.py[cod]
-*$py.class
