@@ -151,10 +151,3 @@ venv.bak/
 .idea/
 *.swp
 *.swo
-
-# Ignorar todas las imágenes de un formato específico en cualquier carpeta
-*.png
-*.jpg
-*.jpeg
-*.gif
-*.webp
