@@ -35,14 +35,19 @@ class Moneda(models.Model):
 
     def save(self, *args, **kwargs):
         """
-        Regla de negocio (Escenario 2 del criterio de aceptación):
+        Regla de negocio (Escenario 2 — CFG-03):
         Si esta moneda se marca como principal, se desmarcan
         automáticamente todas las demás antes de guardar.
-        Garantiza que solo exista UNA moneda principal en todo momento.
+
+        Maneja dos casos:
+          - CREAR (pk=None): actualiza TODAS las existentes como no-principal.
+          - EDITAR (pk existe): actualiza todas EXCEPTO la que se está editando.
         """
         if self.es_principal:
-            # Excluimos la instancia actual (pk) para no afectarla a sí misma
-            Moneda.objects.filter(es_principal=True).exclude(pk=self.pk).update(es_principal=False)
+            otras = Moneda.objects.filter(es_principal=True)
+            if self.pk:                    # Caso EDITAR: excluir la actual
+                otras = otras.exclude(pk=self.pk)
+            otras.update(es_principal=False)
         super().save(*args, **kwargs)
 
     def __str__(self):
