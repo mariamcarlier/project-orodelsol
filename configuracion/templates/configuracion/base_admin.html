@@ -1,0 +1,67 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Panel Admin — Oro del Sol{% endblock %}</title>
+
+    <!-- Fuentes oficiales de la marca -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Questrial&display=swap" rel="stylesheet">
+
+    <!-- Design Tokens: fuente única de verdad de colores y fuentes -->
+    <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+
+    <!-- Estilos del panel de administración -->
+    <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+
+    <!-- Bloque para CSS extra específico de cada página -->
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <header class="admin-header">
+        <div class="admin-header__brand">
+            Oro del Sol
+            <span>Panel de Configuración</span>
+        </div>
+        <nav class="admin-nav">
+            {# CFG-01: URL disponible cuando se implemente Parámetros #}
+            <a href="#" title="Próximamente — CFG-01">Parámetros</a>
+
+            {# CFG-02: Ya implementado #}
+            <a href="{% url 'configuracion:impuesto_list' %}">Impuestos</a>
+
+            {# CFG-03: URL disponible cuando se implemente Monedas #}
+            <a href="#" title="Próximamente — CFG-03">Monedas</a>
+
+            {# CFG-04: URL disponible cuando se implemente Idiomas #}
+            <a href="#" title="Próximamente — CFG-04">Idiomas</a>
+        </nav>
+    </header>
+
+    <main class="admin-main">
+
+        {% if messages %}
+        <ul class="alert-list">
+            {% for message in messages %}
+            <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+
+    </main>
+
+    <footer class="admin-footer">
+        &copy; 2026 &nbsp;·&nbsp; Oro del Sol &nbsp;·&nbsp; Administración interna
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+
+</body>
+</html>

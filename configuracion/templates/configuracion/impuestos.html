@@ -1,0 +1,53 @@
+{% extends 'configuracion/base_admin.html' %}
+
+{% block title %}Impuestos — Oro del Sol{% endblock %}
+
+{% block content %}
+
+    <div class="section-header">
+        <div>
+            <span class="eyebrow">CFG-02</span>
+            <h2>Gestión de Impuestos</h2>
+        </div>
+        <a href="{% url 'configuracion:impuesto_create' %}" class="btn btn--primary-gold">+ Nuevo impuesto</a>
+    </div>
+
+    <p class="section-desc">
+        Configura las tasas de impuesto que se aplicarán automáticamente en el carrito y el checkout de la tienda.
+    </p>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Tasa (%)</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for impuesto in impuestos %}
+            <tr>
+                <td style="color: rgba(196,174,136,.4); font-size:11px;">{{ forloop.counter }}</td>
+                <td>{{ impuesto.nombre }}</td>
+                <td>{{ impuesto.tasa }} %</td>
+                <td>
+                    {% if impuesto.vigente %}
+                        <span class="badge badge--active">Activo</span>
+                    {% else %}
+                        <span class="badge badge--inactive">Inactivo</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="table-empty">
+                    No hay impuestos configurados todavía.
+                    <a href="{% url 'configuracion:impuesto_create' %}">Crea el primero</a>.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}
