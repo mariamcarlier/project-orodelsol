@@ -1,0 +1,88 @@
+/* ═══════════════════════════════════════════════════════════════
+   tokens.css
+   FUENTE ÚNICA DE VERDAD — Design Tokens de Oro del Sol
+   
+   Este archivo NO contiene estilos visuales.
+   Solo define variables CSS (custom properties) que comparten:
+     → styles.css       (frontend público)
+     → admin.css        (panel de administración)
+   
+   Si necesitas cambiar un color de marca, cámbialo AQUÍ.
+   Automáticamente se actualizará en toda la plataforma.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+
+    /* ─────────────────────────────────────────
+       PALETA DE MARCA
+       ───────────────────────────────────────── */
+
+    /* Arena dorada — header, acentos principales */
+    --color-oro:          #d9c7a3;
+
+    /* Marrón profundo — botones CTA, textos de énfasis */
+    --color-cacao:        #785041;
+    --color-cacao-hover:  #5a3a2f;
+
+    /* Crema — secciones destacadas, fondos suaves */
+    --color-marfil:       #f6edd2;
+    --color-marfil-alt:   #ede2c8;
+
+    /* Oscuro profundo — footer, panel admin, sidebar */
+    --color-tierra:       #2c1a10;
+
+    /* Bordes y líneas doradas */
+    --color-oro-borde:    #c4ae88;
+
+
+    /* ─────────────────────────────────────────
+       DORADOS DE APOYO
+       ───────────────────────────────────────── */
+    --gold:               #c9a84c;
+    --gold-light:         #e8d5a3;
+    --gold-dark:          #9a7c32;
+    --obsidian:           #0c0b09;
+    --cream:              #faf8f4;
+
+
+    /* ─────────────────────────────────────────
+       TEXTO
+       ───────────────────────────────────────── */
+    --color-text-dark:    #2c1a10;   /* Sobre fondos claros */
+    --color-text-mid:     #785041;   /* Subtítulos, labels */
+    --color-text-muted:   #9a7e68;   /* Texto secundario */
+    --color-text-on-dark: #f6edd2;   /* Sobre fondos oscuros */
+    --color-white:        #ffffff;
+
+
+    /* ─────────────────────────────────────────
+       TIPOGRAFÍA
+       ───────────────────────────────────────── */
+
+    /* Títulos y display: elegancia serif */
+    --font-display: 'Cormorant Garamond', Georgia, serif;
+
+    /* Cuerpo de texto e interfaz: legibilidad */
+    --font-body:    'Questrial', Arial, sans-serif;
+
+
+    /* ─────────────────────────────────────────
+       ESPACIADO
+       ───────────────────────────────────────── */
+    --section-padding-v:  96px;
+    --section-padding-h:  80px;
+
+
+    /* ─────────────────────────────────────────
+       TRANSICIONES
+       ───────────────────────────────────────── */
+    --ease-smooth: 0.38s cubic-bezier(.25,.1,.25,1);
+    --ease-enter:  0.55s cubic-bezier(.22,1,.36,1);
+
+
+    /* ─────────────────────────────────────────
+       MISCELÁNEOS
+       ───────────────────────────────────────── */
+    --radius:       3px;
+    --shadow-soft:  0 2px 12px rgba(44,26,16,.07);
+}
