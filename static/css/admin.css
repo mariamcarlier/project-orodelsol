@@ -1,0 +1,382 @@
+/* ═══════════════════════════════════════════════════════════════
+   admin.css
+   Estilos exclusivos del Panel de Administración — Oro del Sol
+
+   DEPENDE DE: tokens.css (debe cargarse antes que este archivo)
+   NO duplica variables — las hereda de tokens.css
+
+   Responsabilidad: layout, componentes y estilos del panel admin.
+   NO incluir estilos del frontend público (hero, slider, catálogo).
+   ═══════════════════════════════════════════════════════════════ */
+
+
+/* ─── Reset mínimo ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+
+
+/* ════════════════════════════════════════════════════════
+   BODY — Fondo oscuro tierra para el panel admin
+   El frontend público usa fondo blanco (en styles.css).
+   El admin usa fondo oscuro: contexto completamente distinto.
+   ════════════════════════════════════════════════════════ */
+body {
+    font-family: var(--font-body);
+    background-color: #fce3d6;
+    color: var(--color-text-on-dark);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.65;
+}
+
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+
+
+/* ════════════════════════════════════════════════════════
+   HEADER DEL PANEL
+   ════════════════════════════════════════════════════════ */
+.admin-header {
+    background-color: var(--obsidian);
+    border-bottom: 1px solid var(--color-oro-borde);
+    padding: 0 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow-soft);
+}
+
+.admin-header__brand {
+    font-family: var(--font-display);
+    font-weight: 300;
+    font-size: 1.15rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--color-oro);
+}
+
+.admin-header__brand span {
+    color: var(--color-oro-borde);
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    display: block;
+    text-transform: uppercase;
+    font-family: var(--font-body);
+    margin-top: 1px;
+}
+
+/* ─── Navegación del header ─── */
+.admin-nav {
+    display: flex;
+    gap: 2px;
+}
+
+.admin-nav a {
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    transition: all var(--ease-smooth);
+    border: 1px solid transparent;
+}
+
+.admin-nav a:hover,
+.admin-nav a.active {
+    color: var(--color-oro);
+    border-color: rgba(201, 168, 76, .25);
+    background-color: rgba(201, 168, 76, .06);
+}
+
+
+/* ════════════════════════════════════════════════════════
+   CONTENIDO PRINCIPAL
+   ════════════════════════════════════════════════════════ */
+.admin-main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 40px 80px;
+}
+
+/* ─── Cabecera de sección ─── */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 8px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(196, 174, 136, .2);
+}
+
+/* ─── Eyebrow (sobretítulo tipo CFG-02) ─── */
+.eyebrow {
+    display: block;
+    font-size: 9px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--color-oro);
+    margin-bottom: 4px;
+    opacity: 0.7;
+}
+
+/* ─── Títulos ─── */
+h2 {
+    font-family: var(--font-display);
+    font-weight: 300;
+    font-size: 1.75rem;
+    color: var(--color-marfil);
+    letter-spacing: 1px;
+}
+
+.section-desc {
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    color: var(--color-text-muted);
+    margin-top: 6px;
+    margin-bottom: 28px;
+}
+
+
+/* ════════════════════════════════════════════════════════
+   BOTONES — Coherentes con el sistema de marca (styles.css)
+   ════════════════════════════════════════════════════════ */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    border-radius: var(--radius);
+    padding: 11px 28px;
+    transition: all var(--ease-smooth);
+    border: none;
+    cursor: pointer;
+}
+
+/* Dorado primario */
+.btn--primary-gold {
+    background: var(--color-oro);
+    color: var(--color-text-dark);
+}
+.btn--primary-gold:hover {
+    background: var(--gold-light);
+    transform: translateY(-1px);
+}
+
+/* Contorno dorado */
+.btn--outline-gold {
+    background: transparent;
+    border: 1px solid var(--color-oro-borde);
+    color: var(--color-oro);
+    padding: 10px 24px;
+}
+.btn--outline-gold:hover {
+    background: rgba(201, 168, 76, .1);
+    border-color: var(--color-oro);
+}
+
+/* Cacao — guardar formularios */
+.btn--cacao {
+    background: var(--color-cacao);
+    color: var(--color-text-on-dark);
+}
+.btn--cacao:hover { background: var(--color-cacao-hover); }
+
+/* Enlace cancelar */
+.link-cancel {
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin-left: 18px;
+    border-bottom: 1px solid transparent;
+    transition: all var(--ease-smooth);
+}
+.link-cancel:hover {
+    color: var(--color-marfil);
+    border-bottom-color: var(--color-oro-borde);
+}
+
+
+/* ════════════════════════════════════════════════════════
+   TABLA DE DATOS
+   ════════════════════════════════════════════════════════ */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+.data-table thead tr {
+    border-bottom: 1px solid var(--color-oro-borde);
+}
+
+.data-table th {
+    color: var(--color-oro);
+    font-family: var(--font-body);
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 400;
+    padding: 10px 16px;
+    text-align: left;
+}
+
+.data-table td {
+    padding: 14px 16px;
+    color: rgba(246, 237, 210, .75);
+    border-bottom: 1px solid rgba(196, 174, 136, .1);
+    font-size: 13px;
+}
+
+.data-table tbody tr:hover td {
+    background-color: rgba(201, 168, 76, .04);
+    color: var(--color-marfil);
+}
+
+/* ─── Número de fila ─── */
+.data-table .row-num {
+    color: rgba(196, 174, 136, .4);
+    font-size: 11px;
+}
+
+/* ─── Badges de estado ─── */
+.badge {
+    display: inline-block;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-family: var(--font-body);
+}
+
+.badge--active   { background: rgba(125,204,125,.12); color: #7dcc7d; border: 1px solid rgba(125,204,125,.3); }
+.badge--inactive { background: rgba(204,125,125,.12); color: #cc7d7d; border: 1px solid rgba(204,125,125,.3); }
+.badge--primary  { background: rgba(201,168,76,.15);  color: var(--gold-light); border: 1px solid rgba(201,168,76,.4); }
+
+/* ─── Celda vacía ─── */
+.table-empty {
+    text-align: center;
+    padding: 40px !important;
+    color: var(--color-text-muted) !important;
+    font-size: 12px !important;
+    letter-spacing: 1px;
+}
+.table-empty a {
+    color: var(--color-oro);
+    border-bottom: 1px solid var(--color-oro-borde);
+}
+
+
+/* ════════════════════════════════════════════════════════
+   FORMULARIOS
+   ════════════════════════════════════════════════════════ */
+.form-card {
+    background-color: rgba(255,255,255,.03);
+    border: 1px solid rgba(196, 174, 136, .15);
+    border-radius: var(--radius);
+    padding: 36px 40px;
+    margin-top: 24px;
+}
+
+.form-card p { margin-bottom: 20px; }
+
+.form-card label {
+    display: block;
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--color-oro);
+    margin-bottom: 8px;
+    font-family: var(--font-body);
+}
+
+.form-card input[type="text"],
+.form-card input[type="number"],
+.form-card input[type="email"],
+.form-card select {
+    width: 100%;
+    padding: 11px 14px;
+    background-color: rgba(0,0,0,.3);
+    border: 1px solid rgba(196, 174, 136, .25);
+    border-radius: var(--radius);
+    color: var(--color-text-on-dark);
+    font-family: var(--font-body);
+    font-size: 13px;
+    transition: border-color var(--ease-smooth);
+}
+
+.form-card input[type="text"]:focus,
+.form-card input[type="number"]:focus,
+.form-card input[type="email"]:focus,
+.form-card select:focus {
+    outline: none;
+    border-color: var(--color-oro-borde);
+}
+
+.form-card input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--gold);
+}
+
+.form-help  { display: block; font-size: 11px; color: var(--color-text-muted); margin-top: 5px; }
+.form-error { display: block; font-size: 11px; color: #cc7d7d; margin-top: 5px; }
+
+.form-actions {
+    margin-top: 28px;
+    display: flex;
+    align-items: center;
+}
+
+
+/* ════════════════════════════════════════════════════════
+   MENSAJES DEL SISTEMA (Django messages framework)
+   ════════════════════════════════════════════════════════ */
+.alert-list { list-style: none; margin: 20px 0; }
+
+.alert-list li {
+    padding: 12px 18px;
+    border-radius: var(--radius);
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.alert-list .success {
+    background: rgba(125,204,125,.1);
+    border-left: 2px solid #7dcc7d;
+    color: #7dcc7d;
+}
+
+.alert-list .error,
+.alert-list .warning {
+    background: rgba(204,125,125,.1);
+    border-left: 2px solid #cc7d7d;
+    color: #cc7d7d;
+}
+
+
+/* ════════════════════════════════════════════════════════
+   FOOTER DEL PANEL
+   ════════════════════════════════════════════════════════ */
+.admin-footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(154,126,104,.4);
+    border-top: 1px solid rgba(196, 174, 136, .08);
+}
