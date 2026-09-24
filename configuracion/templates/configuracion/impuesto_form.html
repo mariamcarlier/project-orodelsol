@@ -4,34 +4,22 @@
 
 {% block content %}
 
-    <div class="section-header">
+    <div class="page-header">
         <div>
             <span class="eyebrow">CFG-02</span>
-            <h2>Registrar Nuevo Impuesto</h2>
+            <h1 class="page-title">Registrar Nuevo Impuesto</h1>
         </div>
         <a href="{% url 'configuracion:impuesto_list' %}" class="btn btn--outline-gold">← Volver</a>
     </div>
 
-    <p class="section-desc">
+    <p class="page-desc">
         Define el nombre, la tasa porcentual y si el impuesto está actualmente vigente.
     </p>
 
     <div class="form-card">
         <form method="post">
             {% csrf_token %}
-
-            {% for field in form %}
-            <p>
-                {{ field.label_tag }}
-                {{ field }}
-                {% if field.help_text %}
-                    <small class="form-help">{{ field.help_text }}</small>
-                {% endif %}
-                {% for error in field.errors %}
-                    <small class="form-error">⚠ {{ error }}</small>
-                {% endfor %}
-            </p>
-            {% endfor %}
+            {% include 'configuracion/partials/_form_fields.html' %}
 
             <div class="form-actions">
                 <button type="submit" class="btn btn--cacao">Guardar impuesto</button>
