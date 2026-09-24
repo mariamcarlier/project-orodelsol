@@ -1,88 +1,70 @@
 /* ═══════════════════════════════════════════════════════════════
-   tokens.css
-   FUENTE ÚNICA DE VERDAD — Design Tokens de Oro del Sol
-   
-   Este archivo NO contiene estilos visuales.
-   Solo define variables CSS (custom properties) que comparten:
-     → styles.css       (frontend público)
-     → admin.css        (panel de administración)
-   
-   Si necesitas cambiar un color de marca, cámbialo AQUÍ.
-   Automáticamente se actualizará en toda la plataforma.
+   tokens.css — Design tokens de la marca (fuente única de verdad)
+   Solo define variables. No contiene estilos.
+
+   REGLA: los valores de MARCA (sección 1-3) son los originales del
+   sitio público. No se modifican: cambiarlos altera header, footer,
+   B2B y testimonios. Lo nuevo va en secciones separadas (4 en adelante).
+
+   Orden de carga: SIEMPRE primero, antes de styles.css / admin.css
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
 
-    /* ─────────────────────────────────────────
-       PALETA DE MARCA
-       ───────────────────────────────────────── */
+  /* ── 1. PALETA DE MARCA (originales, no tocar) ── */
+  --color-oro:          #d9c7a3;   /* Arena dorada — acento */
+  --color-oro-borde:    #c4ae88;   /* Bordes y líneas doradas */
+  --color-cacao:        #785041;   /* Marrón — botones, CTA */
+  --color-cacao-hover:  #5a3a2f;
+  --color-marfil:       #f6edd2;   /* Crema */
+  --color-marfil-alt:   #ede2c8;
+  --color-tierra:       #2c1a10;   /* Oscuro — footer, B2B, panel admin */
+  --color-white:        #ffffff;
 
-    /* Arena dorada — header, acentos principales */
-    --color-oro:          #d9c7a3;
+  /* ── 2. DORADOS DE APOYO ── */
+  --gold:               #c9a84c;
+  --gold-light:         #e8d5a3;
+  --gold-dark:          #9a7c32;
+  --obsidian:           #0c0b09;
+  --cream:              #faf8f4;
 
-    /* Marrón profundo — botones CTA, textos de énfasis */
-    --color-cacao:        #785041;
-    --color-cacao-hover:  #5a3a2f;
+  /* ── 3. TEXTO (originales) ── */
+  --color-text-dark:    #2c1a10;
+  --color-text-mid:     #785041;
+  --color-text-muted:   #9a7e68;
+  --color-text-on-dark: #f6edd2;
 
-    /* Crema — secciones destacadas, fondos suaves */
-    --color-marfil:       #f6edd2;
-    --color-marfil-alt:   #ede2c8;
+  /* ── 4. TEXTO SOBRE FONDOS OSCUROS (nuevo, lo usa el panel admin)
+        Mismo tono cálido que text-muted pero más claro:
+        6.2:1 sobre tierra y 7.3:1 sobre obsidian (WCAG AA) ── */
+  --color-text-muted-dark: #b09a82;
 
-    /* Oscuro profundo — footer, panel admin, sidebar */
-    --color-tierra:       #2c1a10;
+  /* ── 5. ESTADOS (nuevos — formularios, badges, alertas) ── */
+  --state-ok:      #7dcc7d;   /* 8.6:1 sobre tierra */
+  --state-danger:  #cc7d7d;   /* 5.4:1 sobre tierra */
+  --state-warning: #e0b35a;
 
-    /* Bordes y líneas doradas */
-    --color-oro-borde:    #c4ae88;
+  /* ── 6. TIPOGRAFÍA ── */
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body:    'Questrial', Arial, sans-serif;
 
+  /* ── 7. ESPACIADO DE SECCIONES ── */
+  --section-padding-v: 96px;
+  --section-padding-h: 80px;
 
-    /* ─────────────────────────────────────────
-       DORADOS DE APOYO
-       ───────────────────────────────────────── */
-    --gold:               #c9a84c;
-    --gold-light:         #e8d5a3;
-    --gold-dark:          #9a7c32;
-    --obsidian:           #0c0b09;
-    --cream:              #faf8f4;
+  /* ── 8. RADIOS Y SOMBRAS ── */
+  --radius:      3px;
+  --radius-lg:   6px;
+  --radius-full: 9999px;
+  --shadow-soft: 0 2px 12px rgba(44,26,16,.07);
+  --shadow-md:   0 4px 16px rgba(0,0,0,.25);
 
+  /* ── 9. FOCO (accesibilidad por teclado) ── */
+  --focus-ring:      0 0 0 3px rgba(201,168,76,.45);
+  --focus-ring-dark: 0 0 0 3px rgba(246,237,210,.55);
 
-    /* ─────────────────────────────────────────
-       TEXTO
-       ───────────────────────────────────────── */
-    --color-text-dark:    #2c1a10;   /* Sobre fondos claros */
-    --color-text-mid:     #785041;   /* Subtítulos, labels */
-    --color-text-muted:   #9a7e68;   /* Texto secundario */
-    --color-text-on-dark: #f6edd2;   /* Sobre fondos oscuros */
-    --color-white:        #ffffff;
-
-
-    /* ─────────────────────────────────────────
-       TIPOGRAFÍA
-       ───────────────────────────────────────── */
-
-    /* Títulos y display: elegancia serif */
-    --font-display: 'Cormorant Garamond', Georgia, serif;
-
-    /* Cuerpo de texto e interfaz: legibilidad */
-    --font-body:    'Questrial', Arial, sans-serif;
-
-
-    /* ─────────────────────────────────────────
-       ESPACIADO
-       ───────────────────────────────────────── */
-    --section-padding-v:  96px;
-    --section-padding-h:  80px;
-
-
-    /* ─────────────────────────────────────────
-       TRANSICIONES
-       ───────────────────────────────────────── */
-    --ease-smooth: 0.38s cubic-bezier(.25,.1,.25,1);
-    --ease-enter:  0.55s cubic-bezier(.22,1,.36,1);
-
-
-    /* ─────────────────────────────────────────
-       MISCELÁNEOS
-       ───────────────────────────────────────── */
-    --radius:       3px;
-    --shadow-soft:  0 2px 12px rgba(44,26,16,.07);
+  /* ── 10. TRANSICIONES ── */
+  --ease-smooth: 0.38s cubic-bezier(.25,.1,.25,1);
+  --ease-enter:  0.55s cubic-bezier(.22,1,.36,1);
+  --ease-fast:   0.2s ease;
 }
