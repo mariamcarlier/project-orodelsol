@@ -6,54 +6,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Panel Admin — Oro del Sol{% endblock %}</title>
 
-    <!-- Fuentes oficiales de la marca -->
+    <!-- Fuentes de la marca -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Questrial&display=swap" rel="stylesheet">
 
-    <!-- Design Tokens: fuente única de verdad de colores y fuentes -->
+    <!-- 1º tokens (variables), 2º estilos del panel -->
     <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
-
-    <!-- Estilos del panel de administración -->
     <link rel="stylesheet" href="{% static 'css/admin.css' %}">
-
-    <!-- Bloque para CSS extra específico de cada página -->
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="admin-body">
 
+    <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+    {# url_name de la página actual: sirve para marcar el módulo activo sin JavaScript #}
+    {% with current=request.resolver_match.url_name|default:"" %}
     <header class="admin-header">
         <div class="admin-header__brand">
             Oro del Sol
             <span>Panel de Configuración</span>
         </div>
-        <nav class="admin-nav">
-            {# CFG-01: URL disponible cuando se implemente Parámetros #}
-            <a href="#" title="Próximamente — CFG-01">Parámetros</a>
 
-            {# CFG-02: Ya implementado #}
-            <a href="{% url 'configuracion:impuesto_list' %}">Impuestos</a>
+        <nav class="admin-nav" aria-label="Módulos de configuración">
+            {# Módulos pendientes: no son enlaces para no dejar rutas muertas #}
+            <span class="admin-nav__item is-soon" aria-disabled="true">Parámetros <small>CFG-01</small></span>
 
-            {# CFG-03: Ya implementado #}
-            <a href="{% url 'configuracion:moneda_list' %}">Monedas</a>
+            <a class="admin-nav__item" href="{% url 'configuracion:impuesto_list' %}"
+               {% if 'impuesto' in current %}aria-current="page"{% endif %}>Impuestos</a>
 
-            {# CFG-04: URL disponible cuando se implemente Idiomas #}
-            <a href="#" title="Próximamente — CFG-04">Idiomas</a>
+            <a class="admin-nav__item" href="{% url 'configuracion:moneda_list' %}"
+               {% if 'moneda' in current %}aria-current="page"{% endif %}>Monedas</a>
+
+            <span class="admin-nav__item is-soon" aria-disabled="true">Idiomas <small>CFG-04</small></span>
+
+            <a class="admin-nav__item admin-nav__item--store" href="{% url 'core:inicio' %}">Ver tienda ↗</a>
         </nav>
     </header>
+    {% endwith %}
 
-    <main class="admin-main">
+    <main class="admin-main" id="contenido" tabindex="-1">
 
         {% if messages %}
-        <ul class="alert-list">
+        <ul class="alert-list" role="status">
             {% for message in messages %}
             <li class="{{ message.tags }}">{{ message }}</li>
             {% endfor %}
         </ul>
         {% endif %}
 
-        {% block content %}
-        {% endblock %}
+        {% block content %}{% endblock %}
 
     </main>
 
@@ -62,6 +64,5 @@
     </footer>
 
     {% block extra_js %}{% endblock %}
-
 </body>
 </html>
