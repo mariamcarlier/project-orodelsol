@@ -2,59 +2,14 @@
    styles.css
    Responsabilidad: Tokens globales + Body + Secciones de contenido
    NO incluir estilos del header, sidebar ni components aquí
+
+   DEPENDE DE: tokens.css (debe cargarse antes que este archivo)
+   NO duplica variables — las hereda de tokens.css
    ═══════════════════════════════════════════════════════ */
 
-/* ────────────────────────────────────────────────────────
-   1. DESIGN TOKENS
-   Fuente única de verdad para colores, fuentes y valores
-   ──────────────────────────────────────────────────────── */
-:root {
-  /* Paleta de marca */
-  
-  --color-oro:          #d9c7a3;   /* Arena dorada — header, acento */
-  --color-cacao:        #785041;   /* Marrón profundo — botones, CTA */
-  --color-cacao-hover:  #5a3a2f;   /* Hover de botones */
-  --color-marfil:       #f6edd2;   /* Crema — secciones destacadas */
-  --color-marfil-alt:   #ede2c8;   /* Crema más oscura — fondos alternos */
-  --color-tierra:       #2c1a10;   /* Oscuro — footer, sidebar, sección B2B */
-  --color-oro-borde:    #c4ae88;   /* Bordes y líneas doradas */
-
-  /* Colores de apoyo - Dorados */
-  --gold:       #c9a84c;
-  --gold-light: #e8d5a3;
-  --gold-dark:  #9a7c32;
-  --obsidian:   #0c0b09;
-  --cream:      #faf8f4;
-
-  /* Texto */
-  --color-text-dark:    #2c1a10;
-  --color-text-mid:     #785041;
-  --color-text-muted:   #9a7e68;
-  --color-text-on-dark: #f6edd2;
-
-  /* Blanco puro — fondo base de la página */
-  --color-white:        #ffffff;
-
-  /* Tipografía */
-  --font-display: 'Cormorant Garamond', Georgia, serif;
-  --font-body:    'Questrial', Arial, sans-serif;
-
-  /* Espaciado base */
-  --section-padding-v: 96px;
-  --section-padding-h: 80px;
-
-  /* Transiciones */
-  --ease-smooth: 0.38s cubic-bezier(.25,.1,.25,1);
-  --ease-enter:  0.55s cubic-bezier(.22,1,.36,1);
-
-  /* Misceláneos */
-  --radius: 3px;
-  --shadow-soft: 0 2px 12px rgba(44,26,16,.07);
-}
-
 
 /* ────────────────────────────────────────────────────────
-   2. RESET MÍNIMO
+   1. RESET MÍNIMO
    ──────────────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -67,13 +22,14 @@ html {
   font-size: 16px;
 }
 
+
 /* ────────────────────────────────────────────────────────
-   3. BODY — Fondo BLANCO por defecto
+   2. BODY — Fondo BLANCO por defecto
    Secciones específicas sobreescriben según necesidad
    ──────────────────────────────────────────────────────── */
 body {
   font-family: var(--font-body);
-  background: var(--color-white);   /* ← BLANCO, no marfil */
+  background: var(--color-white);
   color: var(--color-text-dark);
   overflow-x: hidden;
   line-height: 1.65;
@@ -102,14 +58,14 @@ button {
 
 
 /* ────────────────────────────────────────────────────────
-   4. ANNOUNCE BAR
+   3. ANNOUNCE BAR
    ──────────────────────────────────────────────────────── */
 .announce-bar {
   background: var(--color-cacao);
   color: var(--color-marfil-alt);
   text-align: center;
   padding: 10px 20px;
-  font-size: 11px;
+  font-size: 9px;
   letter-spacing: 3px;
   text-transform: uppercase;
   transition: opacity .4s ease;
@@ -119,11 +75,11 @@ button {
 
 
 /* ────────────────────────────────────────────────────────
-   5. TIPOGRAFÍA GLOBAL
+   4. TIPOGRAFÍA GLOBAL
    ──────────────────────────────────────────────────────── */
 .heading {
   font-family: var(--font-display);
-  font-size: clamp(30px, 3.5vw, 48px);
+  font-size: clamp(36px, 4.2vw, 58px);
   font-weight: 300;
   line-height: 1.15;
   color: var(--color-text-dark);
@@ -144,7 +100,7 @@ button {
 
 .eyebrow {
   display: block;
-  font-size: 10px;
+  font-size: 8px;
   letter-spacing: 4px;
   text-transform: uppercase;
   color: var(--color-cacao);
@@ -168,7 +124,7 @@ button {
 
 
 /* ────────────────────────────────────────────────────────
-   6. BOTONES GLOBALES
+   5. BOTONES GLOBALES
    ──────────────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
@@ -269,7 +225,7 @@ button {
 
 
 /* ────────────────────────────────────────────────────────
-   7. LAYOUT DE SECCIONES
+   6. LAYOUT DE SECCIONES
    ──────────────────────────────────────────────────────── */
 .section {
   padding: var(--section-padding-v) var(--section-padding-h);
@@ -299,7 +255,7 @@ button {
 
 
 /* ────────────────────────────────────────────────────────
-   8. HERO
+   7. HERO
    ──────────────────────────────────────────────────────── */
 .hero {
   position: relative;
@@ -423,7 +379,7 @@ button {
 
 
 /* ────────────────────────────────────────────────────────
-   9. EDITORIAL
+   8. EDITORIAL
    ──────────────────────────────────────────────────────── */
 .editorial {
   display: grid;
@@ -466,7 +422,7 @@ button {
 
 
 /* ────────────────────────────────────────────────────────
-   10. COLECCIONES (grid)
+   9. COLECCIONES (grid)
    ──────────────────────────────────────────────────────── */
 .collections-grid {
   display: grid;
@@ -478,7 +434,7 @@ button {
 
 
 /* ────────────────────────────────────────────────────────
-   11. PRODUCTOS (grid)
+   10. PRODUCTOS (grid)
    ──────────────────────────────────────────────────────── */
 .products-grid {
   display: grid;
@@ -490,7 +446,7 @@ button {
 
 
 /* ────────────────────────────────────────────────────────
-   12. B2B
+   11. B2B
    ──────────────────────────────────────────────────────── */
 .b2b__visual {
   position: relative;
@@ -511,12 +467,12 @@ button {
   position: absolute;
   bottom: 32px;
   left: 32px;
-  color: var(--color-oro);
+  color: var(--color-text-on-cacao);
   font-family: var(--font-display);
   font-size: 12px;
   letter-spacing: 4px;
   text-transform: uppercase;
-  border-left: 1.5px solid var(--color-oro);
+  border-left: 1.5px solid var(--color-text-on-cacao);
   padding-left: 14px;
   line-height: 1.9;
 }
@@ -561,7 +517,7 @@ button {
 
 
 /* ────────────────────────────────────────────────────────
-   13. PROCESO
+   12. PROCESO
    ──────────────────────────────────────────────────────── */
 .process-grid {
   display: grid;
@@ -623,7 +579,7 @@ button {
 
 
 /* ────────────────────────────────────────────────────────
-   14. TESTIMONIOS
+   13. TESTIMONIOS
    ──────────────────────────────────────────────────────── */
 .reviews-section { overflow: hidden; }
 
@@ -674,7 +630,7 @@ button {
 
 
 /* ────────────────────────────────────────────────────────
-   15. TRUST BAR
+   14. TRUST BAR
    ──────────────────────────────────────────────────────── */
 .trust-bar {
   background: var(--color-cacao);
@@ -716,7 +672,7 @@ button {
 
 
 /* ────────────────────────────────────────────────────────
-   16. FOOTER
+   15. FOOTER
    ──────────────────────────────────────────────────────── */
 .site-footer {
   background: var(--color-tierra);
@@ -768,7 +724,7 @@ button {
   transition: all var(--ease-smooth);
 }
 .footer__social-btn:hover {
-  background: var(--color-cacao);
+  background: var(--gold);
   border-color: var(--color-cacao);
   color: var(--color-text-on-dark);
 }
@@ -777,7 +733,7 @@ button {
   font-size: 9px;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: var(--color-oro);
+  color: var(--color-text-on-cacao);
   margin-bottom: 20px;
   font-weight: 500;
 }
@@ -802,7 +758,7 @@ button {
 
 
 /* ────────────────────────────────────────────────────────
-   17. SCROLL REVEAL — Animación de entrada
+   16. SCROLL REVEAL — Animación de entrada
    ──────────────────────────────────────────────────────── */
 .reveal {
   opacity: 0;
@@ -814,6 +770,22 @@ button {
 .reveal.is-visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+
+/* ════════════════════════════════════════════════════════
+   ACCESIBILIDAD — Focus visible global
+   ════════════════════════════════════════════════════════ */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius);
+}
+
+/* Sobre fondos oscuros */
+.section--dark :focus-visible,
+.site-footer :focus-visible {
+  box-shadow: var(--focus-ring-dark);
 }
 
 
@@ -831,6 +803,7 @@ button {
   .collections-grid { grid-template-columns: 1fr 1fr; }
   .collections-grid .collection-card:last-child { display: none; }
 }
+
 /* ── Móvil ── */
 @media (max-width: 900px) {
   :root {
