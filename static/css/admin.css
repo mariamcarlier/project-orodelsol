@@ -1,382 +1,285 @@
 /* ═══════════════════════════════════════════════════════════════
-   admin.css
-   Estilos exclusivos del Panel de Administración — Oro del Sol
+   admin.css — Panel de administración (Oro del Sol)
 
-   DEPENDE DE: tokens.css (debe cargarse antes que este archivo)
-   NO duplica variables — las hereda de tokens.css
+   Depende de tokens.css. NO contiene colores hexadecimales:
+   todo sale de tokens, así un cambio de marca se propaga solo.
+   Todo está bajo .admin-body para no filtrarse a otras páginas.
 
-   Responsabilidad: layout, componentes y estilos del panel admin.
-   NO incluir estilos del frontend público (hero, slider, catálogo).
+   Índice: 1 Base · 2 Header · 3 Página · 4 Botones · 5 Tabla
+           6 Badges · 7 Formularios · 8 Alertas · 9 Footer
+           10 Utilidades · 11 Responsive
    ═══════════════════════════════════════════════════════════════ */
 
-
-/* ─── Reset mínimo ─── */
+/* ── 1. BASE ─────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; font-size: 16px; }
+html { font-size: 16px; scroll-behavior: smooth; }
 
+.admin-body {
+  /* Variables locales del panel (derivadas de los tokens de marca) */
+  --admin-text:    color-mix(in srgb, var(--color-marfil) 88%, transparent);
+  --admin-line:    color-mix(in srgb, var(--color-oro-borde) 22%, transparent);
+  --admin-line-lo: color-mix(in srgb, var(--color-oro-borde) 12%, transparent);
+  --admin-surface: color-mix(in srgb, var(--color-marfil) 4%, transparent);
+  --admin-hover:   color-mix(in srgb, var(--gold) 8%, transparent);
+  --admin-input:   color-mix(in srgb, var(--obsidian) 45%, transparent);
+  --admin-max:     1120px;
 
-/* ════════════════════════════════════════════════════════
-   BODY — Fondo oscuro tierra para el panel admin
-   El frontend público usa fondo blanco (en styles.css).
-   El admin usa fondo oscuro: contexto completamente distinto.
-   ════════════════════════════════════════════════════════ */
-body {
-    font-family: var(--font-body);
-    background-color: #fce3d6;
-    color: var(--color-text-on-dark);
-    min-height: 100vh;
-    -webkit-font-smoothing: antialiased;
-    line-height: 1.65;
+  font-family: var(--font-body);
+  background: var(--color-tierra);
+  color: var(--admin-text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
 }
 
-a { text-decoration: none; color: inherit; }
-ul { list-style: none; }
+.admin-body a { color: inherit; text-decoration: none; }
+.admin-body ul { list-style: none; }
+.admin-body button { font-family: var(--font-body); cursor: pointer; border: 0; background: none; }
+.admin-body :focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius); }
+.admin-body ::selection { background: var(--color-oro); color: var(--color-text-dark); }
+
+.skip-link {
+  position: absolute; left: 16px; top: -60px; z-index: 300;
+  background: var(--color-oro); color: var(--color-text-dark);
+  padding: 10px 18px; border-radius: var(--radius);
+  font-size: 12px; letter-spacing: 1px;
+}
+.skip-link:focus { top: 12px; }
 
 
-/* ════════════════════════════════════════════════════════
-   HEADER DEL PANEL
-   ════════════════════════════════════════════════════════ */
+/* ── 2. HEADER ───────────────────────────────────────────────── */
 .admin-header {
-    background-color: var(--obsidian);
-    border-bottom: 1px solid var(--color-oro-borde);
-    padding: 0 48px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    height: 64px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: var(--shadow-soft);
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  min-height: 68px; padding: 0 40px;
+  background: var(--obsidian);
+  border-bottom: 1px solid var(--color-oro-borde);
+  box-shadow: var(--shadow-soft);
 }
 
 .admin-header__brand {
-    font-family: var(--font-display);
-    font-weight: 300;
-    font-size: 1.15rem;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    color: var(--color-oro);
+  font-family: var(--font-display); font-weight: 300;
+  font-size: 1.15rem; letter-spacing: 4px; text-transform: uppercase;
+  color: var(--color-oro); line-height: 1.15;
 }
-
 .admin-header__brand span {
-    color: var(--color-oro-borde);
-    font-size: 0.65rem;
-    letter-spacing: 2px;
-    display: block;
-    text-transform: uppercase;
-    font-family: var(--font-body);
-    margin-top: 1px;
+  display: block; margin-top: 2px;
+  font-family: var(--font-body); font-size: 9px; letter-spacing: 2.5px;
+  color: var(--color-text-muted-dark);
 }
 
-/* ─── Navegación del header ─── */
-.admin-nav {
-    display: flex;
-    gap: 2px;
+.admin-nav { display: flex; align-items: center; gap: 4px; }
+
+.admin-nav__item {
+  font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--color-text-muted-dark);
+  padding: 9px 16px; border: 1px solid transparent; border-radius: var(--radius);
+  white-space: nowrap;
+  transition: color var(--ease-fast), background var(--ease-fast), border-color var(--ease-fast);
 }
-
-.admin-nav a {
-    font-family: var(--font-body);
-    font-size: 10px;
-    letter-spacing: 2.5px;
-    text-transform: uppercase;
-    color: var(--color-text-muted);
-    padding: 8px 16px;
-    border-radius: var(--radius);
-    transition: all var(--ease-smooth);
-    border: 1px solid transparent;
+a.admin-nav__item:hover,
+.admin-nav__item[aria-current="page"] {
+  color: var(--color-oro);
+  background: var(--admin-hover);
+  border-color: color-mix(in srgb, var(--gold) 30%, transparent);
 }
-
-.admin-nav a:hover,
-.admin-nav a.active {
-    color: var(--color-oro);
-    border-color: rgba(201, 168, 76, .25);
-    background-color: rgba(201, 168, 76, .06);
-}
+/* Módulos aún no construidos: visibles pero no son enlaces muertos */
+.admin-nav__item.is-soon { opacity: .55; cursor: not-allowed; }
+.admin-nav__item.is-soon small { font-size: 8px; letter-spacing: 1px; margin-left: 6px; }
+.admin-nav__item--store { border-color: var(--admin-line); margin-left: 8px; }
 
 
-/* ════════════════════════════════════════════════════════
-   CONTENIDO PRINCIPAL
-   ════════════════════════════════════════════════════════ */
+/* ── 3. CONTENIDO Y CABECERA DE PÁGINA ───────────────────────── */
 .admin-main {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 48px 40px 80px;
+  flex: 1; width: 100%; max-width: var(--admin-max);
+  margin: 0 auto; padding: 48px 40px 80px;
 }
 
-/* ─── Cabecera de sección ─── */
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    margin-bottom: 8px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid rgba(196, 174, 136, .2);
+.page-header {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  gap: 16px; flex-wrap: wrap;
+  padding-bottom: 16px; border-bottom: 1px solid var(--admin-line);
 }
-
-/* ─── Eyebrow (sobretítulo tipo CFG-02) ─── */
 .eyebrow {
-    display: block;
-    font-size: 9px;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    color: var(--color-oro);
-    margin-bottom: 4px;
-    opacity: 0.7;
+  display: block; margin-bottom: 4px;
+  font-size: 9px; letter-spacing: 4px; text-transform: uppercase;
+  color: var(--color-oro); opacity: .8;
 }
-
-/* ─── Títulos ─── */
-h2 {
-    font-family: var(--font-display);
-    font-weight: 300;
-    font-size: 1.75rem;
-    color: var(--color-marfil);
-    letter-spacing: 1px;
+.page-title {
+  font-family: var(--font-display); font-weight: 300;
+  font-size: clamp(1.5rem, 3vw, 1.85rem); letter-spacing: 1px;
+  line-height: 1.2; color: var(--color-marfil);
 }
-
-.section-desc {
-    font-size: 12px;
-    letter-spacing: 0.5px;
-    color: var(--color-text-muted);
-    margin-top: 6px;
-    margin-bottom: 28px;
+.page-desc {
+  max-width: 62ch; margin: 8px 0 28px;
+  font-size: 13px; color: var(--color-text-muted-dark);
 }
 
 
-/* ════════════════════════════════════════════════════════
-   BOTONES — Coherentes con el sistema de marca (styles.css)
-   ════════════════════════════════════════════════════════ */
+/* ── 4. BOTONES ──────────────────────────────────────────────── */
 .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-family: var(--font-body);
-    font-size: 10px;
-    letter-spacing: 2.5px;
-    text-transform: uppercase;
-    border-radius: var(--radius);
-    padding: 11px 28px;
-    transition: all var(--ease-smooth);
-    border: none;
-    cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 11px 26px; border: 1px solid transparent; border-radius: var(--radius);
+  font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; line-height: 1;
+  white-space: nowrap;
+  transition: background var(--ease-fast), color var(--ease-fast),
+              border-color var(--ease-fast), transform var(--ease-fast);
 }
+.btn--primary-gold { background: var(--color-oro); color: var(--color-text-dark); }
+.btn--primary-gold:hover { background: var(--gold-light); transform: translateY(-1px); }
 
-/* Dorado primario */
-.btn--primary-gold {
-    background: var(--color-oro);
-    color: var(--color-text-dark);
-}
-.btn--primary-gold:hover {
-    background: var(--gold-light);
-    transform: translateY(-1px);
-}
+.btn--outline-gold { border-color: var(--color-oro-borde); color: var(--color-oro); }
+.btn--outline-gold:hover { background: var(--admin-hover); border-color: var(--color-oro); }
 
-/* Contorno dorado */
-.btn--outline-gold {
-    background: transparent;
-    border: 1px solid var(--color-oro-borde);
-    color: var(--color-oro);
-    padding: 10px 24px;
-}
-.btn--outline-gold:hover {
-    background: rgba(201, 168, 76, .1);
-    border-color: var(--color-oro);
-}
-
-/* Cacao — guardar formularios */
-.btn--cacao {
-    background: var(--color-cacao);
-    color: var(--color-text-on-dark);
-}
+.btn--cacao { background: var(--color-cacao); color: var(--color-marfil); }   /* 5.9:1 */
 .btn--cacao:hover { background: var(--color-cacao-hover); }
 
-/* Enlace cancelar */
 .link-cancel {
-    font-family: var(--font-body);
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--color-text-muted);
-    margin-left: 18px;
-    border-bottom: 1px solid transparent;
-    transition: all var(--ease-smooth);
+  margin-left: 18px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--color-text-muted-dark); border-bottom: 1px solid transparent;
+  transition: color var(--ease-fast), border-color var(--ease-fast);
 }
-.link-cancel:hover {
-    color: var(--color-marfil);
-    border-bottom-color: var(--color-oro-borde);
-}
+.link-cancel:hover { color: var(--color-marfil); border-bottom-color: var(--color-oro-borde); }
 
 
-/* ════════════════════════════════════════════════════════
-   TABLA DE DATOS
-   ════════════════════════════════════════════════════════ */
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-    margin-top: 4px;
+/* ── 5. TABLA ────────────────────────────────────────────────── */
+.table-wrap {                       /* permite scroll horizontal en móvil */
+  overflow-x: auto;
+  border: 1px solid var(--admin-line-lo); border-radius: var(--radius-lg);
+  background: var(--admin-surface);
 }
-
-.data-table thead tr {
-    border-bottom: 1px solid var(--color-oro-borde);
-}
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 
 .data-table th {
-    color: var(--color-oro);
-    font-family: var(--font-body);
-    font-size: 9px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    font-weight: 400;
-    padding: 10px 16px;
-    text-align: left;
+  padding: 14px 16px; text-align: left; white-space: nowrap;
+  font-size: 9px; font-weight: 400; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--color-oro);
+  background: color-mix(in srgb, var(--obsidian) 35%, transparent);
+  border-bottom: 1px solid var(--color-oro-borde);
 }
-
 .data-table td {
-    padding: 14px 16px;
-    color: rgba(246, 237, 210, .75);
-    border-bottom: 1px solid rgba(196, 174, 136, .1);
-    font-size: 13px;
+  padding: 14px 16px; vertical-align: middle;
+  border-bottom: 1px solid var(--admin-line-lo);
 }
+.data-table tbody tr:last-child td { border-bottom: 0; }
+.data-table tbody tr:hover td { background: var(--admin-hover); color: var(--color-marfil); }
 
-.data-table tbody tr:hover td {
-    background-color: rgba(201, 168, 76, .04);
-    color: var(--color-marfil);
-}
+.cell-num  { width: 48px; font-size: 11px; color: var(--color-text-muted-dark); }
+.cell-code { font-family: 'Courier New', monospace; letter-spacing: 2px; color: var(--color-oro); }
+.cell-soft { font-size: 11px; color: var(--color-text-muted-dark); }
 
-/* ─── Número de fila ─── */
-.data-table .row-num {
-    color: rgba(196, 174, 136, .4);
-    font-size: 11px;
-}
+.table-empty { padding: 48px 20px !important; text-align: center; color: var(--color-text-muted-dark); }
+.table-empty a { color: var(--color-oro); border-bottom: 1px solid var(--color-oro-borde); }
 
-/* ─── Badges de estado ─── */
+
+/* ── 6. BADGES (texto + punto: el color nunca es la única pista) ─ */
 .badge {
-    display: inline-block;
-    font-size: 9px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-family: var(--font-body);
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border: 1px solid; border-radius: var(--radius-full);
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase; white-space: nowrap;
 }
+.badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 
-.badge--active   { background: rgba(125,204,125,.12); color: #7dcc7d; border: 1px solid rgba(125,204,125,.3); }
-.badge--inactive { background: rgba(204,125,125,.12); color: #cc7d7d; border: 1px solid rgba(204,125,125,.3); }
-.badge--primary  { background: rgba(201,168,76,.15);  color: var(--gold-light); border: 1px solid rgba(201,168,76,.4); }
-
-/* ─── Celda vacía ─── */
-.table-empty {
-    text-align: center;
-    padding: 40px !important;
-    color: var(--color-text-muted) !important;
-    font-size: 12px !important;
-    letter-spacing: 1px;
-}
-.table-empty a {
-    color: var(--color-oro);
-    border-bottom: 1px solid var(--color-oro-borde);
-}
+.badge--active   { color: var(--state-ok);     background: color-mix(in srgb, var(--state-ok) 12%, transparent);     border-color: color-mix(in srgb, var(--state-ok) 35%, transparent); }
+.badge--inactive { color: var(--state-danger); background: color-mix(in srgb, var(--state-danger) 12%, transparent); border-color: color-mix(in srgb, var(--state-danger) 35%, transparent); }
+.badge--primary  { color: var(--gold-light);   background: color-mix(in srgb, var(--gold) 15%, transparent);         border-color: color-mix(in srgb, var(--gold) 40%, transparent); }
 
 
-/* ════════════════════════════════════════════════════════
-   FORMULARIOS
-   ════════════════════════════════════════════════════════ */
+/* ── 7. FORMULARIOS ──────────────────────────────────────────── */
 .form-card {
-    background-color: rgba(255,255,255,.03);
-    border: 1px solid rgba(196, 174, 136, .15);
-    border-radius: var(--radius);
-    padding: 36px 40px;
-    margin-top: 24px;
+  max-width: 640px; padding: 36px 40px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-line-lo); border-radius: var(--radius-lg);
 }
+.form-group { margin-bottom: 22px; }
 
-.form-card p { margin-bottom: 20px; }
-
-.form-card label {
-    display: block;
-    font-size: 9px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--color-oro);
-    margin-bottom: 8px;
-    font-family: var(--font-body);
+.form-group > label {
+  display: block; margin-bottom: 8px;
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--color-oro);
 }
+.required-mark { color: var(--state-danger); }
 
-.form-card input[type="text"],
-.form-card input[type="number"],
-.form-card input[type="email"],
-.form-card select {
-    width: 100%;
-    padding: 11px 14px;
-    background-color: rgba(0,0,0,.3);
-    border: 1px solid rgba(196, 174, 136, .25);
-    border-radius: var(--radius);
-    color: var(--color-text-on-dark);
-    font-family: var(--font-body);
-    font-size: 13px;
-    transition: border-color var(--ease-smooth);
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="email"],
+.form-group select {
+  width: 100%; padding: 11px 14px;
+  background: var(--admin-input); color: var(--color-text-on-dark);
+  border: 1px solid var(--admin-line); border-radius: var(--radius);
+  font-family: var(--font-body); font-size: 13px;
+  transition: border-color var(--ease-fast), box-shadow var(--ease-fast);
 }
+.form-group input:focus,
+.form-group select:focus { border-color: var(--color-oro); box-shadow: var(--focus-ring); }
 
-.form-card input[type="text"]:focus,
-.form-card input[type="number"]:focus,
-.form-card input[type="email"]:focus,
-.form-card select:focus {
-    outline: none;
-    border-color: var(--color-oro-borde);
+/* Checkbox: etiqueta al lado, en texto normal (no en mayúsculas) */
+.form-check { display: flex; align-items: center; gap: 10px; }
+.form-check input { width: 16px; height: 16px; accent-color: var(--gold); flex-shrink: 0; }
+.form-check label { font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--color-marfil); }
+
+.form-help  { display: block; margin-top: 6px; font-size: 11px; color: var(--color-text-muted-dark); }
+.form-error { display: block; margin-top: 6px; font-size: 12px; color: var(--state-danger); }
+.form-error::before { content: '⚠ '; }
+
+.form-group--error input,
+.form-group--error select { border-color: var(--state-danger); }
+
+.form-alert {
+  margin-bottom: 22px; padding: 12px 16px; font-size: 13px;
+  color: var(--state-danger);
+  background: color-mix(in srgb, var(--state-danger) 10%, transparent);
+  border-left: 3px solid var(--state-danger); border-radius: var(--radius);
 }
-
-.form-card input[type="checkbox"] {
-    width: 15px;
-    height: 15px;
-    accent-color: var(--gold);
-}
-
-.form-help  { display: block; font-size: 11px; color: var(--color-text-muted); margin-top: 5px; }
-.form-error { display: block; font-size: 11px; color: #cc7d7d; margin-top: 5px; }
 
 .form-actions {
-    margin-top: 28px;
-    display: flex;
-    align-items: center;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+  margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--admin-line-lo);
 }
 
 
-/* ════════════════════════════════════════════════════════
-   MENSAJES DEL SISTEMA (Django messages framework)
-   ════════════════════════════════════════════════════════ */
-.alert-list { list-style: none; margin: 20px 0; }
-
+/* ── 8. ALERTAS (Django messages: success/error/warning/info) ── */
+.alert-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
 .alert-list li {
-    padding: 12px 18px;
-    border-radius: var(--radius);
-    font-size: 12px;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px;
+  padding: 13px 18px; font-size: 13px; line-height: 1.5;
+  border-left: 3px solid var(--color-oro-borde); border-radius: var(--radius);
+  background: var(--admin-surface);
 }
-
-.alert-list .success {
-    background: rgba(125,204,125,.1);
-    border-left: 2px solid #7dcc7d;
-    color: #7dcc7d;
-}
-
-.alert-list .error,
-.alert-list .warning {
-    background: rgba(204,125,125,.1);
-    border-left: 2px solid #cc7d7d;
-    color: #cc7d7d;
-}
+.alert-list .success { color: var(--state-ok);      border-left-color: var(--state-ok);      background: color-mix(in srgb, var(--state-ok) 10%, transparent); }
+.alert-list .error   { color: var(--state-danger);  border-left-color: var(--state-danger);  background: color-mix(in srgb, var(--state-danger) 10%, transparent); }
+.alert-list .warning { color: var(--state-warning); border-left-color: var(--state-warning); background: color-mix(in srgb, var(--state-warning) 10%, transparent); }
 
 
-/* ════════════════════════════════════════════════════════
-   FOOTER DEL PANEL
-   ════════════════════════════════════════════════════════ */
+/* ── 9. FOOTER ───────────────────────────────────────────────── */
 .admin-footer {
-    text-align: center;
-    padding: 20px;
-    font-size: 9px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: rgba(154,126,104,.4);
-    border-top: 1px solid rgba(196, 174, 136, .08);
+  padding: 22px; text-align: center;
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--color-text-muted-dark);
+  border-top: 1px solid var(--admin-line-lo);
+}
+
+
+/* ── 10. UTILIDADES ──────────────────────────────────────────── */
+.text-accent { color: var(--color-oro); font-weight: 400; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+
+/* ── 11. RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .admin-header { flex-wrap: wrap; padding: 12px 20px; gap: 12px; }
+  .admin-nav { width: 100%; overflow-x: auto; padding-bottom: 4px; }
+  .admin-main { padding: 32px 20px 64px; }
+}
+@media (max-width: 600px) {
+  .form-card { padding: 24px 20px; }
+  .form-actions .btn { width: 100%; }
+  .link-cancel { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-body * { transition: none !important; }
+  html { scroll-behavior: auto; }
 }
