@@ -4,16 +4,16 @@
 
 {% block content %}
 
-    <div class="section-header">
+    <div class="page-header">
         <div>
             <span class="eyebrow">CFG-03</span>
-            <h2>Registrar Nueva Moneda</h2>
+            <h1 class="page-title">Registrar Nueva Moneda</h1>
         </div>
         <a href="{% url 'configuracion:moneda_list' %}" class="btn btn--outline-gold">← Volver</a>
     </div>
 
-    <p class="section-desc">
-        Si marcas esta moneda como <strong style="color: var(--color-oro);">principal</strong>,
+    <p class="page-desc">
+        Si marcas esta moneda como <strong class="text-accent">principal</strong>,
         el sistema desmarcará automáticamente la anterior.
         Solo puede existir una moneda principal a la vez.
     </p>
@@ -21,19 +21,7 @@
     <div class="form-card">
         <form method="post">
             {% csrf_token %}
-
-            {% for field in form %}
-            <p>
-                {{ field.label_tag }}
-                {{ field }}
-                {% if field.help_text %}
-                    <small class="form-help">{{ field.help_text }}</small>
-                {% endif %}
-                {% for error in field.errors %}
-                    <small class="form-error">⚠ {{ error }}</small>
-                {% endfor %}
-            </p>
-            {% endfor %}
+            {% include 'configuracion/partials/_form_fields.html' %}
 
             <div class="form-actions">
                 <button type="submit" class="btn btn--cacao">Guardar moneda</button>
