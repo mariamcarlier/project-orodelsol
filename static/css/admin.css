@@ -5,6 +5,11 @@
    todo sale de tokens, así un cambio de marca se propaga solo.
    Todo está bajo .admin-body para no filtrarse a otras páginas.
 
+   Jerarquía cromática:
+     · Header/Nav  → estructura OSCURA  (obsidian + texto claro)
+     · Contenido    → superficie CLARA   (offwhite + texto oscuro)
+     · Cards/Tabla  → superficie BLANCA  (contraste con el contenido)
+
    Índice: 1 Base · 2 Header · 3 Página · 4 Botones · 5 Tabla
            6 Badges · 7 Formularios · 8 Alertas · 9 Footer
            10 Utilidades · 11 Responsive
@@ -16,16 +21,20 @@ html { font-size: 16px; scroll-behavior: smooth; }
 
 .admin-body {
   /* Variables locales del panel (derivadas de los tokens de marca) */
-  --admin-text:    color-mix(in srgb, var(--color-marfil) 88%, transparent);
-  --admin-line:    color-mix(in srgb, var(--color-oro-borde) 22%, transparent);
-  --admin-line-lo: color-mix(in srgb, var(--color-oro-borde) 12%, transparent);
-  --admin-surface: color-mix(in srgb, var(--color-marfil) 4%, transparent);
-  --admin-hover:   color-mix(in srgb, var(--gold) 8%, transparent);
-  --admin-input:   color-mix(in srgb, var(--obsidian) 45%, transparent);
+  --admin-bg:      var(--color-offwhite);   /* fondo general — contenido claro */
+  --admin-sidebar: var(--obsidian);         /* fondo del header/nav — estructura oscura */
+  --admin-surface: var(--color-white);      /* cards, tabla, alertas: superficie elevada */
+  --admin-input:   var(--color-ivory);      /* fondo de inputs, ligeramente hundido vs. la card blanca */
+  --admin-text:        var(--color-text-dark);   /* texto principal sobre admin-bg / admin-surface */
+  --admin-text-muted:  var(--color-tierra);  /* texto secundario sobre admin-bg / admin-surface */
+  --admin-accent:  var(--gold-dark);        /* dorado con contraste suficiente sobre fondo claro */
+  --admin-line:    color-mix(in srgb, var(--color-oro-borde) 30%, transparent);
+  --admin-line-lo: color-mix(in srgb, var(--color-oro-borde) 16%, transparent);
+  --admin-hover:   color-mix(in srgb, var(--gold) 10%, transparent); /* funciona sobre claro u oscuro */
   --admin-max:     1120px;
 
   font-family: var(--font-body);
-  background: var(--color-tierra);
+  background: var(--admin-bg);
   color: var(--admin-text);
   min-height: 100vh;
   display: flex;
@@ -49,12 +58,12 @@ html { font-size: 16px; scroll-behavior: smooth; }
 .skip-link:focus { top: 12px; }
 
 
-/* ── 2. HEADER ───────────────────────────────────────────────── */
+/* ── 2. HEADER (estructura oscura) ──────────────────────────── */
 .admin-header {
   position: sticky; top: 0; z-index: 100;
   display: flex; align-items: center; justify-content: space-between; gap: 24px;
   min-height: 68px; padding: 0 40px;
-  background: var(--obsidian);
+  background: var(--admin-sidebar);
   border-bottom: 1px solid var(--color-oro-borde);
   box-shadow: var(--shadow-soft);
 }
@@ -79,6 +88,9 @@ html { font-size: 16px; scroll-behavior: smooth; }
   white-space: nowrap;
   transition: color var(--ease-fast), background var(--ease-fast), border-color var(--ease-fast);
 }
+/* El header es oscuro: el focus-ring estándar (pensado para fondo claro) no se vería bien aquí */
+.admin-nav__item:focus-visible { box-shadow: var(--focus-ring-dark); }
+
 a.admin-nav__item:hover,
 .admin-nav__item[aria-current="page"] {
   color: var(--color-oro);
@@ -91,7 +103,7 @@ a.admin-nav__item:hover,
 .admin-nav__item--store { border-color: var(--admin-line); margin-left: 8px; }
 
 
-/* ── 3. CONTENIDO Y CABECERA DE PÁGINA ───────────────────────── */
+/* ── 3. CONTENIDO Y CABECERA DE PÁGINA (superficie clara) ───── */
 .admin-main {
   flex: 1; width: 100%; max-width: var(--admin-max);
   margin: 0 auto; padding: 48px 40px 80px;
@@ -105,16 +117,16 @@ a.admin-nav__item:hover,
 .eyebrow {
   display: block; margin-bottom: 4px;
   font-size: 9px; letter-spacing: 4px; text-transform: uppercase;
-  color: var(--color-oro); opacity: .8;
+  color: var(--admin-accent); opacity: .85;
 }
 .page-title {
   font-family: var(--font-display); font-weight: 300;
   font-size: clamp(1.5rem, 3vw, 1.85rem); letter-spacing: 1px;
-  line-height: 1.2; color: var(--color-marfil);
+  line-height: 1.2; color: var(--admin-text);
 }
 .page-desc {
   max-width: 62ch; margin: 8px 0 28px;
-  font-size: 13px; color: var(--color-text-muted-dark);
+  font-size: 13px; color: var(--admin-text-muted);
 }
 
 
@@ -130,7 +142,8 @@ a.admin-nav__item:hover,
 .btn--primary-gold { background: var(--color-oro); color: var(--color-text-dark); }
 .btn--primary-gold:hover { background: var(--gold-light); transform: translateY(-1px); }
 
-.btn--outline-gold { border-color: var(--color-oro-borde); color: var(--color-oro); }
+/* Botón sin relleno: el texto va directo sobre admin-bg, necesita el dorado con contraste */
+.btn--outline-gold { border-color: var(--color-oro-borde); color: var(--admin-accent); }
 .btn--outline-gold:hover { background: var(--admin-hover); border-color: var(--color-oro); }
 
 .btn--cacao { background: var(--color-cacao); color: var(--color-marfil); }   /* 5.9:1 */
@@ -138,10 +151,10 @@ a.admin-nav__item:hover,
 
 .link-cancel {
   margin-left: 18px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
-  color: var(--color-text-muted-dark); border-bottom: 1px solid transparent;
+  color: var(--admin-text-muted); border-bottom: 1px solid transparent;
   transition: color var(--ease-fast), border-color var(--ease-fast);
 }
-.link-cancel:hover { color: var(--color-marfil); border-bottom-color: var(--color-oro-borde); }
+.link-cancel:hover { color: var(--admin-text); border-bottom-color: var(--color-oro-borde); }
 
 
 /* ── 5. TABLA ────────────────────────────────────────────────── */
@@ -152,10 +165,11 @@ a.admin-nav__item:hover,
 }
 .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 
+/* Encabezado de tabla: acento oscuro intencional, funciona igual que el header */
 .data-table th {
   padding: 14px 16px; text-align: left; white-space: nowrap;
   font-size: 9px; font-weight: 400; letter-spacing: 3px; text-transform: uppercase;
-  color: var(--color-oro);
+  color: var(--color-graphite);
   background: color-mix(in srgb, var(--obsidian) 35%, transparent);
   border-bottom: 1px solid var(--color-oro-borde);
 }
@@ -164,14 +178,14 @@ a.admin-nav__item:hover,
   border-bottom: 1px solid var(--admin-line-lo);
 }
 .data-table tbody tr:last-child td { border-bottom: 0; }
-.data-table tbody tr:hover td { background: var(--admin-hover); color: var(--color-marfil); }
+.data-table tbody tr:hover td { background: var(--admin-hover); color: var(--admin-text); }
 
-.cell-num  { width: 48px; font-size: 11px; color: var(--color-text-muted-dark); }
-.cell-code { font-family: 'Courier New', monospace; letter-spacing: 2px; color: var(--color-oro); }
-.cell-soft { font-size: 11px; color: var(--color-text-muted-dark); }
+.cell-num  { width: 48px; font-size: 11px; color: var(--admin-text-muted); }
+.cell-code { font-family: 'Courier New', monospace; letter-spacing: 2px; color: var(--admin-accent); }
+.cell-soft { font-size: 11px; color: var(--admin-text-muted); }
 
-.table-empty { padding: 48px 20px !important; text-align: center; color: var(--color-text-muted-dark); }
-.table-empty a { color: var(--color-oro); border-bottom: 1px solid var(--color-oro-borde); }
+.table-empty { padding: 48px 20px !important; text-align: center; color: var(--admin-text-muted); }
+.table-empty a { color: var(--admin-accent); border-bottom: 1px solid var(--color-oro-borde); }
 
 
 /* ── 6. BADGES (texto + punto: el color nunca es la única pista) ─ */
@@ -184,7 +198,7 @@ a.admin-nav__item:hover,
 
 .badge--active   { color: var(--state-ok);     background: color-mix(in srgb, var(--state-ok) 12%, transparent);     border-color: color-mix(in srgb, var(--state-ok) 35%, transparent); }
 .badge--inactive { color: var(--state-danger); background: color-mix(in srgb, var(--state-danger) 12%, transparent); border-color: color-mix(in srgb, var(--state-danger) 35%, transparent); }
-.badge--primary  { color: var(--gold-light);   background: color-mix(in srgb, var(--gold) 15%, transparent);         border-color: color-mix(in srgb, var(--gold) 40%, transparent); }
+.badge--primary  { color: var(--admin-accent); background: color-mix(in srgb, var(--gold) 15%, transparent);         border-color: color-mix(in srgb, var(--gold) 40%, transparent); }
 
 
 /* ── 7. FORMULARIOS ──────────────────────────────────────────── */
@@ -197,7 +211,7 @@ a.admin-nav__item:hover,
 
 .form-group > label {
   display: block; margin-bottom: 8px;
-  font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--color-oro);
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--admin-text);
 }
 .required-mark { color: var(--state-danger); }
 
@@ -206,7 +220,7 @@ a.admin-nav__item:hover,
 .form-group input[type="email"],
 .form-group select {
   width: 100%; padding: 11px 14px;
-  background: var(--admin-input); color: var(--color-text-on-dark);
+  background: var(--admin-input); color: var(--admin-text);
   border: 1px solid var(--admin-line); border-radius: var(--radius);
   font-family: var(--font-body); font-size: 13px;
   transition: border-color var(--ease-fast), box-shadow var(--ease-fast);
@@ -217,9 +231,9 @@ a.admin-nav__item:hover,
 /* Checkbox: etiqueta al lado, en texto normal (no en mayúsculas) */
 .form-check { display: flex; align-items: center; gap: 10px; }
 .form-check input { width: 16px; height: 16px; accent-color: var(--gold); flex-shrink: 0; }
-.form-check label { font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--color-marfil); }
+.form-check label { font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--admin-text); }
 
-.form-help  { display: block; margin-top: 6px; font-size: 11px; color: var(--color-text-muted-dark); }
+.form-help  { display: block; margin-top: 6px; font-size: 11px; color: var(--admin-text-muted); }
 .form-error { display: block; margin-top: 6px; font-size: 12px; color: var(--state-danger); }
 .form-error::before { content: '⚠ '; }
 
@@ -244,7 +258,7 @@ a.admin-nav__item:hover,
 .alert-list li {
   padding: 13px 18px; font-size: 13px; line-height: 1.5;
   border-left: 3px solid var(--color-oro-borde); border-radius: var(--radius);
-  background: var(--admin-surface);
+  background: var(--admin-input);   /* crema, no blanco puro: se lee como "aviso", no como card */
 }
 .alert-list .success { color: var(--state-ok);      border-left-color: var(--state-ok);      background: color-mix(in srgb, var(--state-ok) 10%, transparent); }
 .alert-list .error   { color: var(--state-danger);  border-left-color: var(--state-danger);  background: color-mix(in srgb, var(--state-danger) 10%, transparent); }
@@ -255,13 +269,13 @@ a.admin-nav__item:hover,
 .admin-footer {
   padding: 22px; text-align: center;
   font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
-  color: var(--color-text-muted-dark);
+  color: var(--admin-text-muted);
   border-top: 1px solid var(--admin-line-lo);
 }
 
 
 /* ── 10. UTILIDADES ──────────────────────────────────────────── */
-.text-accent { color: var(--color-oro); font-weight: 400; }
+.text-accent { color: var(--admin-accent); font-weight: 400; }
 .sr-only {
   position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
   overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;

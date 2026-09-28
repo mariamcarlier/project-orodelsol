@@ -18,15 +18,34 @@
   --color-cacao-hover:  #5a3a2f;
   --color-marfil:       #f6edd2;   /* Crema */
   --color-marfil-alt:   #ede2c8;
-  --color-tierra:       #2c1a10;   /* Oscuro — footer, B2B, panel admin */
+  --color-warm-beige:   #ead7c0; /* Fondo de secciones */
+  --color-tierra:       #2c1a10;
+  --color-espressobrown:#4e342e;
+  --color-caramel:      #c68e5b;   
+  
   --color-white:        #ffffff;
+  --color-black:        #000000;
+  --color-transparent:  transparent;
+
+  --color-butteryellow:   #ffeda8;
+  --color-whippedbutter:  #f2e6b3;
+  --color-champagne:      #fbdfa2;
+  --color-milkpuch:       #fff4c7;   
+
+  --color-offwhite:     #fdfcf8;
+  --color-ivory:        #f3f0e9;
+  --color-nude:         #e3dbcc;
+  --color-riverclay:    #c3b6a5;
+  --color-graphite:     #302e2f;
+  --obsidian:           #0c0b09;
 
   /* ── 2. DORADOS DE APOYO ── */
   --gold:               #c9a84c;
   --gold-light:         #e8d5a3;
   --gold-dark:          #9a7c32;
-  --obsidian:           #0c0b09;
+  --color-cream :       #F9F6F0;
   --cream:              #faf8f4;
+
 
   /* ── 3. TEXTO (originales) ── */
   --color-text-dark:    #2c1a10;
