@@ -10,7 +10,7 @@
 # ═══════════════════════════════════════════════════════════════
 
 from django import forms
-from .models import Impuesto, Moneda
+from .models import Impuesto, Moneda, Idioma
 
 
 class ImpuestoForm(forms.ModelForm):
@@ -39,3 +39,17 @@ class MonedaForm(forms.ModelForm):
             'es_principal': 'Al activar esto, la moneda principal anterior se desmarcará automáticamente.',
             'activa':       'Las monedas inactivas no se ofrecen al usuario.',
         }
+
+
+class IdiomaForm(forms.ModelForm):
+    class Meta:
+        model  = Idioma
+        fields = ['codigo', 'nombre', 'es_principal', 'activo']
+
+        help_texts = {
+            'codigo':       'Código estándar del idioma. Ej: es, en, fr, pt',
+            'nombre':       'Nombre descriptivo del idioma. Ej: Español, English',
+            'es_principal': 'Al marcar este idioma como principal, el anterior se desmarcará automáticamente.',
+            'activo':       'Los idiomas inactivos no se ofrecen a los usuarios en la tienda.',
+        }
+

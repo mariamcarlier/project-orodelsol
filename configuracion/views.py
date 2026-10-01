@@ -18,8 +18,8 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 
-from .models import Impuesto, Moneda
-from .forms  import ImpuestoForm, MonedaForm
+from .models import Impuesto, Moneda, Idioma
+from .forms  import ImpuestoForm, MonedaForm, IdiomaForm
 from .decorators import admin_required
 
 
@@ -103,3 +103,42 @@ def moneda_create(request):
 
     context = {'form': form}
     return render(request, 'configuracion/moneda_form.html', context)
+
+
+# ──────────────────────────────────────────────────────────────
+# CFG-04 — IDIOMAS
+# ──────────────────────────────────────────────────────────────
+
+@admin_required
+def idioma_list(request):
+    """
+    GET /configuracion/idiomas/
+    Consulta todos los idiomas ordenados: principal primero, luego por código.
+    """
+    idiomas = Idioma.objects.all()
+    context = {'idiomas': idiomas}
+    return render(request, 'configuracion/idiomas.html', context)
+
+
+@admin_required
+def idioma_create(request):
+    """
+    GET  /configuracion/idiomas/nuevo/ → Muestra formulario vacío
+    POST /configuracion/idiomas/nuevo/ → Valida y guarda el nuevo idioma
+    La lógica de 'idioma principal único' la maneja el modelo en su save().
+    """
+    if request.method == 'POST':
+        form = IdiomaForm(request.POST)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Idioma registrado correctamente.')
+            return redirect('configuracion:idioma_list')
+
+        messages.error(request, 'Corrige los errores antes de continuar.')
+
+    else:
+        form = IdiomaForm()
+
+    context = {'form': form}
+    return render(request, 'configuracion/idioma_form.html', context)
