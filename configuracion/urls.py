@@ -14,4 +14,8 @@ urlpatterns = [
     path('monedas/',         views.moneda_list,     name='moneda_list'),
     path('monedas/nuevo/',   views.moneda_create,   name='moneda_create'),
 
+    # ── CFG-04 Idiomas ────────────────────────────────────────
+    path('idiomas/',         views.idioma_list,     name='idioma_list'),
+    path('idiomas/nuevo/',   views.idioma_create,   name='idioma_create'),
+
 ]

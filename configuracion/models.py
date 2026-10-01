@@ -53,3 +53,32 @@ class Moneda(models.Model):
     def __str__(self):
         principal = " ★" if self.es_principal else ""
         return f"{self.codigo_iso} — {self.nombre}{principal}"
+
+
+class Idioma(models.Model):
+    codigo       = models.CharField(max_length=10, unique=True, help_text="Código de idioma. Ej: es, en, fr, pt")
+    nombre       = models.CharField(max_length=50, help_text="Nombre descriptivo del idioma. Ej: Español, English")
+    es_principal = models.BooleanField(default=False, help_text="Solo puede haber un idioma principal por defecto a la vez.")
+    activo       = models.BooleanField(default=True, help_text="Idiomas inactivos no se ofrecen al usuario.")
+
+    class Meta:
+        verbose_name        = "Idioma"
+        verbose_name_plural = "Idiomas"
+        ordering            = ['-es_principal', 'codigo']
+
+    def save(self, *args, **kwargs):
+        """
+        Regla de negocio (Escenario 2 — CFG-04):
+        Si este idioma se marca como principal, se desmarcan
+        automáticamente todos los demás antes de guardar.
+        """
+        if self.es_principal:
+            otros = Idioma.objects.filter(es_principal=True)
+            if self.pk:
+                otros = otros.exclude(pk=self.pk)
+            otros.update(es_principal=False)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        principal = " ★" if self.es_principal else ""
+        return f"{self.codigo} — {self.nombre}{principal}"
