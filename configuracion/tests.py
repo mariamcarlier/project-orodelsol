@@ -2,7 +2,7 @@ from decimal import Decimal
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from configuracion.models import Impuesto
+from configuracion.models import Impuesto, Moneda
 
 Usuario = get_user_model()
 
@@ -133,3 +133,180 @@ class ImpuestoCFG02Tests(TestCase):
         self.assertContains(response, 'IVA Joyería 19%')
         self.assertContains(response, '19,00 %')
         self.assertContains(response, 'Activo')
+
+
+class MonedaCFG03Tests(TestCase):
+    """
+    Pruebas automatizadas para la historia de usuario JODS-192:
+    CFG-03 — Configuración — Configurar monedas.
+    """
+
+    def setUp(self):
+        self.client = Client()
+        self.list_url = reverse('configuracion:moneda_list')
+        self.create_url = reverse('configuracion:moneda_create')
+
+        # Usuario con rol ADMINISTRADOR
+        self.admin_user = Usuario.objects.create_user(
+            username='admin_moneda',
+            password='password123',
+            rol='ADMIN',
+            first_name='Admin',
+            last_name='Moneda',
+            tipo_documento='CC',
+            documento='300300300',
+            fecha_nacimiento='1990-01-01'
+        )
+
+        # Usuario con rol CLIENTE
+        self.cliente_user = Usuario.objects.create_user(
+            username='cliente_moneda',
+            password='password123',
+            rol='CLIENTE',
+            first_name='Cliente',
+            last_name='Moneda',
+            tipo_documento='CC',
+            documento='400400400',
+            fecha_nacimiento='1995-05-05'
+        )
+
+    # ── ESCENARIO 3: CONTROL DE ACCESO POR ROL ───────────────────────
+
+    def test_acceso_anonimo_redirige_a_login_en_lista_monedas(self):
+        """Usuario no autenticado debe ser redirigido a login al intentar ver monedas."""
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/admin/login/', response.url)
+
+    def test_acceso_anonimo_redirige_a_login_en_creacion_moneda(self):
+        """Usuario no autenticado debe ser redirigido a login al intentar crear moneda."""
+        response = self.client.get(self.create_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/admin/login/', response.url)
+
+    def test_usuario_no_admin_recibe_403_en_lista_monedas(self):
+        """Usuario autenticado sin rol ADMIN recibe HTTP 403 Forbidden."""
+        self.client.login(username='cliente_moneda', password='password123')
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_usuario_no_admin_recibe_403_en_creacion_moneda(self):
+        """Usuario autenticado sin rol ADMIN recibe HTTP 403 al crear moneda."""
+        self.client.login(username='cliente_moneda', password='password123')
+        response = self.client.get(self.create_url)
+        self.assertEqual(response.status_code, 403)
+
+        response_post = self.client.post(self.create_url, {
+            'codigo_iso': 'USD',
+            'nombre': 'Dólar',
+            'simbolo': '$',
+            'tasa_cambio': '1.0000',
+            'es_principal': False,
+            'activa': True
+        })
+        self.assertEqual(response_post.status_code, 403)
+
+    # ── ESCENARIO 1: LISTADO Y REGISTRO DE MONEDA ─────────────────────
+
+    def test_admin_puede_acceder_a_lista_monedas(self):
+        """Administrador puede acceder exitosamente al listado de monedas."""
+        self.client.login(username='admin_moneda', password='password123')
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'configuracion/monedas.html')
+
+    def test_admin_puede_ver_formulario_nueva_moneda(self):
+        """Administrador puede ver el formulario y se incluye el parcial _form_fields."""
+        self.client.login(username='admin_moneda', password='password123')
+        response = self.client.get(self.create_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'configuracion/moneda_form.html')
+        self.assertTemplateUsed(response, 'configuracion/partials/_form_fields.html')
+
+    def test_creacion_exitosa_de_moneda_valida(self):
+        """Administrador registra una moneda válida y redirige a la lista."""
+        self.client.login(username='admin_moneda', password='password123')
+        datos = {
+            'codigo_iso': 'COP',
+            'nombre': 'Peso colombiano',
+            'simbolo': '$',
+            'tasa_cambio': '1.0000',
+            'es_principal': True,
+            'activa': True
+        }
+        response = self.client.post(self.create_url, datos)
+        self.assertRedirects(response, self.list_url)
+
+        moneda = Moneda.objects.filter(codigo_iso='COP').first()
+        self.assertIsNotNone(moneda)
+        self.assertEqual(moneda.nombre, 'Peso colombiano')
+        self.assertTrue(moneda.es_principal)
+        self.assertTrue(moneda.activa)
+
+    def test_rechazo_de_moneda_con_codigo_iso_duplicado(self):
+        """No permite registrar dos monedas con el mismo código ISO (unique=True)."""
+        Moneda.objects.create(
+            codigo_iso='COP', nombre='Peso colombiano', simbolo='$',
+            tasa_cambio=Decimal('1.0000'), es_principal=True, activa=True
+        )
+
+        self.client.login(username='admin_moneda', password='password123')
+        response = self.client.post(self.create_url, {
+            'codigo_iso': 'COP',
+            'nombre': 'Otro Peso',
+            'simbolo': '$',
+            'tasa_cambio': '1.0000',
+            'es_principal': False,
+            'activa': True
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['form'].errors)
+        self.assertEqual(Moneda.objects.filter(codigo_iso='COP').count(), 1)
+
+    # ── ESCENARIO 2: REGLA DE NEGOCIO — MONEDA PRINCIPAL ÚNICA ────────
+
+    def test_regla_moneda_principal_unica_al_crear(self):
+        """
+        Al registrar una nueva moneda con es_principal=True, la moneda
+        principal anterior se desmarca automáticamente a es_principal=False.
+        """
+        cop = Moneda.objects.create(
+            codigo_iso='COP', nombre='Peso colombiano', simbolo='$',
+            tasa_cambio=Decimal('1.0000'), es_principal=True, activa=True
+        )
+        self.assertTrue(cop.es_principal)
+
+        self.client.login(username='admin_moneda', password='password123')
+        response = self.client.post(self.create_url, {
+            'codigo_iso': 'USD',
+            'nombre': 'Dólar estadounidense',
+            'simbolo': 'US$',
+            'tasa_cambio': '1.0000',
+            'es_principal': True,
+            'activa': True
+        })
+        self.assertRedirects(response, self.list_url)
+
+        # Refrescar desde BD
+        cop.refresh_from_db()
+        usd = Moneda.objects.get(codigo_iso='USD')
+
+        # COP ya no es principal, USD ahora es principal
+        self.assertFalse(cop.es_principal)
+        self.assertTrue(usd.es_principal)
+        self.assertEqual(Moneda.objects.filter(es_principal=True).count(), 1)
+
+    def test_moneda_aparece_en_listado(self):
+        """Moneda configurada se renderiza en la tabla con sus datos y badge."""
+        Moneda.objects.create(
+            codigo_iso='COP', nombre='Peso colombiano', simbolo='$',
+            tasa_cambio=Decimal('1.0000'), es_principal=True, activa=True
+        )
+
+        self.client.login(username='admin_moneda', password='password123')
+        response = self.client.get(self.list_url)
+        self.assertContains(response, 'COP')
+        self.assertContains(response, 'Peso colombiano')
+        self.assertContains(response, 'Principal')
+        self.assertContains(response, 'Activa')
+

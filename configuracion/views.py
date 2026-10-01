@@ -70,6 +70,7 @@ def impuesto_create(request):
 # CFG-03 — MONEDAS
 # ──────────────────────────────────────────────────────────────
 
+@admin_required
 def moneda_list(request):
     """
     GET /configuracion/monedas/
@@ -80,6 +81,7 @@ def moneda_list(request):
     return render(request, 'configuracion/monedas.html', context)
 
 
+@admin_required
 def moneda_create(request):
     """
     GET  /configuracion/monedas/nuevo/ → Muestra formulario vacío
