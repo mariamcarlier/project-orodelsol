@@ -20,12 +20,14 @@ from django.contrib import messages
 
 from .models import Impuesto, Moneda
 from .forms  import ImpuestoForm, MonedaForm
+from .decorators import admin_required
 
 
 # ──────────────────────────────────────────────────────────────
 # CFG-02 — IMPUESTOS
 # ──────────────────────────────────────────────────────────────
 
+@admin_required
 def impuesto_list(request):
     """
     GET /configuracion/impuestos/
@@ -38,6 +40,7 @@ def impuesto_list(request):
                   context)
 
 
+@admin_required
 def impuesto_create(request):
     """
     GET  /configuracion/impuestos/nuevo/ → Muestra formulario vacío

@@ -1,6 +1,8 @@
-{# Parcial reutilizable: pinta TODOS los campos de un formulario Django.
-   Uso:  {% include 'configuracion/partials/_form_fields.html' %}
-   Así impuesto_form y moneda_form no repiten el mismo bucle (principio DRY). #}
+{% comment %}
+Parcial reutilizable: pinta TODOS los campos de un formulario Django.
+Uso: {% include 'configuracion/partials/_form_fields.html' %}
+Así impuesto_form y moneda_form no repiten el mismo bucle (principio DRY).
+{% endcomment %}
 
 {% if form.non_field_errors %}
 <div class="form-alert" role="alert">
