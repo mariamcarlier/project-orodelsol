@@ -1,0 +1,65 @@
+{% extends 'configuracion/base_admin.html' %}
+
+{% block title %}Idiomas — Oro del Sol{% endblock %}
+
+{% block content %}
+
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">CFG-04</span>
+            <h1 class="page-title">Gestión de Idiomas</h1>
+        </div>
+        <a href="{% url 'configuracion:idioma_create' %}" class="btn btn--primary-gold">+ Nuevo idioma</a>
+    </div>
+
+    <p class="page-desc">
+        Configura los idiomas disponibles en la plataforma. Solo puede existir un idioma principal activo a la vez.
+        El idioma principal es el predeterminado para mostrar la tienda a los clientes.
+    </p>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <caption class="sr-only">Listado de idiomas configurados</caption>
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Código</th>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Principal</th>
+                    <th scope="col">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for idioma in idiomas %}
+                <tr>
+                    <td class="cell-num">{{ forloop.counter }}</td>
+                    <td class="cell-code">{{ idioma.codigo }}</td>
+                    <td>{{ idioma.nombre }}</td>
+                    <td>
+                        {% if idioma.es_principal %}
+                            <span class="badge badge--primary">&#9733; Principal</span>
+                        {% else %}
+                            <span class="cell-soft">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if idioma.activo %}
+                            <span class="badge badge--active">Activo</span>
+                        {% else %}
+                            <span class="badge badge--inactive">Inactivo</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="table-empty">
+                        No hay idiomas configurados todavía.
+                        <a href="{% url 'configuracion:idioma_create' %}">Crea el primero (Español)</a>.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+{% endblock %}

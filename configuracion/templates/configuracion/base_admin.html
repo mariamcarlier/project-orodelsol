@@ -29,8 +29,8 @@
         </div>
 
         <nav class="admin-nav" aria-label="Módulos de configuración">
-            {# Módulos pendientes: no son enlaces para no dejar rutas muertas #}
-            <span class="admin-nav__item is-soon" aria-disabled="true">Parámetros <small>CFG-01</small></span>
+            <a class="admin-nav__item" href="{% url 'configuracion:parametros' %}"
+               {% if 'parametro' in current or current == 'configuracion_home' %}aria-current="page"{% endif %}>Parámetros</a>
 
             <a class="admin-nav__item" href="{% url 'configuracion:impuesto_list' %}"
                {% if 'impuesto' in current %}aria-current="page"{% endif %}>Impuestos</a>
@@ -38,7 +38,8 @@
             <a class="admin-nav__item" href="{% url 'configuracion:moneda_list' %}"
                {% if 'moneda' in current %}aria-current="page"{% endif %}>Monedas</a>
 
-            <span class="admin-nav__item is-soon" aria-disabled="true">Idiomas <small>CFG-04</small></span>
+            <a class="admin-nav__item" href="{% url 'configuracion:idioma_list' %}"
+               {% if 'idioma' in current %}aria-current="page"{% endif %}>Idiomas</a>
 
             <a class="admin-nav__item admin-nav__item--store" href="{% url 'core:inicio' %}">Ver tienda ↗</a>
         </nav>
