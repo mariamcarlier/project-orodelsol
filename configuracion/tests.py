@@ -2,7 +2,7 @@ from decimal import Decimal
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from configuracion.models import Impuesto, Moneda, Idioma
+from configuracion.models import Impuesto, Moneda, Idioma, ParametroGeneral
 
 Usuario = get_user_model()
 
@@ -468,5 +468,157 @@ class IdiomaCFG04Tests(TestCase):
         self.assertContains(response, 'Español')
         self.assertContains(response, 'Principal')
         self.assertContains(response, 'Activo')
+
+
+class ParametrosCFG01Tests(TestCase):
+    """
+    Pruebas automatizadas para la historia de usuario JODS-190:
+    CFG-01 — Configuración — Administrar parámetros generales.
+    """
+
+    def setUp(self):
+        self.client = Client()
+        self.url = reverse('configuracion:parametros')
+        self.home_url = reverse('core:inicio')
+
+        # Usuario con rol ADMINISTRADOR
+        self.admin_user = Usuario.objects.create_user(
+            username='admin_param',
+            password='password123',
+            rol='ADMIN',
+            first_name='Admin',
+            last_name='General',
+            tipo_documento='CC',
+            documento='700700700',
+            fecha_nacimiento='1990-01-01'
+        )
+
+        # Usuario con rol CLIENTE
+        self.cliente_user = Usuario.objects.create_user(
+            username='cliente_param',
+            password='password123',
+            rol='CLIENTE',
+            first_name='Cliente',
+            last_name='General',
+            tipo_documento='CC',
+            documento='800800800',
+            fecha_nacimiento='1995-05-05'
+        )
+
+    # ── ESCENARIO 2: ACCESO SIN AUTORIZACIÓN ──────────────────────────
+
+    def test_acceso_anonimo_redirige_a_login(self):
+        """Usuario no autenticado es redirigido a login al intentar acceder a parámetros."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/admin/login/', response.url)
+
+    def test_usuario_cliente_deniega_acceso_y_redirige_a_inicio(self):
+        """
+        Criterio Escenario 2:
+        Dado que un usuario con rol Cliente intenta acceder,
+        cuando navega a configuración,
+        el sistema deniega el acceso y redirige al inicio.
+        """
+        self.client.login(username='cliente_param', password='password123')
+        response = self.client.get(self.url)
+        self.assertRedirects(response, self.home_url)
+
+    def test_usuario_cliente_post_deniega_acceso_y_redirige_a_inicio(self):
+        """Intento de POST de un cliente es denegado y redirigido al inicio."""
+        self.client.login(username='cliente_param', password='password123')
+        response = self.client.post(self.url, {
+            'nombre_tienda': 'Intento Ilegal',
+            'nit': '123456',
+            'correo_contacto': 'hack@test.com',
+            'telefono_contacto': '300000000',
+            'direccion': 'Calle Falsa 123',
+            'ciudad': 'Bogotá',
+        })
+        self.assertRedirects(response, self.home_url)
+
+    def test_ruta_admin_configuracion_alias_redirige_cliente_a_inicio(self):
+        """Acceso a la ruta /admin/configuracion/ deniega a cliente y redirige a inicio."""
+        self.client.login(username='cliente_param', password='password123')
+        response = self.client.get('/admin/configuracion/')
+        self.assertRedirects(response, self.home_url)
+
+    # ── ESCENARIO 1: EDICIÓN DE PARÁMETROS Y AUDITORÍA ────────────────
+
+    def test_admin_puede_acceder_a_parametros(self):
+        """Administrador puede acceder y se renderiza el formulario con parcial."""
+        self.client.login(username='admin_param', password='password123')
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'configuracion/parametros.html')
+        self.assertTemplateUsed(response, 'configuracion/partials/_form_fields.html')
+
+    def test_edicion_parametros_actualiza_valores_y_registra_auditoria(self):
+        """
+        Criterio Escenario 1:
+        Cuando un administrador modifica uno o más parámetros y hace clic en 'Guardar',
+        el sistema actualiza los valores y registra quién hizo el cambio y cuándo.
+        """
+        self.client.login(username='admin_param', password='password123')
+        datos = {
+            'nombre_tienda': 'Oro del Sol Joyería Fina',
+            'lema': 'Anillos de oro 18K para toda la vida',
+            'nit': '901.999.888-1',
+            'correo_contacto': 'info@orodelsol.com',
+            'telefono_contacto': '+57 310 999 8877',
+            'direccion': 'Carrera 15 # 93-60 Oficina 501',
+            'ciudad': 'Bogotá D.C., Colombia',
+            'horario_atencion': 'Lunes a Viernes: 8:00 AM - 6:00 PM',
+        }
+        response = self.client.post(self.url, datos)
+        self.assertRedirects(response, self.url)
+
+        # Verificar actualización en BD
+        parametros = ParametroGeneral.get_solo()
+        self.assertEqual(parametros.nombre_tienda, 'Oro del Sol Joyería Fina')
+        self.assertEqual(parametros.nit, '901.999.888-1')
+        self.assertEqual(parametros.correo_contacto, 'info@orodelsol.com')
+
+        # Auditoría: registra quién y cuándo
+        self.assertEqual(parametros.actualizado_por, self.admin_user)
+        self.assertIsNotNone(parametros.fecha_actualizacion)
+
+    def test_rechazo_si_campo_obligatorio_vacio(self):
+        """Si se omite un campo obligatorio (como nombre_tienda), se rechaza y no actualiza."""
+        self.client.login(username='admin_param', password='password123')
+        response = self.client.post(self.url, {
+            'nombre_tienda': '',  # Vacío (inválido)
+            'nit': '900.111.222',
+            'correo_contacto': 'correo@test.com',
+            'telefono_contacto': '3001234567',
+            'direccion': 'Calle 10 # 20-30',
+            'ciudad': 'Bogotá',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['form'].errors)
+        self.assertIn('nombre_tienda', response.context['form'].errors)
+
+    def test_patron_singleton_mantiene_un_solo_registro(self):
+        """Garantiza que siempre exista un único registro en la base de datos (pk=1)."""
+        self.client.login(username='admin_param', password='password123')
+        self.client.post(self.url, {
+            'nombre_tienda': 'Primera Edición',
+            'nit': '111',
+            'correo_contacto': 'uno@test.com',
+            'telefono_contacto': '111',
+            'direccion': 'Dir 1',
+            'ciudad': 'Ciudad 1',
+        })
+        self.client.post(self.url, {
+            'nombre_tienda': 'Segunda Edición',
+            'nit': '222',
+            'correo_contacto': 'dos@test.com',
+            'telefono_contacto': '222',
+            'direccion': 'Dir 2',
+            'ciudad': 'Ciudad 2',
+        })
+        self.assertEqual(ParametroGeneral.objects.count(), 1)
+        self.assertEqual(ParametroGeneral.get_solo().nombre_tienda, 'Segunda Edición')
+
 
 
