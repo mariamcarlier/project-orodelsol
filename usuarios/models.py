@@ -24,5 +24,14 @@ class Usuario(AbstractUser):
     last_name = models.CharField(max_length=50,blank=False,verbose_name="Apellido")
     tipo_documento = models.CharField(max_length=3,choices=TIPO_DOCUMENTO_CHOICES ,verbose_name="Tipo de Documento")
     documento = models.CharField(max_length=20,unique=True,verbose_name="Documento")
-    fecha_nacimiento = models.DateField(blank=True, verbose_name="Fecha de Nacimiento")
-    REQUIRED_FIELDS = ["first_name", "last_name", "tipo_documento", "documento", "fecha_nacimiento"]
+    fecha_nacimiento = models.DateField(blank=False, verbose_name="Fecha de Nacimiento")
+    telefono = models.CharField(max_length=15, blank=False, verbose_name="Teléfono")
+    foto = models.ImageField(upload_to="perfiles/", blank=True, null=True, verbose_name="Foto de perfil")
+    REQUIRED_FIELDS = [
+        "first_name",
+        "last_name",
+        "tipo_documento",
+        "documento",
+        "fecha_nacimiento",
+        "telefono",
+    ]

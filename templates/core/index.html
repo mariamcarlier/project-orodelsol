@@ -96,61 +96,29 @@
       </div>
 
       <div class="collections-grid reveal" style="transition-delay:.1s">
-
+        {% for coleccion in colecciones %}
         <article class="collection-card">
           <div class="collection-card__media">
-            <img src="{% static 'img/coleccion-almadorada.webp' %}"
-                 alt="Alma Dorada - anillos de compromiso" loading="lazy">
+            {% if coleccion.imagen_url %}
+              <img src="{{ coleccion.imagen_url }}" alt="{{ coleccion.nombre }}" loading="lazy">
+            {% elif coleccion.nombre|slugify == "alma-dorada" %}
+              <img src="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ coleccion.nombre }}" loading="lazy">
+            {% elif coleccion.nombre|slugify == "luna-de-miel" %}
+              <img src="{% static 'img/coleccion-lunademiel.webp' %}" alt="{{ coleccion.nombre }}" loading="lazy">
+            {% elif coleccion.nombre|slugify == "quince-soles" %}
+              <img src="{% static 'img/coleccion-quincesoles.webp' %}" alt="{{ coleccion.nombre }}" loading="lazy">
+            {% endif %}
           </div>
           <div class="collection-card__info">
-            <span class="collection-card__season">Colección · 2026</span>
-            <h3 class="collection-card__name">Alma Dorada</h3>
-            <span class="collection-card__desc">Anillos de compromiso · 18 diseños</span>
-            <a href="/coleccion/alma-dorada" class="collection-card__cta">
-              Explorar
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="12" height="12">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
-              </svg>
-            </a>
+            <span class="collection-card__season">Colección{% if coleccion.temporada %} · {{ coleccion.temporada }}{% endif %}</span>
+            <h3 class="collection-card__name">{{ coleccion.nombre }}</h3>
+            <span class="collection-card__desc">{{ coleccion.producto_count }} productos{% if coleccion.descripcion %} · {{ coleccion.descripcion }}{% endif %}</span>
+            <a href="#productos" class="collection-card__cta">Explorar</a>
           </div>
         </article>
-
-        <article class="collection-card">
-          <div class="collection-card__media">
-            <img src="{% static 'img/coleccion-lunademiel.webp' %}"
-                 alt="Luna de Miel - argollas de matrimonio" loading="lazy">
-          </div>
-          <div class="collection-card__info">
-            <span class="collection-card__season">Colección · 2026</span>
-            <h3 class="collection-card__name">Luna de Miel</h3>
-            <span class="collection-card__desc">Argollas de matrimonio · 12 pares</span>
-            <a href="/coleccion/luna-de-miel" class="collection-card__cta">
-              Explorar
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="12" height="12">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
-              </svg>
-            </a>
-          </div>
-        </article>
-
-        <article class="collection-card">
-          <div class="collection-card__media">
-            <img src= "{% static "img/coleccion-quincesoles.webp" %}"
-                 alt="Quince Soles - anillos XV años" loading="lazy">
-          </div>
-          <div class="collection-card__info">
-            <span class="collection-card__season">Colección · 2026</span>
-            <h3 class="collection-card__name">Quince Soles</h3>
-            <span class="collection-card__desc">XV Años · 9 modelos exclusivos</span>
-            <a href="/coleccion/quince-soles" class="collection-card__cta">
-              Explorar
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="12" height="12">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
-              </svg>
-            </a>
-          </div>
-        </article>
-
+        {% empty %}
+        <p>Aún no hay colecciones disponibles.</p>
+        {% endfor %}
       </div>
     </section>
 
@@ -162,78 +130,22 @@
         <a href="/catalogo" class="link-underline">Ver todo →</a>
       </div>
 
-      <div class="products-grid">
-
-        <article class="product-card reveal" data-id="001">
+      <div class="products-grid" id="productos">
+        {% for producto in productos %}
+        <article class="product-card reveal">
           <div class="product-card__media">
-            <img src="https://cdn-media.glamira.com/media/product/newgeneration/view/3/sku/20702tunatisans/diamond/rhodolite_AAA/stone2/labdiamond_AAAA/alloycolour/white.jpg"
-                 alt="Anillo Corazón 18K Oro Blanco Rhodolita" loading="lazy">
-            <span class="product-card__badge product-card__badge--new">Nuevo</span>
-            <div class="product-card__actions">
-              <button class="product-card__btn" aria-label="Añadir a favoritos" data-action="fav">♡</button>
-              <button class="product-card__btn" aria-label="Vista rápida" data-action="quick">⊙</button>
-            </div>
-            <div class="product-card__bar">Añadir al carrito</div>
+            {% if producto.imagen_url %}<img src="{{ producto.imagen_url }}" alt="{{ producto.nombre }}" loading="lazy">{% endif %}
+            {% if producto.destacado %}<span class="product-card__badge product-card__badge--fav">Destacado</span>{% endif %}
           </div>
           <div class="product-card__info">
-            <span class="product-card__label">18K Oro Blanco · Rhodolita · Alma Dorada</span>
-            <h3 class="product-card__name">Anillo Corazón</h3>
-            <p class="product-card__price"><strong>COP $5.314.482</strong></p>
+            <span class="product-card__label">{{ producto.detalle }} · {{ producto.coleccion.nombre }}</span>
+            <h3 class="product-card__name">{{ producto.nombre }}</h3>
+            <p class="product-card__price"><strong>COP ${{ producto.precio|floatformat:0 }}</strong></p>
           </div>
         </article>
-
-        <article class="product-card reveal" data-id="002" style="transition-delay:.1s">
-          <div class="product-card__media">
-            <img src="https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=400&q=80"
-                 alt="Solitario Clásico 18K Oro Amarillo Diamante" loading="lazy">
-            <div class="product-card__actions">
-              <button class="product-card__btn" aria-label="Añadir a favoritos" data-action="fav">♡</button>
-              <button class="product-card__btn" aria-label="Vista rápida" data-action="quick">⊙</button>
-            </div>
-            <div class="product-card__bar">Añadir al carrito</div>
-          </div>
-          <div class="product-card__info">
-            <span class="product-card__label">18K Oro Amarillo · Diamante · Alma Dorada</span>
-            <h3 class="product-card__name">Solitario Clásico</h3>
-            <p class="product-card__price"><strong>COP $7.200.000</strong></p>
-          </div>
-        </article>
-
-        <article class="product-card reveal" data-id="003" style="transition-delay:.2s">
-          <div class="product-card__media">
-            <img src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80"
-                 alt="Eternidad Rosa 18K Oro Rosa Zafiro" loading="lazy">
-            <span class="product-card__badge product-card__badge--fav">Favorito</span>
-            <div class="product-card__actions">
-              <button class="product-card__btn" aria-label="Añadir a favoritos" data-action="fav">♡</button>
-              <button class="product-card__btn" aria-label="Vista rápida" data-action="quick">⊙</button>
-            </div>
-            <div class="product-card__bar">Añadir al carrito</div>
-          </div>
-          <div class="product-card__info">
-            <span class="product-card__label">18K Oro Rosa · Zafiro · Luna de Miel</span>
-            <h3 class="product-card__name">Eternidad Rosa</h3>
-            <p class="product-card__price"><strong>COP $4.850.000</strong></p>
-          </div>
-        </article>
-
-        <article class="product-card reveal" data-id="004" style="transition-delay:.3s">
-          <div class="product-card__media">
-            <img src="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400&q=80"
-                 alt="Trío Diamante 18K Oro Blanco" loading="lazy">
-            <div class="product-card__actions">
-              <button class="product-card__btn" aria-label="Añadir a favoritos" data-action="fav">♡</button>
-              <button class="product-card__btn" aria-label="Vista rápida" data-action="quick">⊙</button>
-            </div>
-            <div class="product-card__bar">Añadir al carrito</div>
-          </div>
-          <div class="product-card__info">
-            <span class="product-card__label">18K Oro Blanco · Trío · Promesa Eterna</span>
-            <h3 class="product-card__name">Trío Diamante</h3>
-            <p class="product-card__price"><strong>COP $9.100.000</strong></p>
-          </div>
-        </article>
-
+        {% empty %}
+        <p>Aún no hay productos disponibles.</p>
+        {% endfor %}
       </div>
     </section>
 
