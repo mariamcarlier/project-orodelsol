@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Registrar usuario{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/registrar.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="register-page" aria-labelledby="register-title">
+  <div class="register-page__intro">
+    <span class="eyebrow">Área administrativa</span>
+    <h1 id="register-title" class="heading">Registrar <em>usuario</em></h1>
+    <p class="body-text">Crea una cuenta nueva y asigna el tipo de acceso correspondiente.</p>
+  </div>
+
+  {% if messages %}
+    <div class="register-alerts" aria-live="polite">
+      {% for message in messages %}
+        <div class="register-alert register-alert--{{ message.tags }}" role="alert">
+          <span class="register-alert__icon" aria-hidden="true">{% if message.tags == 'success' %}✓{% else %}!{% endif %}</span>
+          <span>{{ message }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if form.non_field_errors %}
+    <div class="register-alert register-alert--error" role="alert">
+      <span class="register-alert__icon" aria-hidden="true">!</span>
+      <span>{{ form.non_field_errors|striptags }}</span>
+    </div>
+  {% endif %}
+
+  <form class="register-form" method="post" novalidate>
+    {% csrf_token %}
+    <div class="register-form__grid">
+      {% for field in form %}
+        <div class="register-field{% if field.errors %} register-field--invalid{% endif %}{% if field.name == 'rol' %} register-field--highlight{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span aria-hidden="true"> *</span>{% endif %}</label>
+          {{ field }}
+          {% if field.help_text %}<p class="register-field__help">{{ field.help_text|striptags }}</p>{% endif %}
+          {% for error in field.errors %}<p class="register-field__error" role="alert">{{ error }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+    <button class="btn btn--primary register-form__submit" type="submit">Registrar usuario <span aria-hidden="true">→</span></button>
+    <p class="register-form__required"><span aria-hidden="true">*</span> Campos obligatorios</p>
+  </form>
+</section>
+{% endblock %}
+

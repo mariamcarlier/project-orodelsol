@@ -1,0 +1,76 @@
+.perfil-form {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 60px 20px;
+}
+
+.perfil-form .field {
+  margin-bottom: 20px;
+}
+
+.perfil-form label {
+  display: block;
+  margin-bottom: 6px;
+  color: #6b6153;
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.perfil-form input,
+.perfil-form select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e0d7c3;
+  border-radius: 6px;
+  background: #fff;
+  font-family: Arial, sans-serif;
+  font-size: 15px;
+}
+
+.perfil-form input[type="date"] {
+  border-color: var(--color-oro-borde);
+  background: var(--color-marfil);
+  color: var(--color-text-dark);
+  color-scheme: light;
+  accent-color: var(--color-cacao);
+}
+
+.perfil-form input[type="date"]:focus {
+  border-color: var(--color-cacao);
+  outline: 2px solid rgba(120, 80, 65, .18);
+  outline-offset: 1px;
+}
+
+.perfil-form input[type="date"]::-webkit-calendar-picker-indicator {
+  padding: 4px;
+  border-radius: 3px;
+  background-color: var(--color-oro);
+  cursor: pointer;
+}
+
+.perfil-form .field-error {
+  margin-top: 4px;
+  color: #b23b3b;
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+}
+
+.perfil-form .form-msg {
+  margin-bottom: 20px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+}
+
+.perfil-form .form-msg.success {
+  background: #e7f5e8;
+  color: #2e7d32;
+}
+
+.perfil-form .form-msg.error {
+  background: #fbe9e9;
+  color: #b23b3b;
+}
