@@ -1,0 +1,129 @@
+.login-overlay {
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.login-card {
+  width: min(100%, 440px);
+  padding: 36px;
+  border: 1px solid rgba(196, 174, 136, .65);
+  background: linear-gradient(135deg, var(--color-white), var(--color-marfil));
+  box-shadow: var(--shadow-soft);
+}
+
+.login-card h2,
+.password-reset-container h2 {
+  margin-bottom: 12px;
+  color: var(--color-text-dark);
+  font-family: var(--font-display);
+  font-size: clamp(30px, 3.5vw, 42px);
+  font-weight: 300;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.login-subtitle,
+.subtitle {
+  margin-bottom: 24px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.login-card form,
+.password-reset-container form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.login-card form p,
+.password-reset-container form p {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  color: var(--color-text-dark);
+  font-size: 13px;
+}
+
+.login-card form label,
+.password-reset-container form label {
+  color: var(--color-text-dark);
+}
+
+.login-card form input,
+.password-reset-container form input {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 13px;
+  border: 1px solid var(--color-oro-borde);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, .78);
+  color: var(--color-text-dark);
+  font: inherit;
+  outline: none;
+  transition: border-color var(--ease-smooth), box-shadow var(--ease-smooth), background var(--ease-smooth);
+}
+
+.login-card form input:focus,
+.password-reset-container form input:focus {
+  border-color: var(--color-cacao);
+  background: var(--color-white);
+  box-shadow: 0 0 0 3px rgba(120, 80, 65, .12);
+}
+
+.login-card form button,
+.password-reset-container .btn-primary {
+  margin-top: 18px;
+  padding: 15px 22px;
+  background: var(--color-cacao);
+  color: var(--color-text-on-dark);
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  transition: background var(--ease-smooth);
+}
+
+.login-card form button:hover,
+.password-reset-container .btn-primary:hover {
+  background: var(--color-cacao-hover);
+}
+
+.options {
+  margin-top: 22px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.options p {
+  margin: 8px 0;
+}
+
+.options a {
+  color: var(--color-cacao);
+  text-decoration: underline;
+  text-decoration-color: rgba(120, 80, 65, .35);
+  text-underline-offset: 3px;
+}
+
+.options a:hover {
+  color: var(--color-cacao-hover);
+  text-decoration-color: currentColor;
+}
+
+.error-message {
+  margin-top: 10px;
+  color: #9b4033;
+  font-size: 13px;
+}
+
+@media (max-width: 680px) {
+  .login-card {
+    padding: 28px 22px;
+  }
+}

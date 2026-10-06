@@ -37,8 +37,11 @@
       <span class="sidebar__label">Mi cuenta</span>
       {% if user.is_authenticated %}
         <a class="sidebar__link" href="{% url 'usuarios:perfil' %}">Mi perfil</a>
+        {% if user.rol == "ADMIN" or user.is_superuser %}
+          <a class="sidebar__link" href="{% url 'core:admin_dashboard' %}">Panel de administración</a>
+        {% endif %}
       {% else %}
-        <a class="sidebar__link" href="/formulario_iniciosesion/index.html">Iniciar sesión</a>
+        <a class="sidebar__link" href="{% url 'login' %}">Iniciar sesión</a>
       {% endif %}
       <a class="sidebar__link" href="/mayoristas">Acceso Mayoristas</a>
     </div>
@@ -88,12 +91,21 @@
       </a>
 
       <div class="header__right">
-        <a href="{% url 'usuarios:perfil' %}" class="header__icon" aria-label="Mi cuenta">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
-          </svg>
-        </a>
+        {% if user.is_authenticated %}
+          <a href="{% url 'usuarios:perfil' %}" class="header__icon" aria-label="Mi cuenta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </a>
+        {% else %}
+          <a href="{% url 'login' %}" class="header__icon" aria-label="Iniciar sesión">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </a>
+        {% endif %}
         <button class="header__icon" aria-label="Mis favoritos">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>

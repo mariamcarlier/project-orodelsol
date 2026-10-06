@@ -1,0 +1,94 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Panel Administración | Oro del Sol{% endblock %}</title>
+    <!-- CSS del Proyecto -->
+    <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <!-- Iconos Boxicons -->
+    <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
+</head>
+<body class="dashboard-body">
+
+    <!-- BARRA LATERAL (SIDEBAR) -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2 class="brand-title">ORO DEL SOL</h2>
+            <span class="brand-subtitle">ADMINISTRACIÓN</span>
+        </div>
+
+        <nav class="sidebar-menu">
+            <ul>
+                <li class="menu-item active">
+                    <a href="{% url 'core:admin_dashboard' %}">
+                        <i class='bx bx-home'></i><span>Resumen</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'admin:core_producto_changelist' %}">
+                        <i class='bx bx-diamond'></i><span>Productos / Joyas</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'admin:core_coleccion_changelist' %}">
+                        <i class='bx bx-category'></i><span>Colecciones</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'admin:usuarios_usuario_changelist' %}">
+                        <i class='bx bx-user'></i><span>Usuarios</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'configuracion:configuracion_home' %}">
+                        <i class='bx bx-cog'></i><span>Configuración</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="{% url 'usuarios:registrar_usuario' %}">
+                        <i class='bx bx-user-plus'></i><span>Registrar usuario</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="{% url 'core:inicio' %}" class="btn-site">
+                <i class='bx bx-store-alt'></i> <span>Ir a la tienda</span>
+            </a>
+            <form method="post" action="{% url 'logout' %}" class="logout-form">
+                {% csrf_token %}
+                <button type="submit" class="btn-logout">
+                    <i class='bx bx-log-out'></i><span>Cerrar sesión</span>
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="main-wrapper">
+        <!-- BARRA SUPERIOR (NAVBAR) -->
+        <header class="topbar">
+            <button class="toggle-btn" id="toggleSidebar" aria-label="Alternar menú">
+                <i class='bx bx-menu'></i>
+            </button>
+            <div class="user-profile">
+                <span class="user-name">{{ request.user.get_full_name|default:request.user.username }}</span>
+                <div class="avatar">
+                    <i class='bx bx-user-circle'></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- AREA DE CONTENIDO -->
+        <main class="dashboard-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script src="{% static 'js/dashboard.js' %}"></script>
+</body>
+</html>
