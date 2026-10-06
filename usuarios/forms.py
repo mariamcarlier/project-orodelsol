@@ -7,7 +7,7 @@ class RegistroUsuarioForm(UserCreationForm):
         model = Usuario
         fields = [
             "username", "email", "first_name", "last_name",
-            "tipo_documento", "documento", "fecha_nacimiento", "rol",
+            "tipo_documento", "documento", "fecha_nacimiento", "telefono", "rol",
         ]
 
     def clean_email(self):
