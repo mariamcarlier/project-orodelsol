@@ -1,0 +1,241 @@
+:root {
+    --bg-main: #FAF8F5;
+    --bg-card: #FFFFFF;
+    --sidebar-bg: #1C1917;
+    --sidebar-text: #D6D3D1;
+    --primary-gold: #C5A059;
+    --primary-gold-hover: #B08A43;
+    --accent-brown: #6B4436;
+    --text-dark: #292524;
+    --text-muted: #78716C;
+    --border-color: #E7E5E4;
+}
+
+body.dashboard-body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-dark);
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 260px;
+    flex: 0 0 260px;
+    background-color: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.3s ease;
+}
+
+.sidebar.collapsed {
+    width: 0;
+    flex-basis: 0;
+    overflow: hidden;
+}
+
+.sidebar-header {
+    padding: 2rem 1.5rem 1rem;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.brand-title {
+    color: var(--primary-gold);
+    font-size: 1.3rem;
+    letter-spacing: 2px;
+    margin: 0;
+}
+
+.brand-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+}
+
+.sidebar-menu ul {
+    list-style: none;
+    padding: 1rem 0;
+    margin: 0;
+}
+
+.menu-item a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0.8rem 1.5rem;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: 0.2s;
+}
+
+.menu-item a i {
+    font-size: 1.2rem;
+}
+
+.menu-item:hover a, .menu-item.active a {
+    background-color: rgba(197, 160, 89, 0.15);
+    color: var(--primary-gold);
+    border-left: 4px solid var(--primary-gold);
+}
+
+.sidebar-footer {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sidebar-footer a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    font-size: 0.85rem;
+}
+
+.logout-form {
+    margin: 0;
+}
+
+.sidebar-footer .btn-logout {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--sidebar-text);
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+/* Layout Principal */
+.main-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.topbar {
+    height: 60px;
+    flex-shrink: 0;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+}
+
+.toggle-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-dark);
+}
+
+.dashboard-content {
+    padding: 2rem;
+}
+
+/* KPIs Grid */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.kpi-card {
+    background: var(--bg-card);
+    padding: 1.5rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    border: 1px solid var(--border-color);
+}
+
+.kpi-icon {
+    width: 50px;
+    height: 50px;
+    background-color: rgba(197, 160, 89, 0.1);
+    color: var(--primary-gold);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.kpi-info h3 {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.kpi-value {
+    margin: 4px 0 0;
+    font-size: 1.3rem;
+    font-weight: bold;
+}
+
+/* Tablas */
+.table-container {
+    background: var(--bg-card);
+    margin-top: 2rem;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.data-table th, .data-table td {
+    padding: 0.8rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table th {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.status.completed { background: #E6F4EA; color: #137333; }
+.status.pending { background: #FEF7E0; color: #B06000; }
+
+@media (max-width: 640px) {
+    .topbar {
+        padding: 0 1rem;
+    }
+
+    .dashboard-content {
+        padding: 1rem;
+    }
+
+    .table-container {
+        overflow-x: auto;
+        padding: 1rem;
+    }
+}

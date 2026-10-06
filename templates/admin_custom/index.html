@@ -1,0 +1,68 @@
+{% extends "admin_custom/base_dashboard.html" %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Resumen General</h1>
+    <p>Bienvenido al panel de gestión de Oro del Sol.</p>
+</div>
+
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon"><i class="bx bx-diamond"></i></div>
+        <div class="kpi-info">
+            <h3>Productos activos</h3>
+            <p class="kpi-value">{{ active_product_count }}</p>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon"><i class="bx bx-category"></i></div>
+        <div class="kpi-info">
+            <h3>Colecciones activas</h3>
+            <p class="kpi-value">{{ active_collection_count }}</p>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon"><i class="bx bx-group"></i></div>
+        <div class="kpi-info">
+            <h3>Clientes activos</h3>
+            <p class="kpi-value">{{ active_client_count }}</p>
+        </div>
+    </div>
+</div>
+
+<div class="table-container">
+    <h2>Productos recientes</h2>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Colección</th>
+                <th>Precio</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for producto in recent_products %}
+                <tr>
+                    <td>
+                        <a href="{% url 'admin:core_producto_change' producto.pk %}">
+                            {{ producto.nombre }}
+                        </a>
+                    </td>
+                    <td>{{ producto.coleccion.nombre }}</td>
+                    <td>{{ producto.precio|floatformat:2 }}</td>
+                    <td>
+                        {% if producto.activo %}
+                            <span class="status completed">Activo</span>
+                        {% else %}
+                            <span class="status pending">Inactivo</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="4">Todavía no hay productos registrados.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

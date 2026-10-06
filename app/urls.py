@@ -24,7 +24,8 @@ from configuracion import views as configuracion_views
 urlpatterns = [
     path("admin/configuracion/", configuracion_views.parametros_view),
     path("admin/", admin.site.urls),
-    path("", include("core.urls")),
+    path("accounts/", include("django.contrib.auth.urls")),
+    path("", include("core.urls", namespace="core")),
     path("configuracion/", include("configuracion.urls")),
     path("usuario/", include("usuarios.urls")),
 ]
