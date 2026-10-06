@@ -20,6 +20,12 @@ Thumbs.db
 .idea/
 *.swp
 
+# Evidencia y reportes locales de validacion
+/evidencia-*.png
+/informe-construccion-modelo.html
+/informe-construccion-modelo.pdf
+/usuarios/usuarios/usuarios/forms.py
+
 # Logs
 *.log
 
