@@ -1,0 +1,112 @@
+.profile-page {
+  width: min(100%, 924px);
+  margin: 0 auto;
+  padding: clamp(40px, 7vw, 72px) clamp(16px, 4vw, 32px) clamp(56px, 9vw, 96px);
+}
+
+.profile-page__intro {
+  max-width: 560px;
+  margin-bottom: 34px;
+}
+
+.profile-page__intro .heading {
+  margin-bottom: 14px;
+}
+
+.profile-card {
+  position: relative;
+  padding: clamp(20px, 4vw, 36px);
+  border: 1px solid rgba(196,174,136,.65);
+  background: linear-gradient(135deg, var(--color-white), var(--color-marfil));
+  box-shadow: var(--shadow-soft);
+}
+
+.profile-card__photo {
+  display: grid;
+  width: 112px;
+  height: 112px;
+  margin: 0 auto 32px;
+  overflow: hidden;
+  place-items: center;
+  border: 1px solid var(--color-oro-borde);
+  border-radius: 50%;
+  background: var(--color-cacao);
+  color: var(--color-marfil);
+  font-family: var(--font-display);
+  font-size: 42px;
+}
+
+.profile-card__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 0 clamp(16px, 3vw, 28px);
+  margin: 0;
+}
+
+.profile-detail {
+  padding: 18px 0;
+  border-bottom: 1px solid rgba(196,174,136,.45);
+}
+
+.profile-detail dt {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--color-text-dark);
+  font-size: 11px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+}
+
+.profile-detail dd {
+  margin: 0;
+  color: var(--color-text-dark);
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.profile-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 32px;
+}
+
+.profile-card__actions .btn {
+  max-width: 100%;
+  text-align: center;
+}
+
+.profile-card__actions span {
+  font-size: 18px;
+  line-height: 0;
+}
+
+@media (max-width: 680px) {
+  .profile-card {
+    padding: 22px 18px;
+  }
+
+  .profile-card__actions {
+    justify-content: stretch;
+  }
+
+  .profile-card__actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 360px) {
+  .profile-page {
+    padding-inline: 12px;
+  }
+
+  .profile-card {
+    padding: 18px 14px;
+  }
+}

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Mi perfil{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/perfil.css' %}?v=2">
+{% endblock %}
+
+{% block content %}
+<section class="profile-page" aria-labelledby="profile-title">
+  <div class="profile-page__intro">
+    <span class="eyebrow">Mi cuenta</span>
+    <h1 id="profile-title" class="heading">Mi <em>perfil</em></h1>
+    <p class="body-text">Consulta la información registrada en tu cuenta.</p>
+  </div>
+
+  <div class="profile-card">
+    <div class="profile-card__photo">
+      {% if perfil.foto %}
+        <img src="{{ perfil.foto.url }}" alt="Foto de perfil de {{ perfil.get_full_name|default:perfil.username }}">
+      {% else %}
+        <span aria-hidden="true">{{ perfil.first_name|first|default:perfil.username|first|upper }}</span>
+      {% endif %}
+    </div>
+
+    <dl class="profile-details">
+      <div class="profile-detail">
+        <dt>Nombre</dt>
+        <dd>{{ perfil.first_name|default:"Sin resultados" }}</dd>
+      </div>
+      <div class="profile-detail">
+        <dt>Apellido</dt>
+        <dd>{{ perfil.last_name|default:"Sin resultados" }}</dd>
+      </div>
+      <div class="profile-detail">
+        <dt>Nombre de usuario</dt>
+        <dd>{{ perfil.username|default:"Sin resultados" }}</dd>
+      </div>
+      <div class="profile-detail">
+        <dt>Correo electrónico</dt>
+        <dd>{{ perfil.email|default:"Sin resultados" }}</dd>
+      </div>
+      <div class="profile-detail">
+        <dt>Tipo de documento</dt>
+        <dd>{{ perfil.get_tipo_documento_display|default:"Sin resultados" }}</dd>
+      </div>
+      <div class="profile-detail">
+        <dt>Número de documento</dt>
+        <dd>{{ perfil.documento|default:"Sin resultados" }}</dd>
+      </div>
+      <div class="profile-detail">
+        <dt>Fecha de nacimiento</dt>
+        <dd>{% if perfil.fecha_nacimiento %}{{ perfil.fecha_nacimiento|date:"d/m/Y" }}{% else %}Sin resultados{% endif %}</dd>
+      </div>
+      <div class="profile-detail">
+        <dt>Teléfono</dt>
+        <dd>{{ perfil.telefono|default:"Sin resultados" }}</dd>
+      </div>
+      <div class="profile-detail">
+        <dt>Tipo de cuenta</dt>
+        <dd>{{ perfil.get_rol_display|default:"Sin resultados" }}</dd>
+      </div>
+    </dl>
+
+    <div class="profile-card__actions">
+      <a class="btn btn--primary" href="{% url 'usuarios:editar_perfil' %}">Editar información personal <span aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</section>
+{% endblock %}
