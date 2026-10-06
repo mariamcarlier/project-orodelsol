@@ -99,6 +99,7 @@
         {% for coleccion in colecciones %}
         <article class="collection-card">
           <div class="collection-card__media">
+            {% if coleccion.imagen_url %}<img src="{{ coleccion.imagen_url }}" alt="{{ coleccion.nombre }}" loading="lazy">{% endif %}
             {% if coleccion.imagen_url %}
               <img src="{{ coleccion.imagen_url }}" alt="{{ coleccion.nombre }}" loading="lazy">
             {% elif coleccion.nombre|slugify == "alma-dorada" %}

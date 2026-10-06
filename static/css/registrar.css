@@ -1,4 +1,7 @@
 .register-page {
+  width: min(100%, 1104px);
+  margin: 0 auto;
+  padding: clamp(40px, 7vw, 72px) clamp(16px, 4vw, 32px) clamp(56px, 9vw, 96px);
   max-width: 1040px;
   margin: 0 auto;
   padding: 72px 32px 96px;
@@ -55,7 +58,7 @@
 }
 
 .register-form {
-  padding: 36px;
+  padding: clamp(20px, 4vw, 36px);
   border: 1px solid rgba(196,174,136,.65);
   background: linear-gradient(135deg, var(--color-white), var(--color-marfil));
   box-shadow: var(--shadow-soft);
@@ -63,8 +66,8 @@
 
 .register-form__grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px 28px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: clamp(18px, 3vw, 24px) clamp(18px, 3vw, 28px);
 }
 
 .register-field {
@@ -92,8 +95,9 @@
 
 .register-field input,
 .register-field select {
+  display: block;
   width: 100%;
-  min-height: 46px;
+  min-height: 48px;
   padding: 11px 13px;
   border: 1px solid var(--color-oro-borde);
   border-radius: var(--radius);
@@ -132,6 +136,8 @@
 }
 
 .register-form__submit {
+  width: 100%;
+  justify-content: center;
   margin-top: 34px;
 }
 
@@ -147,20 +153,25 @@
 }
 
 @media (max-width: 680px) {
-  .register-page {
-    padding: 48px 20px 64px;
-  }
-
   .register-form {
-    padding: 24px 20px;
-  }
-
-  .register-form__grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
+    padding: 22px 18px;
   }
 
   .register-field--highlight {
-    padding-top: 20px;
+    padding-top: 16px;
+  }
+}
+
+@media (max-width: 360px) {
+  .register-page {
+    padding-inline: 12px;
+  }
+
+  .register-form {
+    padding: 18px 14px;
+  }
+
+  .register-field label {
+    letter-spacing: 1px;
   }
 }
