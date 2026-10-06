@@ -1,0 +1,89 @@
+/* ═══════════════════════════════════════════════════════════════
+   tokens.css — Design tokens de la marca (fuente única de verdad)
+   Solo define variables. No contiene estilos.
+
+   REGLA: los valores de MARCA (sección 1-3) son los originales del
+   sitio público. No se modifican: cambiarlos altera header, footer,
+   B2B y testimonios. Lo nuevo va en secciones separadas (4 en adelante).
+
+   Orden de carga: SIEMPRE primero, antes de styles.css / admin.css
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+
+  /* ── 1. PALETA DE MARCA (originales, no tocar) ── */
+  --color-oro:          #d9c7a3;   /* Arena dorada — acento */
+  --color-oro-borde:    #c4ae88;   /* Bordes y líneas doradas */
+  --color-cacao:        #785041;   /* Marrón — botones, CTA */
+  --color-cacao-hover:  #5a3a2f;
+  --color-marfil:       #f6edd2;   /* Crema */
+  --color-marfil-alt:   #ede2c8;
+  --color-warm-beige:   #ead7c0; /* Fondo de secciones */
+  --color-tierra:       #2c1a10;
+  --color-espressobrown:#4e342e;
+  --color-caramel:      #c68e5b;   
+  
+  --color-white:        #ffffff;
+  --color-black:        #000000;
+  --color-transparent:  transparent;
+
+  --color-butteryellow:   #ffeda8;
+  --color-whippedbutter:  #f2e6b3;
+  --color-champagne:      #fbdfa2;
+  --color-milkpuch:       #fff4c7;   
+
+  --color-offwhite:     #fdfcf8;
+  --color-ivory:        #f3f0e9;
+  --color-nude:         #e3dbcc;
+  --color-riverclay:    #c3b6a5;
+  --color-graphite:     #302e2f;
+  --obsidian:           #0c0b09;
+
+  /* ── 2. DORADOS DE APOYO ── */
+  --gold:               #c9a84c;
+  --gold-light:         #e8d5a3;
+  --gold-dark:          #9a7c32;
+  --color-cream :       #F9F6F0;
+  --cream:              #faf8f4;
+
+
+  /* ── 3. TEXTO (originales) ── */
+  --color-text-dark:    #2c1a10;
+  --color-text-mid:     #785041;
+  --color-text-muted:   #9a7e68;
+  --color-text-on-dark: #f6edd2;
+
+  /* ── 4. TEXTO SOBRE FONDOS OSCUROS (nuevo, lo usa el panel admin)
+        Mismo tono cálido que text-muted pero más claro:
+        6.2:1 sobre tierra y 7.3:1 sobre obsidian (WCAG AA) ── */
+  --color-text-muted-dark: #b09a82;
+
+  /* ── 5. ESTADOS (nuevos — formularios, badges, alertas) ── */
+  --state-ok:      #7dcc7d;   /* 8.6:1 sobre tierra */
+  --state-danger:  #cc7d7d;   /* 5.4:1 sobre tierra */
+  --state-warning: #e0b35a;
+
+  /* ── 6. TIPOGRAFÍA ── */
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body:    'Questrial', Arial, sans-serif;
+
+  /* ── 7. ESPACIADO DE SECCIONES ── */
+  --section-padding-v: 96px;
+  --section-padding-h: 80px;
+
+  /* ── 8. RADIOS Y SOMBRAS ── */
+  --radius:      3px;
+  --radius-lg:   6px;
+  --radius-full: 9999px;
+  --shadow-soft: 0 2px 12px rgba(44,26,16,.07);
+  --shadow-md:   0 4px 16px rgba(0,0,0,.25);
+
+  /* ── 9. FOCO (accesibilidad por teclado) ── */
+  --focus-ring:      0 0 0 3px rgba(201,168,76,.45);
+  --focus-ring-dark: 0 0 0 3px rgba(246,237,210,.55);
+
+  /* ── 10. TRANSICIONES ── */
+  --ease-smooth: 0.38s cubic-bezier(.25,.1,.25,1);
+  --ease-enter:  0.55s cubic-bezier(.22,1,.36,1);
+  --ease-fast:   0.2s ease;
+}

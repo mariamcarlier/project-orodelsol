@@ -1,0 +1,31 @@
+{% extends 'configuracion/base_admin.html' %}
+
+{% block title %}Nuevo Impuesto — Oro del Sol{% endblock %}
+
+{% block content %}
+
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">CFG-02</span>
+            <h1 class="page-title">Registrar Nuevo Impuesto</h1>
+        </div>
+        <a href="{% url 'configuracion:impuesto_list' %}" class="btn btn--outline-gold">← Volver</a>
+    </div>
+
+    <p class="page-desc">
+        Define el nombre, la tasa porcentual y si el impuesto está actualmente vigente.
+    </p>
+
+    <div class="form-card">
+        <form method="post">
+            {% csrf_token %}
+            {% include 'configuracion/partials/_form_fields.html' %}
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn--cacao">Guardar impuesto</button>
+                <a href="{% url 'configuracion:impuesto_list' %}" class="link-cancel">Cancelar</a>
+            </div>
+        </form>
+    </div>
+
+{% endblock %}
