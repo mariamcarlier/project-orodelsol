@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/login.css' %}?v=6">
 <link rel="stylesheet" href="{% static 'css/login.css' %}?v=2">
 {% endblock %}
 
@@ -15,6 +16,39 @@
 
     <form method="post">
       {% csrf_token %}
+      {% for field in form %}
+        <p>
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {% if field.name == "password" %}
+            <span class="login-password-control">
+              {{ field }}
+              <button
+                class="login-password-toggle"
+                type="button"
+                data-password-toggle
+                aria-controls="{{ field.id_for_label }}"
+                aria-label="Mostrar contraseña"
+                aria-pressed="false"
+              >
+                <svg class="password-eye password-eye--open" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg class="password-eye password-eye--closed" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="m3 3 18 18"></path>
+                  <path d="M10.6 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a15.6 15.6 0 0 1-4 4.8M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7c1.5 0 2.8-.4 4-1"></path>
+                  <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path>
+                </svg>
+              </button>
+            </span>
+          {% else %}
+            {{ field }}
+          {% endif %}
+          {% for error in field.errors %}
+            <span class="error-message">{{ error }}</span>
+          {% endfor %}
+        </p>
+      {% endfor %}
       {{ form.as_p }}
       <button type="submit">Iniciar Sesion</button>
     </form>

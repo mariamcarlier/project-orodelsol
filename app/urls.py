@@ -19,15 +19,17 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import include, path
-from configuracion import views as configuracion_views
+
+from usuarios.views import perfil, registrar_usuario
 
 urlpatterns = [
     path("admin/configuracion/", configuracion_views.parametros_view),
     path("admin/", admin.site.urls),
     path("accounts/", include("django.contrib.auth.urls")),
-    path("", include("core.urls", namespace="core")),
-    path("configuracion/", include("configuracion.urls")),
+    path("", include("core.urls")),
     path("usuario/", include("usuarios.urls")),
+    path("register/", registrar_usuario, name="register"),
+    path("profile/", perfil, name="profile"),
 ]
 
 if settings.DEBUG:
