@@ -1,0 +1,156 @@
+<section class="dashboard-section" id="registros">
+    <header class="dashboard-section__heading">
+        <div>
+            <h1>{{ recurso.title }}</h1>
+            <p>{{ recurso.pagina.paginator.count }} registros</p>
+        </div>
+        {% if recurso.crear_formulario %}
+            <details class="dashboard-create" {% if recurso.abrir_crear %}open{% endif %}>
+                <summary>Crear nuevo</summary>
+                <form method="post" enctype="multipart/form-data" class="dashboard-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="recurso" value="{{ recurso.key }}">
+                    <input type="hidden" name="accion" value="create">
+                    {% for field in recurso.crear_formulario %}
+                        <div class="dashboard-field">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                            {% for error in field.errors %}
+                                <span class="dashboard-error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                    {% for error in recurso.crear_formulario.non_field_errors %}
+                        <span class="dashboard-error">{{ error }}</span>
+                    {% endfor %}
+                    <button type="submit" class="dashboard-button">Guardar</button>
+                </form>
+            </details>
+        {% endif %}
+    </header>
+
+    <form method="get" action="{{ request.path }}" class="dashboard-search">
+        <label for="search-{{ recurso.key }}">Buscar en {{ recurso.title|lower }}</label>
+        <input id="search-{{ recurso.key }}" name="q" value="{{ recurso.busqueda }}" type="search">
+        <button type="submit" class="dashboard-button dashboard-button--secondary">Buscar</button>
+    </form>
+
+    {% if recurso.bulk_field %}
+        <form method="post" id="bulk-{{ recurso.key }}" class="dashboard-bulk">
+            {% csrf_token %}
+            <input type="hidden" name="recurso" value="{{ recurso.key }}">
+            <input type="hidden" name="accion" value="bulk">
+            <label for="estado-{{ recurso.key }}">Cambiar estado de los seleccionados:</label>
+            <select id="estado-{{ recurso.key }}" name="estado">
+                <option value="1">Activar</option>
+                <option value="0">Desactivar</option>
+            </select>
+            <button type="submit" class="dashboard-button dashboard-button--secondary">Aplicar</button>
+        </form>
+    {% endif %}
+
+    <div class="dashboard-table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    {% if recurso.bulk_field %}<th>Seleccionar</th>{% endif %}
+                    {% for columna in recurso.columnas %}<th>{{ columna }}</th>{% endfor %}
+                    {% if recurso.puede_cambiar or recurso.puede_borrar %}<th>Acciones</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in recurso.filas %}
+                    <tr>
+                        {% if recurso.bulk_field %}
+                            <td>
+                                <input type="checkbox" name="registros" value="{{ fila.objeto.pk }}"
+                                       form="bulk-{{ recurso.key }}"
+                                       aria-label="Seleccionar {{ fila.objeto }}">
+                            </td>
+                        {% endif %}
+                        {% for celda in fila.celdas %}<td>{{ celda }}</td>{% endfor %}
+                        {% if recurso.puede_cambiar or recurso.puede_borrar %}
+                            <td class="dashboard-actions">
+                                {% if recurso.puede_cambiar %}
+                                    <details {% if fila.abrir_edicion %}open{% endif %}>
+                                        <summary>Editar</summary>
+                                        <form method="post" enctype="multipart/form-data" class="dashboard-form">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="recurso" value="{{ recurso.key }}">
+                                            <input type="hidden" name="accion" value="edit">
+                                            <input type="hidden" name="registro" value="{{ fila.objeto.pk }}">
+                                            {% for field in fila.formulario %}
+                                                <div class="dashboard-field">
+                                                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                    {{ field }}
+                                                    {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                                                    {% for error in field.errors %}
+                                                        <span class="dashboard-error">{{ error }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endfor %}
+                                            {% for error in fila.formulario.non_field_errors %}
+                                                <span class="dashboard-error">{{ error }}</span>
+                                            {% endfor %}
+                                            <button type="submit" class="dashboard-button">Guardar cambios</button>
+                                        </form>
+
+                                        {% if fila.formulario_contrasena %}
+                                            <details class="dashboard-password" {% if fila.abrir_contrasena %}open{% endif %}>
+                                                <summary>Cambiar contraseña</summary>
+                                                <form method="post" class="dashboard-form">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="recurso" value="{{ recurso.key }}">
+                                                    <input type="hidden" name="accion" value="password">
+                                                    <input type="hidden" name="registro" value="{{ fila.objeto.pk }}">
+                                                    {% for field in fila.formulario_contrasena %}
+                                                        <div class="dashboard-field">
+                                                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                            {{ field }}
+                                                            {% for error in field.errors %}
+                                                                <span class="dashboard-error">{{ error }}</span>
+                                                            {% endfor %}
+                                                        </div>
+                                                    {% endfor %}
+                                                    {% for error in fila.formulario_contrasena.non_field_errors %}
+                                                        <span class="dashboard-error">{{ error }}</span>
+                                                    {% endfor %}
+                                                    <button type="submit" class="dashboard-button">Actualizar contraseña</button>
+                                                </form>
+                                            </details>
+                                        {% endif %}
+                                    </details>
+                                {% endif %}
+                                {% if recurso.puede_borrar %}
+                                    <form method="post" class="dashboard-delete"
+                                          onsubmit="return confirm('¿Seguro que quieres borrar este registro?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="recurso" value="{{ recurso.key }}">
+                                        <input type="hidden" name="accion" value="delete">
+                                        <input type="hidden" name="registro" value="{{ fila.objeto.pk }}">
+                                        <button type="submit" class="dashboard-button dashboard-button--danger">Borrar</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        {% endif %}
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="20">No hay registros para mostrar.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if recurso.pagina.has_other_pages %}
+        <nav class="dashboard-pagination" aria-label="Paginación de {{ recurso.title }}">
+            {% if recurso.pagina.has_previous %}
+                <a href="?q={{ recurso.busqueda|urlencode }}&page={{ recurso.pagina.previous_page_number }}#registros">Anterior</a>
+            {% endif %}
+            <span>Página {{ recurso.pagina.number }} de {{ recurso.pagina.paginator.num_pages }}</span>
+            {% if recurso.pagina.has_next %}
+                <a href="?q={{ recurso.busqueda|urlencode }}&page={{ recurso.pagina.next_page_number }}#registros">Siguiente</a>
+            {% endif %}
+        </nav>
+    {% endif %}
+</section>
