@@ -79,7 +79,7 @@
         </a>
       </div>
       <div class="editorial__image reveal" style="transition-delay:.15s">
-        <img src="{% static 'img/bodafoto.webp' %}"
+        <img src="{% static 'img/bodafoto.webp' %}" 
              alt="Detalle de anillo en oro 18K" loading="lazy">
         <span class="editorial__tag">Oro 18K · Certificado</span>
       </div>
@@ -100,6 +100,15 @@
         <article class="collection-card">
           <div class="collection-card__media">
             {% if coleccion.imagen_url %}<img src="{{ coleccion.imagen_url }}" alt="{{ coleccion.nombre }}" loading="lazy">{% endif %}
+            {% if coleccion.imagen_url %}
+              <img src="{{ coleccion.imagen_url }}" alt="{{ coleccion.nombre }}" loading="lazy">
+            {% elif coleccion.nombre|slugify == "alma-dorada" %}
+              <img src="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ coleccion.nombre }}" loading="lazy">
+            {% elif coleccion.nombre|slugify == "luna-de-miel" %}
+              <img src="{% static 'img/coleccion-lunademiel.webp' %}" alt="{{ coleccion.nombre }}" loading="lazy">
+            {% elif coleccion.nombre|slugify == "quince-soles" %}
+              <img src="{% static 'img/coleccion-quincesoles.webp' %}" alt="{{ coleccion.nombre }}" loading="lazy">
+            {% endif %}
           </div>
           <div class="collection-card__info">
             <span class="collection-card__season">Colección{% if coleccion.temporada %} · {{ coleccion.temporada }}{% endif %}</span>

@@ -10,8 +10,12 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
+import secrets
 from pathlib import Path
 import os
+
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,11 +24,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-fj&hz4)its$t5atl!0mg$^l(n7w&2zit+-iibbfrf9dzg%y&t%"
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in {"true", "1", "yes"}
+
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured("Define DJANGO_SECRET_KEY when DEBUG is disabled.")
+    SECRET_KEY = secrets.token_urlsafe(50)
 
 ALLOWED_HOSTS = ['*']
 
@@ -40,6 +47,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "usuarios",
     "core",
+    "configuracion",
 ]
 AUTH_USER_MODEL = 'usuarios.Usuario'
 

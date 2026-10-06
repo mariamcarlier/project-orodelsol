@@ -1,0 +1,33 @@
+{% extends 'configuracion/base_admin.html' %}
+
+{% block title %}Nuevo Idioma — Oro del Sol{% endblock %}
+
+{% block content %}
+
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">CFG-04</span>
+            <h1 class="page-title">Registrar Nuevo Idioma</h1>
+        </div>
+        <a href="{% url 'configuracion:idioma_list' %}" class="btn btn--outline-gold">← Volver</a>
+    </div>
+
+    <p class="page-desc">
+        Si marcas este idioma como <strong class="text-accent">principal</strong>,
+        el sistema desmarcará automáticamente el anterior.
+        Solo puede existir un idioma principal por defecto a la vez.
+    </p>
+
+    <div class="form-card">
+        <form method="post">
+            {% csrf_token %}
+            {% include 'configuracion/partials/_form_fields.html' %}
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn--cacao">Guardar idioma</button>
+                <a href="{% url 'configuracion:idioma_list' %}" class="link-cancel">Cancelar</a>
+            </div>
+        </form>
+    </div>
+
+{% endblock %}

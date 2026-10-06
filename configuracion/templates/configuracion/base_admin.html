@@ -1,0 +1,69 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Panel Admin — Oro del Sol{% endblock %}</title>
+
+    <!-- Fuentes de la marca -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Questrial&display=swap" rel="stylesheet">
+
+    <!-- 1º tokens (variables), 2º estilos del panel -->
+    <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="admin-body">
+
+    <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+    {# url_name de la página actual: sirve para marcar el módulo activo sin JavaScript #}
+    {% with current=request.resolver_match.url_name|default:"" %}
+    <header class="admin-header">
+        <div class="admin-header__brand">
+            Oro del Sol
+            <span>Panel de Configuración</span>
+        </div>
+
+        <nav class="admin-nav" aria-label="Módulos de configuración">
+            <a class="admin-nav__item" href="{% url 'configuracion:parametros' %}"
+               {% if 'parametro' in current or current == 'configuracion_home' %}aria-current="page"{% endif %}>Parámetros</a>
+
+            <a class="admin-nav__item" href="{% url 'configuracion:impuesto_list' %}"
+               {% if 'impuesto' in current %}aria-current="page"{% endif %}>Impuestos</a>
+
+            <a class="admin-nav__item" href="{% url 'configuracion:moneda_list' %}"
+               {% if 'moneda' in current %}aria-current="page"{% endif %}>Monedas</a>
+
+            <a class="admin-nav__item" href="{% url 'configuracion:idioma_list' %}"
+               {% if 'idioma' in current %}aria-current="page"{% endif %}>Idiomas</a>
+
+            <a class="admin-nav__item admin-nav__item--store" href="{% url 'core:inicio' %}">Ver tienda ↗</a>
+        </nav>
+    </header>
+    {% endwith %}
+
+    <main class="admin-main" id="contenido" tabindex="-1">
+
+        {% if messages %}
+        <ul class="alert-list" role="status">
+            {% for message in messages %}
+            <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+
+    </main>
+
+    <footer class="admin-footer">
+        &copy; 2026 &nbsp;·&nbsp; Oro del Sol &nbsp;·&nbsp; Administración interna
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

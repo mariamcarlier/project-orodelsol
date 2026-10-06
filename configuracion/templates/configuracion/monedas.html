@@ -1,0 +1,75 @@
+{% extends 'configuracion/base_admin.html' %}
+
+{% block title %}Monedas — Oro del Sol{% endblock %}
+
+{% block content %}
+
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">CFG-03</span>
+            <h1 class="page-title">Gestión de Monedas</h1>
+        </div>
+        <a href="{% url 'configuracion:moneda_create' %}" class="btn btn--primary-gold">+ Nueva moneda</a>
+    </div>
+
+    <p class="page-desc">
+        Define las monedas disponibles en la plataforma. Solo puede existir una moneda principal activa a la vez.
+        La moneda principal es la base para calcular tasas de conversión futuras.
+    </p>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <caption class="sr-only">Listado de monedas configuradas</caption>
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Código ISO</th>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Símbolo</th>
+                    <th scope="col">Tasa de cambio</th>
+                    <th scope="col">Principal</th>
+                    <th scope="col">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for moneda in monedas %}
+                <tr>
+                    <td class="cell-num">{{ forloop.counter }}</td>
+                    <td class="cell-code">{{ moneda.codigo_iso }}</td>
+                    <td>{{ moneda.nombre }}</td>
+                    <td>{{ moneda.simbolo }}</td>
+                    <td>
+                        {% if moneda.es_principal %}
+                            <span class="cell-soft">— Base</span>
+                        {% else %}
+                            {{ moneda.tasa_cambio }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if moneda.es_principal %}
+                            <span class="badge badge--primary">&#9733; Principal</span>
+                        {% else %}
+                            <span class="cell-soft">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if moneda.activa %}
+                            <span class="badge badge--active">Activa</span>
+                        {% else %}
+                            <span class="badge badge--inactive">Inactiva</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="table-empty">
+                        No hay monedas configuradas todavía.
+                        <a href="{% url 'configuracion:moneda_create' %}">Crea la primera (COP)</a>.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+{% endblock %}

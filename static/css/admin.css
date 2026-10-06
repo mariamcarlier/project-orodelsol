@@ -1,0 +1,299 @@
+/* ═══════════════════════════════════════════════════════════════
+   admin.css — Panel de administración (Oro del Sol)
+
+   Depende de tokens.css. NO contiene colores hexadecimales:
+   todo sale de tokens, así un cambio de marca se propaga solo.
+   Todo está bajo .admin-body para no filtrarse a otras páginas.
+
+   Jerarquía cromática:
+     · Header/Nav  → estructura OSCURA  (obsidian + texto claro)
+     · Contenido    → superficie CLARA   (offwhite + texto oscuro)
+     · Cards/Tabla  → superficie BLANCA  (contraste con el contenido)
+
+   Índice: 1 Base · 2 Header · 3 Página · 4 Botones · 5 Tabla
+           6 Badges · 7 Formularios · 8 Alertas · 9 Footer
+           10 Utilidades · 11 Responsive
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 1. BASE ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; }
+
+.admin-body {
+  /* Variables locales del panel (derivadas de los tokens de marca) */
+  --admin-bg:      var(--color-offwhite);   /* fondo general — contenido claro */
+  --admin-sidebar: var(--obsidian);         /* fondo del header/nav — estructura oscura */
+  --admin-surface: var(--color-white);      /* cards, tabla, alertas: superficie elevada */
+  --admin-input:   var(--color-ivory);      /* fondo de inputs, ligeramente hundido vs. la card blanca */
+  --admin-text:        var(--color-text-dark);   /* texto principal sobre admin-bg / admin-surface */
+  --admin-text-muted:  var(--color-tierra);  /* texto secundario sobre admin-bg / admin-surface */
+  --admin-accent:  var(--gold-dark);        /* dorado con contraste suficiente sobre fondo claro */
+  --admin-line:    color-mix(in srgb, var(--color-oro-borde) 30%, transparent);
+  --admin-line-lo: color-mix(in srgb, var(--color-oro-borde) 16%, transparent);
+  --admin-hover:   color-mix(in srgb, var(--gold) 10%, transparent); /* funciona sobre claro u oscuro */
+  --admin-max:     1120px;
+
+  font-family: var(--font-body);
+  background: var(--admin-bg);
+  color: var(--admin-text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.admin-body a { color: inherit; text-decoration: none; }
+.admin-body ul { list-style: none; }
+.admin-body button { font-family: var(--font-body); cursor: pointer; border: 0; background: none; }
+.admin-body :focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius); }
+.admin-body ::selection { background: var(--color-oro); color: var(--color-text-dark); }
+
+.skip-link {
+  position: absolute; left: 16px; top: -60px; z-index: 300;
+  background: var(--color-oro); color: var(--color-text-dark);
+  padding: 10px 18px; border-radius: var(--radius);
+  font-size: 12px; letter-spacing: 1px;
+}
+.skip-link:focus { top: 12px; }
+
+
+/* ── 2. HEADER (estructura oscura) ──────────────────────────── */
+.admin-header {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  min-height: 68px; padding: 0 40px;
+  background: var(--admin-sidebar);
+  border-bottom: 1px solid var(--color-oro-borde);
+  box-shadow: var(--shadow-soft);
+}
+
+.admin-header__brand {
+  font-family: var(--font-display); font-weight: 300;
+  font-size: 1.15rem; letter-spacing: 4px; text-transform: uppercase;
+  color: var(--color-oro); line-height: 1.15;
+}
+.admin-header__brand span {
+  display: block; margin-top: 2px;
+  font-family: var(--font-body); font-size: 9px; letter-spacing: 2.5px;
+  color: var(--color-text-muted-dark);
+}
+
+.admin-nav { display: flex; align-items: center; gap: 4px; }
+
+.admin-nav__item {
+  font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--color-text-muted-dark);
+  padding: 9px 16px; border: 1px solid transparent; border-radius: var(--radius);
+  white-space: nowrap;
+  transition: color var(--ease-fast), background var(--ease-fast), border-color var(--ease-fast);
+}
+/* El header es oscuro: el focus-ring estándar (pensado para fondo claro) no se vería bien aquí */
+.admin-nav__item:focus-visible { box-shadow: var(--focus-ring-dark); }
+
+a.admin-nav__item:hover,
+.admin-nav__item[aria-current="page"] {
+  color: var(--color-oro);
+  background: var(--admin-hover);
+  border-color: color-mix(in srgb, var(--gold) 30%, transparent);
+}
+/* Módulos aún no construidos: visibles pero no son enlaces muertos */
+.admin-nav__item.is-soon { opacity: .55; cursor: not-allowed; }
+.admin-nav__item.is-soon small { font-size: 8px; letter-spacing: 1px; margin-left: 6px; }
+.admin-nav__item--store { border-color: var(--admin-line); margin-left: 8px; }
+
+
+/* ── 3. CONTENIDO Y CABECERA DE PÁGINA (superficie clara) ───── */
+.admin-main {
+  flex: 1; width: 100%; max-width: var(--admin-max);
+  margin: 0 auto; padding: 48px 40px 80px;
+}
+
+.page-header {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  gap: 16px; flex-wrap: wrap;
+  padding-bottom: 16px; border-bottom: 1px solid var(--admin-line);
+}
+.eyebrow {
+  display: block; margin-bottom: 4px;
+  font-size: 9px; letter-spacing: 4px; text-transform: uppercase;
+  color: var(--admin-accent); opacity: .85;
+}
+.page-title {
+  font-family: var(--font-display); font-weight: 300;
+  font-size: clamp(1.5rem, 3vw, 1.85rem); letter-spacing: 1px;
+  line-height: 1.2; color: var(--admin-text);
+}
+.page-desc {
+  max-width: 62ch; margin: 8px 0 28px;
+  font-size: 13px; color: var(--admin-text-muted);
+}
+
+
+/* ── 4. BOTONES ──────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 11px 26px; border: 1px solid transparent; border-radius: var(--radius);
+  font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; line-height: 1;
+  white-space: nowrap;
+  transition: background var(--ease-fast), color var(--ease-fast),
+              border-color var(--ease-fast), transform var(--ease-fast);
+}
+.btn--primary-gold { background: var(--color-oro); color: var(--color-text-dark); }
+.btn--primary-gold:hover { background: var(--gold-light); transform: translateY(-1px); }
+
+/* Botón sin relleno: el texto va directo sobre admin-bg, necesita el dorado con contraste */
+.btn--outline-gold { border-color: var(--color-oro-borde); color: var(--admin-accent); }
+.btn--outline-gold:hover { background: var(--admin-hover); border-color: var(--color-oro); }
+
+.btn--cacao { background: var(--color-cacao); color: var(--color-marfil); }   /* 5.9:1 */
+.btn--cacao:hover { background: var(--color-cacao-hover); }
+
+.link-cancel {
+  margin-left: 18px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--admin-text-muted); border-bottom: 1px solid transparent;
+  transition: color var(--ease-fast), border-color var(--ease-fast);
+}
+.link-cancel:hover { color: var(--admin-text); border-bottom-color: var(--color-oro-borde); }
+
+
+/* ── 5. TABLA ────────────────────────────────────────────────── */
+.table-wrap {                       /* permite scroll horizontal en móvil */
+  overflow-x: auto;
+  border: 1px solid var(--admin-line-lo); border-radius: var(--radius-lg);
+  background: var(--admin-surface);
+}
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+/* Encabezado de tabla: acento oscuro intencional, funciona igual que el header */
+.data-table th {
+  padding: 14px 16px; text-align: left; white-space: nowrap;
+  font-size: 9px; font-weight: 400; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--color-graphite);
+  background: color-mix(in srgb, var(--obsidian) 35%, transparent);
+  border-bottom: 1px solid var(--color-oro-borde);
+}
+.data-table td {
+  padding: 14px 16px; vertical-align: middle;
+  border-bottom: 1px solid var(--admin-line-lo);
+}
+.data-table tbody tr:last-child td { border-bottom: 0; }
+.data-table tbody tr:hover td { background: var(--admin-hover); color: var(--admin-text); }
+
+.cell-num  { width: 48px; font-size: 11px; color: var(--admin-text-muted); }
+.cell-code { font-family: 'Courier New', monospace; letter-spacing: 2px; color: var(--admin-accent); }
+.cell-soft { font-size: 11px; color: var(--admin-text-muted); }
+
+.table-empty { padding: 48px 20px !important; text-align: center; color: var(--admin-text-muted); }
+.table-empty a { color: var(--admin-accent); border-bottom: 1px solid var(--color-oro-borde); }
+
+
+/* ── 6. BADGES (texto + punto: el color nunca es la única pista) ─ */
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border: 1px solid; border-radius: var(--radius-full);
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase; white-space: nowrap;
+}
+.badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+.badge--active   { color: var(--state-ok);     background: color-mix(in srgb, var(--state-ok) 12%, transparent);     border-color: color-mix(in srgb, var(--state-ok) 35%, transparent); }
+.badge--inactive { color: var(--state-danger); background: color-mix(in srgb, var(--state-danger) 12%, transparent); border-color: color-mix(in srgb, var(--state-danger) 35%, transparent); }
+.badge--primary  { color: var(--admin-accent); background: color-mix(in srgb, var(--gold) 15%, transparent);         border-color: color-mix(in srgb, var(--gold) 40%, transparent); }
+
+
+/* ── 7. FORMULARIOS ──────────────────────────────────────────── */
+.form-card {
+  max-width: 640px; padding: 36px 40px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-line-lo); border-radius: var(--radius-lg);
+}
+.form-group { margin-bottom: 22px; }
+
+.form-group > label {
+  display: block; margin-bottom: 8px;
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--admin-text);
+}
+.required-mark { color: var(--state-danger); }
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="email"],
+.form-group select {
+  width: 100%; padding: 11px 14px;
+  background: var(--admin-input); color: var(--admin-text);
+  border: 1px solid var(--admin-line); border-radius: var(--radius);
+  font-family: var(--font-body); font-size: 13px;
+  transition: border-color var(--ease-fast), box-shadow var(--ease-fast);
+}
+.form-group input:focus,
+.form-group select:focus { border-color: var(--color-oro); box-shadow: var(--focus-ring); }
+
+/* Checkbox: etiqueta al lado, en texto normal (no en mayúsculas) */
+.form-check { display: flex; align-items: center; gap: 10px; }
+.form-check input { width: 16px; height: 16px; accent-color: var(--gold); flex-shrink: 0; }
+.form-check label { font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--admin-text); }
+
+.form-help  { display: block; margin-top: 6px; font-size: 11px; color: var(--admin-text-muted); }
+.form-error { display: block; margin-top: 6px; font-size: 12px; color: var(--state-danger); }
+.form-error::before { content: '⚠ '; }
+
+.form-group--error input,
+.form-group--error select { border-color: var(--state-danger); }
+
+.form-alert {
+  margin-bottom: 22px; padding: 12px 16px; font-size: 13px;
+  color: var(--state-danger);
+  background: color-mix(in srgb, var(--state-danger) 10%, transparent);
+  border-left: 3px solid var(--state-danger); border-radius: var(--radius);
+}
+
+.form-actions {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+  margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--admin-line-lo);
+}
+
+
+/* ── 8. ALERTAS (Django messages: success/error/warning/info) ── */
+.alert-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+.alert-list li {
+  padding: 13px 18px; font-size: 13px; line-height: 1.5;
+  border-left: 3px solid var(--color-oro-borde); border-radius: var(--radius);
+  background: var(--admin-input);   /* crema, no blanco puro: se lee como "aviso", no como card */
+}
+.alert-list .success { color: var(--state-ok);      border-left-color: var(--state-ok);      background: color-mix(in srgb, var(--state-ok) 10%, transparent); }
+.alert-list .error   { color: var(--state-danger);  border-left-color: var(--state-danger);  background: color-mix(in srgb, var(--state-danger) 10%, transparent); }
+.alert-list .warning { color: var(--state-warning); border-left-color: var(--state-warning); background: color-mix(in srgb, var(--state-warning) 10%, transparent); }
+
+
+/* ── 9. FOOTER ───────────────────────────────────────────────── */
+.admin-footer {
+  padding: 22px; text-align: center;
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--admin-text-muted);
+  border-top: 1px solid var(--admin-line-lo);
+}
+
+
+/* ── 10. UTILIDADES ──────────────────────────────────────────── */
+.text-accent { color: var(--admin-accent); font-weight: 400; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+
+/* ── 11. RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .admin-header { flex-wrap: wrap; padding: 12px 20px; gap: 12px; }
+  .admin-nav { width: 100%; overflow-x: auto; padding-bottom: 4px; }
+  .admin-main { padding: 32px 20px 64px; }
+}
+@media (max-width: 600px) {
+  .form-card { padding: 24px 20px; }
+  .form-actions .btn { width: 100%; }
+  .link-cancel { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-body * { transition: none !important; }
+  html { scroll-behavior: auto; }
+}

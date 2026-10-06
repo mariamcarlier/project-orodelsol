@@ -3,6 +3,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/login.css' %}?v=6">
+<link rel="stylesheet" href="{% static 'css/login.css' %}?v=2">
 {% endblock %}
 
 {% block title %}Iniciar Sesión{% endblock %}
@@ -48,6 +49,7 @@
           {% endfor %}
         </p>
       {% endfor %}
+      {{ form.as_p }}
       <button type="submit">Iniciar Sesion</button>
     </form>
   </div>

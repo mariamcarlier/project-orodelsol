@@ -1,0 +1,41 @@
+{% extends 'configuracion/base_admin.html' %}
+
+{% block title %}Parámetros Generales — Oro del Sol{% endblock %}
+
+{% block content %}
+
+    <div class="page-header">
+        <div>
+            <span class="eyebrow">CFG-01</span>
+            <h1 class="page-title">Configuración General de la Tienda</h1>
+        </div>
+        <a href="{% url 'core:inicio' %}" class="btn btn--outline-gold" target="_blank" rel="noopener">Ver tienda ↗</a>
+    </div>
+
+    <p class="page-desc">
+        Administra los parámetros comerciales y datos institucionales oficiales de <strong>Oro del Sol</strong>.
+        Esta información se utiliza en el encabezado, pie de página, facturación y medios de contacto con clientes.
+    </p>
+
+    {% if parametros.actualizado_por or parametros.fecha_actualizacion %}
+    <div class="audit-badge" style="margin-bottom: var(--space-4, 1.5rem); padding: 0.75rem 1rem; background: rgba(200, 160, 80, 0.08); border-left: 3px solid #c8a050; border-radius: 4px; font-size: 0.875rem;">
+        <span>&#128339; <strong>Última actualización:</strong> {{ parametros.fecha_actualizacion|date:"d/m/Y H:i" }}</span>
+        {% if parametros.actualizado_por %}
+        <span style="margin-left: 1rem;">&#128100; <strong>Modificado por:</strong> {{ parametros.actualizado_por.get_full_name|default:parametros.actualizado_por.username }}</span>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="form-card">
+        <form method="post">
+            {% csrf_token %}
+            {% include 'configuracion/partials/_form_fields.html' %}
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn--cacao">Guardar cambios</button>
+                <a href="{% url 'configuracion:parametros' %}" class="link-cancel">Descartar cambios</a>
+            </div>
+        </form>
+    </div>
+
+{% endblock %}
