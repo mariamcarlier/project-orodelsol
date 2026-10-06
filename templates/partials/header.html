@@ -37,7 +37,7 @@
       <span class="sidebar__label">Mi cuenta</span>
       {% if user.is_authenticated %}
         <a class="sidebar__link" href="{% url 'usuarios:perfil' %}">Mi perfil</a>
-        {% if user.rol == "ADMIN" or user.is_superuser %}
+        {% if user.is_staff %}
           <a class="sidebar__link" href="{% url 'core:admin_dashboard' %}">Panel de administración</a>
         {% endif %}
       {% else %}
