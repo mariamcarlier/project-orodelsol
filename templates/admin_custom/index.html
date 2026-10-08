@@ -9,7 +9,7 @@
 <nav class="dashboard-home-grid" aria-label="Apartados de administración">
     {% for recurso in recursos %}
         <a class="dashboard-home-card" href="{% url 'core:admin_section' recurso.key %}">
-            <span class="dashboard-home-card__icon"><i class="bx bx-layer"></i></span>
+            <span class="dashboard-home-card__icon"><i class="bx {{ recurso.icon }}"></i></span>
             <span>{{ recurso.title }}</span>
             <span class="dashboard-home-card__arrow" aria-hidden="true">→</span>
         </a>

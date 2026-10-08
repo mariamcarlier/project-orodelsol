@@ -1,5 +1,7 @@
 {% load static %}
 <!DOCTYPE html>
+
+
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -17,20 +19,20 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h2 class="brand-title">ORO DEL SOL</h2>
-            <span class="brand-subtitle">ADMINISTRACIÓN</span>
+            <span class="brand-subtitle">Panel Administador</span>
         </div>
 
         <nav class="sidebar-menu">
             <ul>
                 <li class="menu-item{% if request.resolver_match.url_name == 'admin_dashboard' %} active{% endif %}">
                     <a href="{% url 'core:admin_dashboard' %}">
-                        <i class='bx bx-home'></i><span>Resumen</span>
+                        <i class="bx bx-home" aria-hidden="true"></i><span>Resumen</span>
                     </a>
                 </li>
                 {% for recurso in recursos %}
                     <li class="menu-item{% if request.resolver_match.kwargs.seccion == recurso.key %} active{% endif %}">
                         <a href="{% url 'core:admin_section' recurso.key %}">
-                            <i class="bx bx-layer"></i><span>{{ recurso.title }}</span>
+                            <i class="bx {{ recurso.icon }}" aria-hidden="true"></i><span>{{ recurso.title }}</span>
                         </a>
                     </li>
                 {% endfor %}
@@ -54,12 +56,12 @@
     <div class="main-wrapper">
         <!-- BARRA SUPERIOR (NAVBAR) -->
         <header class="topbar">
-            <div class="user-profile">
-                <span class="user-name">{{ request.user.get_full_name|default:request.user.username }}</span>
-                <div class="avatar">
-                    <i class='bx bx-user-circle'></i>
-                </div>
-            </div>
+            <a href="{% url 'usuarios:perfil' %}" class="admin-profile-link" aria-label="Ir al perfil de administrador">
+                <span class="admin-profile-link__avatar">
+                    <i class="bx bx-user" aria-hidden="true"></i>
+                </span>
+                <span>Admin</span>
+            </a>
         </header>
 
         <!-- AREA DE CONTENIDO -->
