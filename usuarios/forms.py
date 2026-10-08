@@ -17,6 +17,28 @@ class RegistroUsuarioForm(UserCreationForm):
         return email
 
 
+class AdministrarUsuarioForm(forms.ModelForm):
+    class Meta:
+        model = Usuario
+        fields = [
+            "first_name",
+            "last_name",
+            "email",
+            "tipo_documento",
+            "documento",
+            "fecha_nacimiento",
+            "telefono",
+            "foto",
+            "rol",
+            "is_active",
+            "is_staff",
+            "groups",
+        ]
+        widgets = {
+            "fecha_nacimiento": forms.DateInput(attrs={"type": "date"}),
+        }
+
+
 class EditarPerfilForm(forms.ModelForm):
     """
     USR-07 - Editar perfil.
