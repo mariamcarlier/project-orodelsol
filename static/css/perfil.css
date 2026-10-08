@@ -1,4 +1,7 @@
 .profile-page {
+  width: min(100%, 924px);
+  margin: 0 auto;
+  padding: clamp(40px, 7vw, 72px) clamp(16px, 4vw, 32px) clamp(56px, 9vw, 96px);
   max-width: 860px;
   margin: 0 auto;
   padding: 72px 32px 96px;
@@ -15,6 +18,7 @@
 
 .profile-card {
   position: relative;
+  padding: clamp(20px, 4vw, 36px);
   padding: 36px;
   border: 1px solid rgba(196,174,136,.65);
   background: linear-gradient(135deg, var(--color-white), var(--color-marfil));
@@ -44,8 +48,8 @@
 
 .profile-details {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 28px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 0 clamp(16px, 3vw, 28px);
   margin: 0;
 }
 
@@ -76,21 +80,37 @@
   margin-top: 32px;
 }
 
+.profile-card__actions .btn {
+  max-width: 100%;
+  text-align: center;
+}
+
 .profile-card__actions span {
   font-size: 18px;
   line-height: 0;
 }
 
 @media (max-width: 680px) {
+  .profile-card {
+    padding: 22px 18px;
+  }
+
+  .profile-card__actions {
+    justify-content: stretch;
+  }
+
+  .profile-card__actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 360px) {
   .profile-page {
-    padding: 48px 20px 64px;
+    padding-inline: 12px;
   }
 
   .profile-card {
-    padding: 24px 20px;
-  }
-
-  .profile-details {
-    grid-template-columns: 1fr;
+    padding: 18px 14px;
   }
 }

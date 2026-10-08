@@ -35,9 +35,10 @@ urlpatterns = [
     ),
     path("admin/", admin.site.urls),
     path("accounts/", include("django.contrib.auth.urls")),
-    path("", include("core.urls", namespace="core")),
-    path("configuracion/", include("configuracion.urls")),
+    path("", include("core.urls")),
     path("usuario/", include("usuarios.urls")),
+    path("register/", registrar_usuario, name="register"),
+    path("profile/", perfil, name="profile"),
 ]
 
 if settings.DEBUG:

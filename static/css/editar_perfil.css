@@ -1,7 +1,7 @@
 .perfil-form {
-  max-width: 560px;
+  width: min(100%, 600px);
   margin: 0 auto;
-  padding: 60px 20px;
+  padding: clamp(40px, 7vw, 60px) clamp(16px, 4vw, 24px);
 }
 
 .perfil-form .field {
@@ -20,7 +20,9 @@
 
 .perfil-form input,
 .perfil-form select {
+  display: block;
   width: 100%;
+  min-height: 46px;
   padding: 10px 12px;
   border: 1px solid #e0d7c3;
   border-radius: 6px;
@@ -65,6 +67,10 @@
   font-size: 14px;
 }
 
+.perfil-form form .btn {
+  max-width: 100%;
+}
+
 .perfil-form .form-msg.success {
   background: #e7f5e8;
   color: #2e7d32;
@@ -73,4 +79,15 @@
 .perfil-form .form-msg.error {
   background: #fbe9e9;
   color: #b23b3b;
+}
+
+@media (max-width: 480px) {
+  .perfil-form {
+    padding-inline: 14px;
+  }
+
+  .perfil-form form .btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
