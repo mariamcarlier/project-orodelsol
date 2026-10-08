@@ -19,8 +19,11 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import include, path
-
 from usuarios.views import perfil, registrar_usuario
+
+admin.site.site_header = "Administración de Oro del Sol"
+admin.site.site_title = "Oro del Sol"
+admin.site.index_title = "Gestión de la tienda"
 
 urlpatterns = [
     path("admin/configuracion/", include("configuracion.urls")),
