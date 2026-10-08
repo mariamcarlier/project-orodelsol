@@ -1,7 +1,7 @@
-# 1. Primero realiza las importaciones
 from django.db.models import Count, Q
 from django.shortcuts import render
 
+from .dashboard import admin_dashboard, admin_section
 from .models import Coleccion, Producto
 
 
