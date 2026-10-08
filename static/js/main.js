@@ -199,6 +199,20 @@ function initProductCardEvents() {
   });
 }
 
+function initPasswordVisibility() {
+  const toggle = document.querySelector('[data-password-toggle]');
+  if (!toggle) return;
+
+  const password = document.getElementById(toggle.getAttribute('aria-controls'));
+  if (!password) return;
+
+  toggle.addEventListener('click', () => {
+    const isVisible = password.type === 'text';
+    password.type = isVisible ? 'password' : 'text';
+    toggle.setAttribute('aria-label', isVisible ? 'Mostrar contraseña' : 'Ocultar contraseña');
+    toggle.setAttribute('aria-pressed', String(!isVisible));
+  });
+}
 
 /* ════════════════════════════════════════════════════════
    8. EVENTOS GLOBALES
@@ -223,6 +237,9 @@ function initEvents() {
 
   /* Eventos de product cards (delegación) */
   initProductCardEvents();
+
+  /* Mostrar u ocultar la contraseña del formulario de acceso */
+  initPasswordVisibility();
 }
 
 

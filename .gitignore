@@ -157,3 +157,41 @@ venv.bak/
 .idea/
 *.swp
 *.swo
+
+**/migrations/[0-9]*.py
+!**/migrations/__init__.py
+
+# === Django & Base de datos ===
+db.sqlite3
+db.sqlite3-journal
+**/migrations/[0-9]*.py
+!**/migrations/__init__.py
+
+# === Entornos Virtuales ===
+.venv/
+venv/
+env/
+ENV/
+pyenv/
+
+# === Cache de Python ===
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# === Variables de Entorno (Credenciales) ===
+.env
+.env.local
+
+# === Carpetas de Medios y Estáticos de Producción ===
+staticfiles/
+media/
+
+# === IDEs y Editores ===
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
