@@ -67,6 +67,7 @@ RECURSOS = (
     {
         "key": "productos",
         "title": "Productos",
+        "icon": "bx-package",
         "model": Producto,
         "create_form": ProductoForm,
         "edit_form": ProductoForm,
@@ -82,6 +83,7 @@ RECURSOS = (
     {
         "key": "colecciones",
         "title": "Colecciones",
+        "icon": "bx-collection",
         "model": Coleccion,
         "create_form": ColeccionForm,
         "edit_form": ColeccionForm,
@@ -96,6 +98,7 @@ RECURSOS = (
     {
         "key": "usuarios",
         "title": "Usuarios",
+        "icon": "bx-user",
         "model": Usuario,
         "create_form": AdministrarUsuarioCreacionForm,
         "edit_form": AdministrarUsuarioForm,
@@ -119,6 +122,7 @@ RECURSOS = (
     {
         "key": "grupos",
         "title": "Grupos y permisos",
+        "icon": "bx-group",
         "model": Group,
         "create_form": GrupoPermisosForm,
         "edit_form": GrupoPermisosForm,
@@ -132,6 +136,7 @@ RECURSOS = (
     {
         "key": "impuestos",
         "title": "Impuestos",
+        "icon": "bx-receipt",
         "model": Impuesto,
         "create_form": ImpuestoForm,
         "edit_form": ImpuestoForm,
@@ -146,6 +151,7 @@ RECURSOS = (
     {
         "key": "monedas",
         "title": "Monedas",
+        "icon": "bx-dollar-circle",
         "model": Moneda,
         "create_form": MonedaForm,
         "edit_form": MonedaForm,
@@ -162,6 +168,7 @@ RECURSOS = (
     {
         "key": "idiomas",
         "title": "Idiomas",
+        "icon": "bx-globe",
         "model": Idioma,
         "create_form": IdiomaForm,
         "edit_form": IdiomaForm,
@@ -177,6 +184,7 @@ RECURSOS = (
     {
         "key": "parametros",
         "title": "Parámetros generales",
+        "icon": "bx-cog",
         "model": ParametroGeneral,
         "create_form": ParametroGeneralForm,
         "edit_form": ParametroGeneralForm,
@@ -195,6 +203,14 @@ RECURSOS = (
 
 def permiso(modelo, accion):
     return f"{modelo._meta.app_label}.{accion}_{modelo._meta.model_name}"
+
+
+def recursos_visibles(usuario):
+    return [
+        item
+        for item in RECURSOS
+        if usuario.has_perm(permiso(item["model"], "view"))
+    ]
 
 
 def obtener_celda(objeto, campo):
@@ -227,11 +243,7 @@ def preparar_formulario(formulario, usuario):
 
 def crear_contexto(request, clave, formularios=None, formulario_abierto=None):
     formularios = formularios or {}
-    menu = [
-        {"key": item["key"], "title": item["title"]}
-        for item in RECURSOS
-        if request.user.has_perm(permiso(item["model"], "view"))
-    ]
+    menu = recursos_visibles(request.user)
     configuracion = next((item for item in RECURSOS if item["key"] == clave), None)
     if configuracion is None:
         raise PermissionDenied("El módulo solicitado no está disponible.")
@@ -431,12 +443,11 @@ def procesar_accion(request, clave, configuracion):
 def admin_dashboard(request):
     if request.method != "GET":
         return HttpResponseNotAllowed(["GET"])
-    recursos = [
-        {"key": item["key"], "title": item["title"]}
-        for item in RECURSOS
-        if request.user.has_perm(permiso(item["model"], "view"))
-    ]
-    return render(request, "admin_custom/index.html", {"recursos": recursos})
+    return render(
+        request,
+        "admin_custom/index.html",
+        {"recursos": recursos_visibles(request.user)},
+    )
 
 
 @staff_member_required
