@@ -23,7 +23,7 @@ from django.urls import include, path
 from usuarios.views import perfil, registrar_usuario
 
 urlpatterns = [
-    path("admin/configuracion/", configuracion_views.parametros_view),
+    path("admin/configuracion/", include("configuracion.urls")),
     path("admin/", admin.site.urls),
     path("accounts/", include("django.contrib.auth.urls")),
     path("", include("core.urls")),
