@@ -2,7 +2,7 @@ from decimal import Decimal
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from configuracion.models import Impuesto, Moneda, Idioma, ParametroGeneral
+from configuracion.models import CostoEnvio, Impuesto, Moneda, Idioma, ParametroGeneral
 
 Usuario = get_user_model()
 
@@ -730,5 +730,3 @@ class CostoEnvioCFG05Tests(TestCase):
         tarifa.refresh_from_db()
         self.assertTrue(tarifa.activo)
 
-
-from configuracion.models import CostoEnvio
