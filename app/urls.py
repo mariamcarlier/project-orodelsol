@@ -21,14 +21,13 @@ from django.contrib import admin
 from django.contrib.auth import urls as auth_urls
 from django.contrib.auth.views import LoginView
 from django.urls import include, path
-<<<<<<< HEAD
+
 
 from usuarios.forms import RateLimitedAuthenticationForm
 from usuarios.views import crear_cuenta, perfil, registrar_usuario
-=======
+
 from usuarios.views import perfil, registrar_usuario
-from configuracion import views as configuracion_views
->>>>>>> f1acce20ba9b1e257bfcbe5e7a308150c8220d18
+
 
 admin.site.site_header = "Administración de Oro del Sol"
 admin.site.site_title = "Oro del Sol"
@@ -40,7 +39,6 @@ auth_urlpatterns = [
 
 urlpatterns = [
     path("configuracion/", include("configuracion.urls")),
-    path("admin/configuracion/", configuracion_views.parametros_view),
     path("admin/", admin.site.urls),
     path(
         "accounts/login/",
