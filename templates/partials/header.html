@@ -40,6 +40,10 @@
         {% if user.is_staff %}
           <a class="sidebar__link" href="{% url 'core:admin_dashboard' %}">Panel de administración</a>
         {% endif %}
+        <form method="post" action="{% url 'logout' %}" class="sidebar__logout-form">
+          {% csrf_token %}
+          <button class="sidebar__link sidebar__logout" type="submit">Cerrar sesión</button>
+        </form>
       {% else %}
         <a class="sidebar__link" href="{% url 'login' %}">Iniciar sesión</a>
       {% endif %}
@@ -91,12 +95,6 @@
       </a>
 
       <div class="header__right">
-        <a href="{% url 'usuarios:perfil' %}" class="header__icon" aria-label="Mi cuenta">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
-          </svg>
-        </a>
         {% if user.is_authenticated %}
           <a href="{% url 'usuarios:perfil' %}" class="header__icon" aria-label="Mi cuenta">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
