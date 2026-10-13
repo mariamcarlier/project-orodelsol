@@ -10,7 +10,7 @@
 # ═══════════════════════════════════════════════════════════════
 
 from django import forms
-from .models import Impuesto, Moneda, Idioma, ParametroGeneral
+from .models import CostoEnvio, Impuesto, Moneda, Idioma, ParametroGeneral
 
 
 class ImpuestoForm(forms.ModelForm):
@@ -79,3 +79,28 @@ class ParametroGeneralForm(forms.ModelForm):
         }
 
 
+
+
+class CostoEnvioForm(forms.ModelForm):
+    class Meta:
+        model = CostoEnvio
+        fields = [
+            "ciudad",
+            "departamento",
+            "precio",
+            "tiempo_entrega",
+            "activo",
+        ]
+        help_texts = {
+            "ciudad": "Nombre de la ciudad o municipio de destino.",
+            "departamento": "Departamento o región de destino.",
+            "precio": "Valor en COP. Debe ser cero o un valor positivo.",
+            "tiempo_entrega": "Ejemplo: 2 a 4 días hábiles. Confirma el plazo antes de publicarlo.",
+            "activo": "Solo las tarifas activas deben considerarse para futuras consultas del checkout.",
+        }
+
+    def clean_precio(self):
+        precio = self.cleaned_data["precio"]
+        if precio < 0:
+            raise forms.ValidationError("El costo de envío no puede ser negativo.")
+        return precio
