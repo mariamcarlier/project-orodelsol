@@ -637,6 +637,7 @@ class CostoEnvioCFG05Tests(TestCase):
             tipo_documento="CC",
             documento="987654321",
             fecha_nacimiento="1990-01-01",
+            telefono="3001234567",
         )
         self.client.force_login(self.admin_user)
         self.url = reverse(
