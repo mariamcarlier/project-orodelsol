@@ -1,13 +1,4 @@
-# ═══════════════════════════════════════════════════════════════
-# forms.py — Formularios del módulo Configuración
-#
-# ¿Por qué existe este archivo?
-# Con CBV (CreateView), Django generaba el formulario automáticamente
-# a partir del campo 'fields'. Con FBV, nosotros definimos
-# explícitamente qué campos se muestran y cómo se validan.
-#
-# ModelForm: genera un formulario HTML a partir de un modelo de BD.
-# ═══════════════════════════════════════════════════════════════
+# Formularios compartidos por las secciones de configuración del panel.
 
 from django import forms
 from .models import Impuesto, Moneda, Idioma, ParametroGeneral
@@ -77,5 +68,4 @@ class ParametroGeneralForm(forms.ModelForm):
             'ciudad':            'Ciudad y país principal donde opera la joyería.',
             'horario_atencion':  'Horarios y días hábiles de atención al público.',
         }
-
 

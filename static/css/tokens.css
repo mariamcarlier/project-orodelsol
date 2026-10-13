@@ -6,7 +6,7 @@
    sitio público. No se modifican: cambiarlos altera header, footer,
    B2B y testimonios. Lo nuevo va en secciones separadas (4 en adelante).
 
-   Orden de carga: SIEMPRE primero, antes de styles.css / admin.css
+   Orden de carga: SIEMPRE primero, antes de styles.css
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
