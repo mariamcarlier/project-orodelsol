@@ -116,4 +116,39 @@ class ParametroGeneral(models.Model):
 
     def __str__(self):
         return f"Configuración General — {self.nombre_tienda}"
-
+
+
+class CostoEnvio(models.Model):
+    ciudad = models.CharField(
+        max_length=100,
+        help_text="Ciudad o municipio de destino.",
+    )
+    departamento = models.CharField(
+        max_length=100,
+        help_text="Departamento o región de destino.",
+    )
+    precio = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text="Costo del envío en pesos colombianos (COP).",
+    )
+    tiempo_entrega = models.CharField(
+        max_length=80,
+        default="2 a 4 días hábiles",
+        help_text="Tiempo estimado informado al cliente.",
+    )
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Costo de envío"
+        verbose_name_plural = "Costos de envío"
+        ordering = ["departamento", "ciudad"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["ciudad", "departamento"],
+                name="uniq_costo_envio_ciudad_departamento",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.ciudad}, {self.departamento} — ${self.precio} COP"
