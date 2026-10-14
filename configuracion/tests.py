@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
@@ -35,6 +37,8 @@ class LegacyConfigurationRedirectTests(TestCase):
             "tasa": "19.00",
         })
 
+        self.assertEqual(response.status_code, 405)
+        self.assertEqual(response["Allow"], "GET, HEAD")
 
 
 class CostoEnvioCFG05Tests(TestCase):
@@ -63,7 +67,7 @@ class CostoEnvioCFG05Tests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(
             response,
-            "admin_custom/sections/costos_envio.html",
+            "admin_custom/section.html",
         )
         self.assertContains(response, "Costos de envío")
 
@@ -143,6 +147,3 @@ class CostoEnvioCFG05Tests(TestCase):
         })
         tarifa.refresh_from_db()
         self.assertTrue(tarifa.activo)
-
-        self.assertEqual(response.status_code, 405)
-        self.assertEqual(response["Allow"], "GET, HEAD")
