@@ -1,12 +1,9 @@
 from django.test import TestCase
 from django.urls import reverse
-<<<<<<< HEAD
 from django.contrib.auth import get_user_model
 from configuracion.models import CostoEnvio, Impuesto, Moneda, Idioma, ParametroGeneral
 
 Usuario = get_user_model()
-=======
->>>>>>> origin/main
 
 
 class LegacyConfigurationRedirectTests(TestCase):
@@ -38,7 +35,6 @@ class LegacyConfigurationRedirectTests(TestCase):
             "tasa": "19.00",
         })
 
-<<<<<<< HEAD
 
 
 class CostoEnvioCFG05Tests(TestCase):
@@ -148,7 +144,5 @@ class CostoEnvioCFG05Tests(TestCase):
         tarifa.refresh_from_db()
         self.assertTrue(tarifa.activo)
 
-=======
         self.assertEqual(response.status_code, 405)
         self.assertEqual(response["Allow"], "GET, HEAD")
->>>>>>> origin/main

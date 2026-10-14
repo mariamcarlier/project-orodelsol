@@ -69,7 +69,6 @@ class ParametroGeneralForm(forms.ModelForm):
             'horario_atencion':  'Horarios y días hábiles de atención al público.',
         }
 
-<<<<<<< HEAD
 
 
 
@@ -96,5 +95,3 @@ class CostoEnvioForm(forms.ModelForm):
         if precio < 0:
             raise forms.ValidationError("El costo de envío no puede ser negativo.")
         return precio
-=======
->>>>>>> origin/main
