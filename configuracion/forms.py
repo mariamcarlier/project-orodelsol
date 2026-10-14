@@ -1,13 +1,4 @@
-# ═══════════════════════════════════════════════════════════════
-# forms.py — Formularios del módulo Configuración
-#
-# ¿Por qué existe este archivo?
-# Con CBV (CreateView), Django generaba el formulario automáticamente
-# a partir del campo 'fields'. Con FBV, nosotros definimos
-# explícitamente qué campos se muestran y cómo se validan.
-#
-# ModelForm: genera un formulario HTML a partir de un modelo de BD.
-# ═══════════════════════════════════════════════════════════════
+# Formularios compartidos por las secciones de configuración del panel.
 
 from django import forms
 from .models import CostoEnvio, Impuesto, Moneda, Idioma, ParametroGeneral
@@ -78,6 +69,7 @@ class ParametroGeneralForm(forms.ModelForm):
             'horario_atencion':  'Horarios y días hábiles de atención al público.',
         }
 
+<<<<<<< HEAD
 
 
 
@@ -104,3 +96,5 @@ class CostoEnvioForm(forms.ModelForm):
         if precio < 0:
             raise forms.ValidationError("El costo de envío no puede ser negativo.")
         return precio
+=======
+>>>>>>> origin/main
