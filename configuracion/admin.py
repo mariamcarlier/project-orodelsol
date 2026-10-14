@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Idioma, Impuesto, Moneda, ParametroGeneral
+from .models import CostoEnvio, Idioma, Impuesto, Moneda, ParametroGeneral
 
 
 @admin.register(ParametroGeneral)
@@ -74,4 +74,27 @@ class IdiomaAdmin(admin.ModelAdmin):
 
     @admin.action(description="Desactivar idiomas seleccionados")
     def desactivar_idiomas(self, request, queryset):
+        queryset.update(activo=False)
+
+
+@admin.register(CostoEnvio)
+class CostoEnvioAdmin(admin.ModelAdmin):
+    list_display = (
+        "ciudad",
+        "departamento",
+        "precio",
+        "tiempo_entrega",
+        "activo",
+    )
+    list_filter = ("departamento", "activo")
+    search_fields = ("ciudad", "departamento")
+    ordering = ("departamento", "ciudad")
+    actions = ("activar_tarifas", "desactivar_tarifas")
+
+    @admin.action(description="Activar tarifas seleccionadas")
+    def activar_tarifas(self, request, queryset):
+        queryset.update(activo=True)
+
+    @admin.action(description="Desactivar tarifas seleccionadas")
+    def desactivar_tarifas(self, request, queryset):
         queryset.update(activo=False)
