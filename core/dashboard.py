@@ -7,9 +7,9 @@ from django.contrib.auth.forms import SetPasswordForm
 from django.contrib.auth.models import Group
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.http import HttpResponse, HttpResponseNotAllowed
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
+from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
 
 from configuracion.forms import (
@@ -498,6 +498,6 @@ def admin_section(request, seccion):
     )
     return render(
         request,
-        f"admin_custom/sections/{seccion}.html",
+        "admin_custom/section.html",
         contexto,
     )

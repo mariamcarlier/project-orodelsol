@@ -675,73 +675,86 @@ button {
    15. FOOTER
    ──────────────────────────────────────────────────────── */
 .site-footer {
-  background: var(--color-tierra);
-  padding: 80px var(--section-padding-h) 36px;
+  position: relative;
+  background:
+    radial-gradient(ellipse at 8% 0%, rgba(198,142,91,.2), transparent 34%),
+    var(--color-tierra);
+  border-top: 4px solid var(--color-caramel);
+  padding: 64px var(--section-padding-h) 28px;
 }
 
 .footer__grid {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr;
-  gap: 60px;
-  padding-bottom: 60px;
-  border-bottom: 1px solid rgba(217,199,163,.08);
-  margin-bottom: 36px;
+  align-items: start;
+  gap: 32px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid rgba(217,199,163,.22);
+  margin-bottom: 22px;
+}
+
+.footer__brand {
+  padding: 24px;
+  border: 1px solid rgba(217,199,163,.24);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(145deg, rgba(198,142,91,.2), rgba(217,199,163,.06));
 }
 
 .footer__logo {
   font-family: var(--font-display);
-  font-size: 20px;
-  letter-spacing: 4px;
+  font-size: 24px;
+  letter-spacing: 3px;
   text-transform: uppercase;
   color: var(--color-text-on-dark);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .footer__logo em { font-style: italic; color: var(--color-oro); }
 
 .footer__tagline {
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: rgba(246,237,210,.25);
-  margin-bottom: 28px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--color-text-muted-dark);
+  margin-bottom: 20px;
 }
 
 .footer__social {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .footer__social-btn {
-  width: 32px;
-  height: 32px;
-  border: 1px solid rgba(217,199,163,.2);
-  border-radius: var(--radius);
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(217,199,163,.48);
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 10px;
   font-weight: bold;
-  color: var(--color-oro);
+  color: var(--color-marfil);
   transition: all var(--ease-smooth);
 }
 .footer__social-btn:hover {
-  background: var(--gold);
-  border-color: var(--color-cacao);
-  color: var(--color-text-on-dark);
+  background: var(--color-caramel);
+  border-color: var(--color-caramel);
+  color: var(--color-tierra);
 }
 
 .footer__col-title {
-  font-size: 9px;
-  letter-spacing: 3px;
+  font-size: 11px;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--color-text-on-cacao);
-  margin-bottom: 20px;
-  font-weight: 500;
+  color: var(--color-oro);
+  margin: 8px 0 18px;
+  font-weight: 700;
 }
 
-.footer__col li { margin-bottom: 11px; }
+.footer__col li { margin-bottom: 12px; }
 .footer__col a {
-  font-size: 12px;
-  color: rgba(246,237,210,.3);
+  font-size: 13px;
+  color: var(--color-text-muted-dark);
   transition: color var(--ease-smooth);
 }
 .footer__col a:hover { color: var(--color-oro); }
@@ -750,10 +763,10 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 10px;
-  color: rgba(246,237,210,.15);
+  font-size: 11px;
+  color: var(--color-text-muted-dark);
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px 20px;
 }
 
 
@@ -799,7 +812,8 @@ button {
     --section-padding-h: 48px;
   }
   .products-grid    { grid-template-columns: repeat(2, 1fr); }
-  .footer__grid     { grid-template-columns: 1fr 1fr; gap: 36px; }
+  .footer__grid     { grid-template-columns: 1fr 1fr; gap: 28px; }
+  .footer__brand    { grid-column: 1 / -1; }
   .collections-grid { grid-template-columns: 1fr 1fr; }
   .collections-grid .collection-card:last-child { display: none; }
 }
@@ -826,8 +840,13 @@ button {
   .products-grid { grid-template-columns: 1fr; max-width: 340px; margin-inline: auto; }
   .collections-grid { grid-template-columns: 1fr; }
   .collections-grid .collection-card:last-child { display: block; }
-  .footer__grid  { grid-template-columns: 1fr; gap: 28px; }
-  .footer__bottom { flex-direction: column; text-align: center; }
+  .site-footer { padding: 40px 20px 22px; }
+  .footer__grid  { grid-template-columns: 1fr 1fr; gap: 18px 16px; padding-bottom: 24px; }
+  .footer__brand { grid-column: 1 / -1; padding: 20px; }
+  .footer__col-title { margin: 4px 0 14px; letter-spacing: 1.5px; }
+  .footer__col li { margin-bottom: 10px; }
+  .footer__col a { font-size: 12px; }
+  .footer__bottom { flex-direction: column; align-items: flex-start; font-size: 10px; }
   .hero__content  { padding: 0 28px 48px; }
   .hero__ctas     { flex-direction: column; align-items: flex-start; }
 }
