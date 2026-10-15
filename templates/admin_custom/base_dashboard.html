@@ -85,6 +85,7 @@
 
         <!-- AREA DE CONTENIDO -->
         <main class="dashboard-content">
+            {% include 'admin_custom/_migas.html' %}
             {% if messages %}
                 <ul class="dashboard-messages" role="status">
                     {% for message in messages %}
