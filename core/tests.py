@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from configuracion.models import Idioma, Impuesto, Moneda, ParametroGeneral
 
-from .dashboard import RECURSOS, construir_menu
+from .dashboard import RECURSOS, construir_menu, construir_migas
 from .models import Coleccion, Producto
 
 
@@ -391,7 +391,13 @@ class MenuLateralTests(TestCase):
 		activos = [e["recurso"]["key"] for e in grupo["items"] if e["activo"]]
 		self.assertEqual(activos, ["monedas"])
 		self.assertFalse(any(e["activo"] for e in response.context["menu_lateral"]["sueltos"]))
-		self.assertContains(response, 'aria-current="page"', count=1)
+		
+		enlace_activo = f'href="{self.url_seccion("monedas")}" aria-current="page"'
+		self.assertContains(response, enlace_activo, count=1)
+		self.assertNotContains(
+			response, f'href="{self.url_seccion("impuestos")}" aria-current="page"'
+		)
+  
 
 	def test_recurso_suelto_activo_no_abre_el_grupo(self):
 		response = self.client.get(self.url_seccion("productos"))
@@ -464,3 +470,59 @@ class MenuLateralTests(TestCase):
 
 		self.assertEqual(menu["grupos"], [])
 		self.assertEqual(self.claves(menu["sueltos"]), ["a", "b"])
+
+
+class MigasTests(TestCase):
+	def setUp(self):
+		administrador = get_user_model().objects.create_superuser(
+			username="administrador",
+			password="clave-de-prueba",
+			first_name="Admin",
+			last_name="Prueba",
+			tipo_documento="CC",
+			documento="123456789",
+			fecha_nacimiento=date(1990, 1, 1),
+			telefono="3001234567",
+		)
+		self.client.force_login(administrador)
+
+	def titulos(self, migas):
+		return [miga["title"] for miga in migas]
+
+	def test_migas_del_resumen(self):
+		response = self.client.get(reverse("core:admin_dashboard"))
+
+		migas = response.context["migas"]
+		self.assertEqual(self.titulos(migas), ["Mi cuenta", "Admin"])
+		self.assertEqual(migas[0]["url"], reverse("usuarios:perfil"))
+		self.assertIsNone(migas[1]["url"])
+		self.assertContains(response, 'aria-label="Migas de pan"')
+
+	def test_migas_de_un_submodulo_incluyen_el_grupo(self):
+		url = reverse("core:admin_section", kwargs={"seccion": "impuestos"})
+		response = self.client.get(url)
+
+		migas = response.context["migas"]
+		self.assertEqual(
+			self.titulos(migas), ["Mi cuenta", "Admin", "Configuración", "Impuestos"]
+		)
+		self.assertEqual(migas[1]["url"], reverse("core:admin_dashboard"))
+		self.assertIsNone(migas[2]["url"])
+		self.assertIsNone(migas[3]["url"])
+		self.assertContains(
+			response, f'<a href="{reverse("core:admin_dashboard")}">Admin</a>'
+		)
+
+	def test_migas_de_un_recurso_sin_grupo(self):
+		url = reverse("core:admin_section", kwargs={"seccion": "productos"})
+		response = self.client.get(url)
+
+		self.assertEqual(
+			self.titulos(response.context["migas"]),
+			["Mi cuenta", "Admin", "Productos"],
+		)
+
+	def test_construir_migas_con_clave_desconocida_no_falla(self):
+		migas = construir_migas("no_existe")
+
+		self.assertEqual(self.titulos(migas), ["Mi cuenta", "Admin"])

@@ -11,6 +11,7 @@ from django.db.models import Q
 from django.db.models.deletion import ProtectedError
 from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from configuracion.forms import (
     CostoEnvioForm,
@@ -285,6 +286,28 @@ def construir_menu(recursos, clave_activa=None):
             )
     return {"sueltos": sueltos, "grupos": grupos}
 
+def construir_migas(clave=None):
+    """Arma las migas de pan: Mi cuenta > Admin > [grupo] > [recurso].
+
+    Cada miga es {"title": str, "url": str | None}. La última nunca lleva
+    enlace porque es la página actual; el grupo tampoco, porque no tiene
+    página propia.
+    """
+    migas = [{"title": "Mi cuenta", "url": reverse("usuarios:perfil")}]
+    if clave is None:
+        migas.append({"title": "Admin", "url": None})
+        return migas
+
+    migas.append({"title": "Admin", "url": reverse("core:admin_dashboard")})
+    recurso = next((r for r in RECURSOS if r["key"] == clave), None)
+    if recurso is None:
+        return migas
+    grupo = GRUPOS_MENU.get(recurso.get("grupo"))
+    if grupo:
+        migas.append({"title": grupo["title"], "url": None})
+    migas.append({"title": recurso["title"], "url": None})
+    return migas
+
 def obtener_celda(objeto, campo):
     valor = objeto
     for parte in campo.split("__"):
@@ -412,6 +435,7 @@ def crear_contexto(request, clave, formularios=None, formulario_abierto=None):
             "recursos": menu, 
             "recurso": recurso,
             "menu_lateral": construir_menu(menu, clave),
+            "migas": construir_migas(clave),
         }
 
 
@@ -524,7 +548,7 @@ def admin_dashboard(request):
     return render(
         request,
         "admin_custom/index.html",
-        {"recursos": recursos, "menu_lateral": construir_menu(recursos)},
+        {"recursos": recursos, "menu_lateral": construir_menu(recursos), "migas": construir_migas()},
     )
 
 
