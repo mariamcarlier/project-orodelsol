@@ -58,6 +58,9 @@
             </ul>
         </nav>
 
+            <!-- Fondo oscuro del menú en móvil -->
+    <div class="dashboard-overlay" id="dashboardOverlay"></div>
+
         <div class="sidebar-footer">
             <a href="{% url 'core:inicio' %}" class="btn-site">
                 <i class='bx bx-store-alt'></i> <span>Ir a la tienda</span>
@@ -75,6 +78,12 @@
     <div class="main-wrapper">
         <!-- BARRA SUPERIOR (NAVBAR) -->
         <header class="topbar">
+
+            <button type="button" class="topbar__menu-btn" id="menuToggle"
+                    aria-controls="sidebar" aria-expanded="false" aria-label="Abrir menú">
+                <i class="bx bx-menu" aria-hidden="true"></i>
+            </button>
+            
             <a href="{% url 'usuarios:perfil' %}" class="admin-profile-link" aria-label="Ir al perfil de administrador">
                 <span class="admin-profile-link__avatar">
                     <i class="bx bx-user" aria-hidden="true"></i>
@@ -96,6 +105,7 @@
             {% block content %}{% endblock %}
         </main>
     </div>
+    <script src="{% static 'js/dashboard.js' %}"></script>
 
 </body>
 </html>

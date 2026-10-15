@@ -526,3 +526,27 @@ class MigasTests(TestCase):
 		migas = construir_migas("no_existe")
 
 		self.assertEqual(self.titulos(migas), ["Mi cuenta", "Admin"])
+  
+  
+class ResponsivePanelTests(TestCase):
+	def setUp(self):
+		administrador = get_user_model().objects.create_superuser(
+			username="administrador",
+			password="clave-de-prueba",
+			first_name="Admin",
+			last_name="Prueba",
+			tipo_documento="CC",
+			documento="123456789",
+			fecha_nacimiento=date(1990, 1, 1),
+			telefono="3001234567",
+		)
+		self.client.force_login(administrador)
+
+	def test_la_pagina_incluye_boton_de_menu_overlay_y_script(self):
+		response = self.client.get(reverse("core:admin_dashboard"))
+
+		self.assertContains(response, 'id="menuToggle"')
+		self.assertContains(response, 'aria-controls="sidebar"')
+		self.assertContains(response, 'aria-expanded="false"')
+		self.assertContains(response, 'id="dashboardOverlay"')
+		self.assertContains(response, "js/dashboard.js")
