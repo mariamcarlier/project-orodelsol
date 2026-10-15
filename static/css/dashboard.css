@@ -82,6 +82,74 @@ body.dashboard-body {
     border-left: 4px solid var(--primary-gold);
 }
 
+/* Grupo desplegable del menú (<details>) */
+.menu-group summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0.8rem 1.5rem;
+    color: var(--sidebar-text);
+    font-size: 0.95rem;
+    cursor: pointer;
+    list-style: none;
+    transition: 0.2s;
+}
+
+.menu-group summary::-webkit-details-marker {
+    display: none;
+}
+
+.menu-group summary i {
+    font-size: 1.2rem;
+}
+
+.menu-group summary:hover,
+.menu-group.has-active summary {
+    color: var(--primary-gold);
+}
+
+.menu-group summary:hover {
+    background-color: rgba(197, 160, 89, 0.15);
+}
+
+.menu-group__chevron {
+    margin-left: auto;
+    transition: transform 0.2s;
+}
+
+.menu-group details[open] > summary .menu-group__chevron {
+    transform: rotate(180deg);
+}
+
+.menu-group .submenu {
+    padding: 0;
+} /*anula la regla existente .sidebar-menu ul { padding: 1rem 0 }, que de lo contrario separaría de más los subítems. */
+
+.menu-group details[open] > .submenu {
+    animation: submenu-in 0.2s ease;
+}
+
+.submenu .menu-item a {
+    padding-left: 3.4rem;
+    font-size: 0.9rem;
+}
+
+.menu-item a:focus-visible,
+.menu-group summary:focus-visible {
+    outline: 2px solid var(--primary-gold);
+    outline-offset: -2px;
+}
+
+@keyframes submenu-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .menu-group details[open] > .submenu { animation: none; } 
+    .menu-group__chevron { transition: none; }
+}
+
 .sidebar-footer {
     padding: 1.5rem;
     display: flex;

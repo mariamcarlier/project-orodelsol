@@ -63,12 +63,18 @@ class ColeccionForm(forms.ModelForm):
         model = Coleccion
         fields = ("nombre", "descripcion", "temporada", "imagen_url", "activa")
 
+GRUPOS_MENU = {
+    "configuracion": {"title": "Configuración", "icon": "bx-cog"},
+}
 
 RECURSOS = (
     {
         "key": "costos_envio",
         "title": "Costos de envío",
-        "icon": "bx-truck",
+        "icon": "bxs-truck",
+        "grupo": "configuracion",
+        "grupo_orden": "5",
+
         "model": CostoEnvio,
         "create_form": CostoEnvioForm,
         "edit_form": CostoEnvioForm,
@@ -155,6 +161,9 @@ RECURSOS = (
         "key": "impuestos",
         "title": "Impuestos",
         "icon": "bx-receipt",
+        "grupo": "configuracion",
+        "grupo_orden": "2",
+
         "model": Impuesto,
         "create_form": ImpuestoForm,
         "edit_form": ImpuestoForm,
@@ -170,6 +179,9 @@ RECURSOS = (
         "key": "monedas",
         "title": "Monedas",
         "icon": "bx-dollar-circle",
+        "grupo": "configuracion",
+        "grupo_orden": "3",
+        
         "model": Moneda,
         "create_form": MonedaForm,
         "edit_form": MonedaForm,
@@ -187,6 +199,9 @@ RECURSOS = (
         "key": "idiomas",
         "title": "Idiomas",
         "icon": "bx-globe",
+        "grupo": "configuracion",
+        "grupo_orden": "4",
+
         "model": Idioma,
         "create_form": IdiomaForm,
         "edit_form": IdiomaForm,
@@ -203,6 +218,9 @@ RECURSOS = (
         "key": "parametros",
         "title": "Parámetros generales",
         "icon": "bx-cog",
+        "grupo": "configuracion",
+        "grupo_orden": "1",
+
         "model": ParametroGeneral,
         "create_form": ParametroGeneralForm,
         "edit_form": ParametroGeneralForm,
@@ -230,6 +248,42 @@ def recursos_visibles(usuario):
         if usuario.has_perm(permiso(item["model"], "view"))
     ]
 
+def construir_menu(recursos, clave_activa=None):
+    """Organiza los recursos visibles para pintar el menú lateral.
+
+    Devuelve un diccionario con dos listas:
+    - "sueltos": recursos que no pertenecen a ningún grupo.
+    - "grupos": grupos desplegables con sus recursos ordenados.
+    Cada recurso viaja como {"recurso": ..., "activo": bool}. Un grupo
+    se marca como "abierto" cuando contiene el recurso activo.
+    """
+    sueltos = []
+    agrupados = {}
+    for recurso in recursos:
+        entrada = {"recurso": recurso, "activo": recurso["key"] == clave_activa}
+        clave_grupo = recurso.get("grupo")
+        if clave_grupo in GRUPOS_MENU:
+            agrupados.setdefault(clave_grupo, []).append(entrada)
+        else:
+            sueltos.append(entrada)
+
+    grupos = []
+    for clave_grupo, datos in GRUPOS_MENU.items():
+        items = sorted(
+            agrupados.get(clave_grupo, []),
+            key=lambda entrada: entrada["recurso"].get("grupo_orden", 0),
+        )
+        if items:
+            grupos.append(
+                {
+                    "key": clave_grupo,
+                    "title": datos["title"],
+                    "icon": datos["icon"],
+                    "items": items,
+                    "abierto": any(entrada["activo"] for entrada in items),
+                }
+            )
+    return {"sueltos": sueltos, "grupos": grupos}
 
 def obtener_celda(objeto, campo):
     valor = objeto
@@ -354,7 +408,11 @@ def crear_contexto(request, clave, formularios=None, formulario_abierto=None):
         "bulk_field": configuracion.get("bulk_field") if puede_cambiar else None,
         "abrir_crear": formulario_abierto == (clave, "create", ""),
     }
-    return {"recursos": menu, "recurso": recurso}
+    return {
+            "recursos": menu, 
+            "recurso": recurso,
+            "menu_lateral": construir_menu(menu, clave),
+        }
 
 
 def procesar_accion(request, clave, configuracion):
@@ -461,10 +519,12 @@ def procesar_accion(request, clave, configuracion):
 def admin_dashboard(request):
     if request.method != "GET":
         return HttpResponseNotAllowed(["GET"])
+    
+    recursos = recursos_visibles(request.user)
     return render(
         request,
         "admin_custom/index.html",
-        {"recursos": recursos_visibles(request.user)},
+        {"recursos": recursos, "menu_lateral": construir_menu(recursos)},
     )
 
 

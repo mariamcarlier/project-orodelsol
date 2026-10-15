@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from configuracion.models import Idioma, Impuesto, Moneda, ParametroGeneral
 
-from .dashboard import RECURSOS
+from .dashboard import RECURSOS, construir_menu
 from .models import Coleccion, Producto
 
 
@@ -311,3 +311,156 @@ class PanelAdministracionTests(TestCase):
 
 		self.assertEqual(response.status_code, 200)
 		self.assertIsNone(response.context["recurso"]["crear_formulario"])
+
+class MenuLateralTests(TestCase):
+	CLAVES_CONFIGURACION = [
+		"parametros",
+		"impuestos",
+		"monedas",
+		"idiomas",
+		"costos_envio",
+	]
+	CLAVES_SUELTAS = ["productos", "colecciones", "usuarios", "grupos"]
+
+	def crear_staff(self, username, documento, codenames=()):
+		usuario = get_user_model().objects.create_user(
+			username=username,
+			password="password123",
+			is_staff=True,
+			first_name="Staff",
+			last_name="Prueba",
+			tipo_documento="CC",
+			documento=documento,
+			fecha_nacimiento=date(1990, 1, 1),
+		)
+		for codename in codenames:
+			usuario.user_permissions.add(
+				Permission.objects.get(codename=codename)
+			)
+		return usuario
+
+	def setUp(self):
+		administrador = get_user_model().objects.create_superuser(
+			username="administrador",
+			password="clave-de-prueba",
+			first_name="Admin",
+			last_name="Prueba",
+			tipo_documento="CC",
+			documento="123456789",
+			fecha_nacimiento=date(1990, 1, 1),
+			telefono="3001234567",
+		)
+		self.client.force_login(administrador)
+
+	def url_seccion(self, clave):
+		return reverse("core:admin_section", kwargs={"seccion": clave})
+
+	def claves(self, entradas):
+		return [entrada["recurso"]["key"] for entrada in entradas]
+
+	def test_configuracion_aparece_agrupada_y_ordenada(self):
+		response = self.client.get(reverse("core:admin_dashboard"))
+
+		menu = response.context["menu_lateral"]
+		self.assertEqual(len(menu["grupos"]), 1)
+		grupo = menu["grupos"][0]
+		self.assertEqual(grupo["title"], "Configuración")
+		self.assertEqual(self.claves(grupo["items"]), self.CLAVES_CONFIGURACION)
+		self.assertEqual(self.claves(menu["sueltos"]), self.CLAVES_SUELTAS)
+		self.assertContains(response, "<summary>")
+
+	def test_grupo_cerrado_en_el_resumen(self):
+		response = self.client.get(reverse("core:admin_dashboard"))
+
+		self.assertFalse(response.context["menu_lateral"]["grupos"][0]["abierto"])
+		self.assertContains(response, "<details>")
+		self.assertNotContains(response, "<details open>")
+
+	def test_grupo_se_abre_al_visitar_un_submodulo(self):
+		for clave in self.CLAVES_CONFIGURACION:
+			with self.subTest(seccion=clave):
+				response = self.client.get(self.url_seccion(clave))
+
+				self.assertTrue(response.context["menu_lateral"]["grupos"][0]["abierto"])
+				self.assertContains(response, "<details open>")
+
+	def test_submodulo_activo_se_identifica_correctamente(self):
+		response = self.client.get(self.url_seccion("monedas"))
+
+		grupo = response.context["menu_lateral"]["grupos"][0]
+		activos = [e["recurso"]["key"] for e in grupo["items"] if e["activo"]]
+		self.assertEqual(activos, ["monedas"])
+		self.assertFalse(any(e["activo"] for e in response.context["menu_lateral"]["sueltos"]))
+		self.assertContains(response, 'aria-current="page"', count=1)
+
+	def test_recurso_suelto_activo_no_abre_el_grupo(self):
+		response = self.client.get(self.url_seccion("productos"))
+
+		menu = response.context["menu_lateral"]
+		activos = [e["recurso"]["key"] for e in menu["sueltos"] if e["activo"]]
+		self.assertEqual(activos, ["productos"])
+		self.assertFalse(menu["grupos"][0]["abierto"])
+		self.assertNotContains(response, "<details open>")
+
+	def test_permisos_filtran_los_submodulos_visibles(self):
+		usuario = self.crear_staff("solo_impuestos", "111", ["view_impuesto"])
+		self.client.force_login(usuario)
+
+		response = self.client.get(self.url_seccion("impuestos"))
+
+		menu = response.context["menu_lateral"]
+		self.assertEqual(self.claves(menu["grupos"][0]["items"]), ["impuestos"])
+		self.assertEqual(menu["sueltos"], [])
+		self.assertNotContains(response, self.url_seccion("monedas"))
+
+	def test_grupo_no_aparece_si_no_hay_permiso_sobre_sus_submodulos(self):
+		usuario = self.crear_staff("solo_productos", "222", ["view_producto"])
+		self.client.force_login(usuario)
+
+		response = self.client.get(reverse("core:admin_dashboard"))
+
+		menu = response.context["menu_lateral"]
+		self.assertEqual(menu["grupos"], [])
+		self.assertEqual(self.claves(menu["sueltos"]), ["productos"])
+		self.assertNotContains(response, "menu-group")
+
+	def test_el_servidor_sigue_bloqueando_submodulos_sin_permiso(self):
+		usuario = self.crear_staff("solo_impuestos_2", "333", ["view_impuesto"])
+		self.client.force_login(usuario)
+
+		response = self.client.get(self.url_seccion("monedas"))
+
+		self.assertEqual(response.status_code, 403)
+
+	def test_costos_envio_conserva_ruta_e_icono(self):
+		recurso = next(r for r in RECURSOS if r["key"] == "costos_envio")
+		self.assertEqual(recurso["icon"], "bxs-truck")
+
+		response = self.client.get(reverse("core:admin_dashboard"))
+
+		self.assertContains(response, f'href="{self.url_seccion("costos_envio")}"')
+		self.assertContains(response, "bxs-truck")
+		self.assertNotContains(response, "bx-truck")
+
+	def test_el_resto_del_menu_sigue_funcionando(self):
+		response = self.client.get(reverse("core:admin_dashboard"))
+
+		for clave in self.CLAVES_SUELTAS:
+			with self.subTest(recurso=clave):
+				self.assertContains(response, f'href="{self.url_seccion(clave)}"')
+				self.assertEqual(
+					self.client.get(self.url_seccion(clave)).status_code, 200
+				)
+		self.assertContains(response, "Resumen")
+		self.assertContains(response, "Ir a la tienda")
+
+	def test_construir_menu_ignora_recursos_sin_grupo_conocido(self):
+		recursos = [
+			{"key": "a", "grupo": "no_existe"},
+			{"key": "b"},
+		]
+
+		menu = construir_menu(recursos, "a")
+
+		self.assertEqual(menu["grupos"], [])
+		self.assertEqual(self.claves(menu["sueltos"]), ["a", "b"])
