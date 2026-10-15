@@ -19,7 +19,7 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h2 class="brand-title">ORO DEL SOL</h2>
-            <span class="brand-subtitle">Panel Administador</span>
+            <span class="brand-subtitle">Panel Administrador</span>
         </div>
 
         <nav class="sidebar-menu">
@@ -29,11 +29,30 @@
                         <i class="bx bx-home" aria-hidden="true"></i><span>Resumen</span>
                     </a>
                 </li>
-                {% for recurso in recursos %}
-                    <li class="menu-item{% if request.resolver_match.kwargs.seccion == recurso.key %} active{% endif %}">
-                        <a href="{% url 'core:admin_section' recurso.key %}">
-                            <i class="bx {{ recurso.icon }}" aria-hidden="true"></i><span>{{ recurso.title }}</span>
+                {% for entrada in menu_lateral.sueltos %}
+                    <li class="menu-item{% if entrada.activo %} active{% endif %}">
+                        <a href="{% url 'core:admin_section' entrada.recurso.key %}"{% if entrada.activo %} aria-current="page"{% endif %}>
+                            <i class="bx {{ entrada.recurso.icon }}" aria-hidden="true"></i><span>{{ entrada.recurso.title }}</span>
                         </a>
+                    </li>
+                {% endfor %}
+                {% for grupo in menu_lateral.grupos %}
+                    <li class="menu-group{% if grupo.abierto %} has-active{% endif %}">
+                        <details{% if grupo.abierto %} open{% endif %}>
+                            <summary>
+                                <i class="bx {{ grupo.icon }}" aria-hidden="true"></i><span>{{ grupo.title }}</span>
+                                <i class="bx bx-chevron-down menu-group__chevron" aria-hidden="true"></i>
+                            </summary>
+                            <ul class="submenu">
+                                {% for entrada in grupo.items %}
+                                    <li class="menu-item submenu-item{% if entrada.activo %} active{% endif %}">
+                                        <a href="{% url 'core:admin_section' entrada.recurso.key %}"{% if entrada.activo %} aria-current="page"{% endif %}>
+                                            <span>{{ entrada.recurso.title }}</span>
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </details>
                     </li>
                 {% endfor %}
             </ul>
