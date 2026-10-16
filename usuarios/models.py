@@ -35,3 +35,14 @@ class Usuario(AbstractUser):
         "fecha_nacimiento",
         "telefono",
     ]
+
+    @property
+    def tipo_cuenta(self):
+        """Etiqueta del tipo de cuenta que se muestra en pantalla.
+
+        Es solo presentación: no concede ni quita permisos. Aplica la misma
+        regla que usuarios.views.es_administrador (superusuario o rol ADMIN).
+        """
+        if self.is_superuser or self.rol == "ADMIN":
+            return "Administrador"
+        return self.get_rol_display() 

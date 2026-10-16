@@ -2,7 +2,6 @@
 {% load static %}
 {% block title %}Mi perfil{% endblock %}
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/perfil.css' %}?v=2">
 <link rel="stylesheet" href="{% static 'css/perfil.css' %}">
 {% endblock %}
 
@@ -58,7 +57,7 @@
       </div>
       <div class="profile-detail">
         <dt>Tipo de cuenta</dt>
-        <dd>{{ perfil.get_rol_display|default:"Sin resultados" }}</dd>
+        <dd>{{ perfil.tipo_cuenta }}</dd>
       </div>
     </dl>
 
