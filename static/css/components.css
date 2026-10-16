@@ -249,3 +249,24 @@
   border-top-color: var(--color-oro);
   background: var(--color-white);
 }
+
+
+/* ────────────────────────────────────────────────────────
+   LAYOUT COMPARTIDO
+   .container — ancho máximo, márgenes laterales y aire vertical
+   .auto-grid — columnas que se reacomodan solas, sin @media
+   ──────────────────────────────────────────────────────── */
+.container {
+  width: min(100%, var(--container-md));
+  margin-inline: auto;
+  padding: var(--space-page-top) var(--gutter) var(--space-page-bottom);
+}
+.container--sm { width: min(100%, var(--container-sm)); }
+.container--lg { width: min(100%, var(--container-lg)); }
+
+.auto-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--auto-grid-min, 260px)), 1fr));
+  gap: var(--space-gap);
+  
+}
