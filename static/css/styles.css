@@ -34,6 +34,16 @@ body {
   overflow-x: hidden;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+
+   /* Footer al final de la ventana en páginas cortas */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /*es la altura real visible en móviles, sin el salto de la barra de direcciones.*/
+  min-height: 100dvh; /*queda como respaldo para navegadores antiguos.*/
+}
+
+body > main {
+  flex: 1 0 auto; /*significa «crece para llenar el espacio libre, pero nunca te encojas».*/
 }
 
 img {
