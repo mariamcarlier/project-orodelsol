@@ -436,3 +436,103 @@ class ConsultarPerfilTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Este enlace ya se utilizó o venció")
         self.assertContains(response, "Solicitar otro enlace")
+
+class TipoDeCuentaTests(TestCase):
+    """El perfil muestra la etiqueta correcta sin alterar los permisos."""
+
+    def crear(self, username, documento, **extra):
+        datos = {
+            "password": "ClaveSegura123!",
+            "first_name": "Prueba",
+            "last_name": "Cuenta",
+            "tipo_documento": "CC",
+            "documento": documento,
+            "fecha_nacimiento": date(1990, 1, 1),
+            "telefono": "3001234567",
+        }
+        datos.update(extra)
+        return get_user_model().objects.create_user(username=username, **datos)
+
+    def etiqueta_en_perfil(self, usuario):
+        self.client.force_login(usuario)
+        response = self.client.get("/usuario/perfil/")
+        self.assertEqual(response.status_code, 200)
+        return response
+
+    def test_superusuario_creado_con_createsuperuser_se_muestra_administrador(self):
+        superusuario = get_user_model().objects.create_superuser(
+            username="super",
+            password="ClaveSegura123!",
+            first_name="Super",
+            last_name="Usuario",
+            tipo_documento="CC",
+            documento="111",
+            fecha_nacimiento=date(1990, 1, 1),
+            telefono="3001234567",
+        )
+        self.assertEqual(superusuario.rol, "CLIENTE")  # el rol no se toca
+
+        response = self.etiqueta_en_perfil(superusuario)
+
+        self.assertContains(response, "<dd>Administrador</dd>", html=True)
+
+    def test_rol_admin_se_muestra_administrador(self):
+        response = self.etiqueta_en_perfil(self.crear("adm", "222", rol="ADMIN"))
+
+        self.assertContains(response, "<dd>Administrador</dd>", html=True)
+
+    def test_mayorista_se_muestra_mayorista(self):
+        response = self.etiqueta_en_perfil(self.crear("may", "333", rol="MAYORISTA"))
+
+        self.assertContains(response, "<dd>Mayorista</dd>", html=True)
+
+    def test_cliente_se_muestra_cliente(self):
+        response = self.etiqueta_en_perfil(self.crear("cli", "444"))
+
+        self.assertContains(response, "<dd>Cliente</dd>", html=True)
+
+    def test_personal_staff_con_rol_cliente_sigue_siendo_cliente(self):
+        staff = self.crear("staff", "555", is_staff=True)
+
+        self.assertEqual(staff.tipo_cuenta, "Cliente")
+
+    def test_la_etiqueta_coincide_con_la_regla_de_es_administrador(self):
+        from .views import es_administrador
+
+        for rol in ("ADMIN", "MAYORISTA", "CLIENTE"):
+            for superusuario in (False, True):
+                with self.subTest(rol=rol, superusuario=superusuario):
+                    usuario = get_user_model()(rol=rol, is_superuser=superusuario)
+                    self.assertEqual(
+                        es_administrador(usuario),
+                        usuario.tipo_cuenta == "Administrador",
+                    )
+
+    def test_ver_el_perfil_no_cambia_roles_ni_permisos(self):
+        superusuario = self.crear("super2", "666", is_staff=True, is_superuser=True)
+
+        self.etiqueta_en_perfil(superusuario)
+
+        superusuario.refresh_from_db()
+        self.assertEqual(superusuario.rol, "CLIENTE")
+        self.assertTrue(superusuario.is_staff)
+        self.assertTrue(superusuario.is_superuser)
+
+    def test_el_acceso_al_panel_sigue_dependiendo_de_is_staff(self):
+        cliente = self.crear("cli2", "777")
+        rol_admin_sin_staff = self.crear("adm2", "888", rol="ADMIN")
+        superusuario = self.crear("super3", "999", is_staff=True, is_superuser=True)
+
+        for usuario, esperado in (
+            (cliente, 302),
+            (rol_admin_sin_staff, 302),
+            (superusuario, 200),
+        ):
+            with self.subTest(usuario=usuario.username):
+                self.client.force_login(usuario)
+                self.assertEqual(self.client.get("/panel-admin/").status_code, esperado)
+
+    def test_perfil_carga_su_hoja_de_estilos_una_sola_vez(self):
+        response = self.etiqueta_en_perfil(self.crear("cli3", "1010"))
+
+        self.assertContains(response, "css/perfil.css", count=1)
