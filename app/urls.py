@@ -18,28 +18,45 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+<<<<<<< HEAD
 from django.urls import include, path
 from django.views.generic import RedirectView
 
 from configuracion import views as configuracion_views
 from usuarios.views import perfil, registrar_usuario
+=======
+from django.contrib.auth import urls as auth_urls
+from django.contrib.auth.views import LoginView
+from django.urls import include, path
+
+
+from usuarios.forms import RateLimitedAuthenticationForm
+from usuarios.views import crear_cuenta, perfil, registrar_usuario
+
+from usuarios.views import perfil, registrar_usuario
+
+>>>>>>> db669ec51f4e5bfedf22f833dbf4b596d0108b59
 
 admin.site.site_header = "Administración de Oro del Sol"
 admin.site.site_title = "Oro del Sol"
 admin.site.index_title = "Gestión de la tienda"
 
+auth_urlpatterns = [
+    pattern for pattern in auth_urls.urlpatterns if pattern.name != "login"
+]
+
 urlpatterns = [
-    path("admin/configuracion/", configuracion_views.parametros_view),
-    path(
-        "admin/",
-        RedirectView.as_view(pattern_name="core:admin_dashboard", permanent=False),
-        name="admin-dashboard-home",
-    ),
+    path("configuracion/", include("configuracion.urls")),
     path("admin/", admin.site.urls),
-    path("accounts/", include("django.contrib.auth.urls")),
+    path(
+        "accounts/login/",
+        LoginView.as_view(form_class=RateLimitedAuthenticationForm),
+        name="login",
+    ),
+    path("accounts/", include(auth_urlpatterns)),
     path("", include("core.urls")),
     path("usuario/", include("usuarios.urls")),
-    path("register/", registrar_usuario, name="register"),
+    path("register/", crear_cuenta, name="register"),
     path("profile/", perfil, name="profile"),
 ]
 

@@ -158,12 +158,18 @@ venv.bak/
 *.swp
 *.swo
 
+<<<<<<< HEAD
 !**/migrations/__init__.py
 
 # === Django & Base de datos ===
 db.sqlite3
 db.sqlite3-journal
 !**/migrations/__init__.py
+=======
+# === Django & Base de datos ===
+db.sqlite3
+db.sqlite3-journal
+>>>>>>> db669ec51f4e5bfedf22f833dbf4b596d0108b59
 
 # === Entornos Virtuales ===
 .venv/

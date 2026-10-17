@@ -2,17 +2,21 @@
 {% load static %}
 {% block title %}Registrar usuario{% endblock %}
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/registrar.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'css/registrar.css' %}?v=3">
 {% endblock %}
 
-<link rel="stylesheet" href="{% static 'css/registrar.css' %}">
-{% endblock %}
 {% block content %}
 <section class="register-page" aria-labelledby="register-title">
   <div class="register-page__intro">
-    <span class="eyebrow">Área administrativa</span>
-    <h1 id="register-title" class="heading">Registrar <em>usuario</em></h1>
-    <p class="body-text">Crea una cuenta nueva y asigna el tipo de acceso correspondiente.</p>
+    {% if registro_publico %}
+      <span class="eyebrow">Únete a Oro del Sol</span>
+      <h1 id="register-title" class="heading">Crear <em>cuenta</em></h1>
+      <p class="body-text">Regístrate para disfrutar de una experiencia personalizada.</p>
+    {% else %}
+      <span class="eyebrow">Área administrativa</span>
+      <h1 id="register-title" class="heading">Registrar <em>usuario</em></h1>
+      <p class="body-text">Crea una cuenta nueva y asigna el tipo de acceso correspondiente.</p>
+    {% endif %}
   </div>
 
   {% if messages %}
@@ -45,8 +49,11 @@
         </div>
       {% endfor %}
     </div>
-    <button class="btn btn--primary register-form__submit" type="submit">Registrar usuario <span aria-hidden="true">→</span></button>
+    <button class="btn btn--primary register-form__submit" type="submit">{% if registro_publico %}Crear cuenta{% else %}Registrar usuario{% endif %} <span aria-hidden="true">→</span></button>
     <p class="register-form__required"><span aria-hidden="true">*</span> Campos obligatorios</p>
   </form>
+  {% if registro_publico %}
+    <p class="register-form__login">¿Ya tienes cuenta? <a href="{% url 'login' %}">Inicia sesión</a></p>
+  {% endif %}
 </section>
 {% endblock %}
