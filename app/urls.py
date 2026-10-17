@@ -18,24 +18,12 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-
-from django.urls import include, path
-from django.views.generic import RedirectView
-
-
-from usuarios.views import perfil, registrar_usuario
-
 from django.contrib.auth import urls as auth_urls
 from django.contrib.auth.views import LoginView
 from django.urls import include, path
 
-
 from usuarios.forms import RateLimitedAuthenticationForm
-from usuarios.views import crear_cuenta, perfil, registrar_usuario
-
-from usuarios.views import perfil, registrar_usuario
-
-
+from usuarios.views import crear_cuenta, perfil
 
 admin.site.site_header = "Administración de Oro del Sol"
 admin.site.site_title = "Oro del Sol"

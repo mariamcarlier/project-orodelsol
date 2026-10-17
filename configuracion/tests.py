@@ -1,9 +1,10 @@
 from decimal import Decimal
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
-from django.contrib.auth import get_user_model
-from configuracion.models import CostoEnvio, Impuesto, Moneda, Idioma, ParametroGeneral
+
+from configuracion.models import CostoEnvio, Idioma, Impuesto, Moneda, ParametroGeneral
 
 Usuario = get_user_model()
 

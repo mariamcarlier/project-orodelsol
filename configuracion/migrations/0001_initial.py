@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = []
 
-    operations = [
+    operations = [  # noqa: RUF012
         migrations.CreateModel(
             name="Impuesto",
             fields=[
