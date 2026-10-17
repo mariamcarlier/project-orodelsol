@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 
+
 class Impuesto(models.Model):
     nombre = models.CharField(max_length=50, unique=True, help_text="Ej: IVA 19%")
     tasa = models.DecimalField(max_digits=5, decimal_places=2, help_text="Porcentaje, ej: 19.00")
@@ -32,7 +33,7 @@ class Moneda(models.Model):
     class Meta:
         verbose_name        = "Moneda"
         verbose_name_plural = "Monedas"
-        ordering            = ['-es_principal', 'codigo_iso']
+        ordering            = ['-es_principal', 'codigo_iso']  # noqa: RUF012
 
     def save(self, *args, **kwargs):
         """
@@ -65,7 +66,7 @@ class Idioma(models.Model):
     class Meta:
         verbose_name        = "Idioma"
         verbose_name_plural = "Idiomas"
-        ordering            = ['-es_principal', 'codigo']
+        ordering            = ['-es_principal', 'codigo']  # noqa: RUF012
 
     def save(self, *args, **kwargs):
         """
@@ -111,7 +112,7 @@ class ParametroGeneral(models.Model):
 
     @classmethod
     def get_solo(cls):
-        obj, created = cls.objects.get_or_create(pk=1)
+        obj, _created = cls.objects.get_or_create(pk=1)
         return obj
 
     def __str__(self):
@@ -142,8 +143,8 @@ class CostoEnvio(models.Model):
     class Meta:
         verbose_name = "Costo de envío"
         verbose_name_plural = "Costos de envío"
-        ordering = ["departamento", "ciudad"]
-        constraints = [
+        ordering = ["departamento", "ciudad"]  # noqa: RUF012
+        constraints = [  # noqa: RUF012
             models.UniqueConstraint(
                 fields=["ciudad", "departamento"],
                 name="uniq_costo_envio_ciudad_departamento",

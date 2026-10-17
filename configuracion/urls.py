@@ -2,7 +2,6 @@ from django.http import HttpResponseNotAllowed
 from django.shortcuts import redirect
 from django.urls import path
 
-
 app_name = 'configuracion'
 
 def redirigir_al_panel(request, seccion):

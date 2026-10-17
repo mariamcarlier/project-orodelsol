@@ -4,11 +4,11 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
+    dependencies = [  # noqa: RUF012
         ("configuracion", "0005_alter_idioma_id_alter_impuesto_id_alter_moneda_id_and_more"),
     ]
 
-    operations = [
+    operations = [  # noqa: RUF012
         migrations.CreateModel(
             name="CostoEnvio",
             fields=[

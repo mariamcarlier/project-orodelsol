@@ -1,5 +1,5 @@
-from datetime import date
 import re
+from datetime import date
 
 from django.contrib.auth import get_user_model
 from django.core import mail
