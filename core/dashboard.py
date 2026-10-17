@@ -7,18 +7,19 @@ from django.contrib.auth.forms import SetPasswordForm
 from django.contrib.auth.models import Group
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.http import HttpResponse, HttpResponseNotAllowed
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
+from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
 
 from configuracion.forms import (
+    CostoEnvioForm,
     IdiomaForm,
     ImpuestoForm,
     MonedaForm,
     ParametroGeneralForm,
 )
-from configuracion.models import Idioma, Impuesto, Moneda, ParametroGeneral
+from configuracion.models import CostoEnvio, Idioma, Impuesto, Moneda, ParametroGeneral
 from usuarios.forms import AdministrarUsuarioForm, RegistroUsuarioForm
 from usuarios.models import Usuario
 
@@ -64,6 +65,23 @@ class ColeccionForm(forms.ModelForm):
 
 
 RECURSOS = (
+    {
+        "key": "costos_envio",
+        "title": "Costos de envío",
+        "icon": "bx-truck",
+        "model": CostoEnvio,
+        "create_form": CostoEnvioForm,
+        "edit_form": CostoEnvioForm,
+        "columns": (
+            ("Ciudad", "ciudad"),
+            ("Departamento", "departamento"),
+            ("Costo (COP)", "precio"),
+            ("Tiempo estimado", "tiempo_entrega"),
+            ("Activo", "activo"),
+        ),
+        "search_fields": ("ciudad__icontains", "departamento__icontains"),
+        "bulk_field": "activo",
+    },
     {
         "key": "productos",
         "title": "Productos",
@@ -480,6 +498,6 @@ def admin_section(request, seccion):
     )
     return render(
         request,
-        f"admin_custom/sections/{seccion}.html",
+        "admin_custom/section.html",
         contexto,
     )
