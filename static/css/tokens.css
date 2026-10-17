@@ -87,7 +87,7 @@
   --ease-enter:  0.55s cubic-bezier(.22,1,.36,1);
   --ease-fast:   0.2s ease;
 
-  
+
   /* ── 11. LAYOUT FLUIDO (nuevo) ──
         Anchos de contenido, márgenes laterales y espaciado que se
         ajustan solos con clamp(). Los usan .container y .auto-grid
@@ -100,12 +100,14 @@
   --space-page-bottom: clamp(56px, 9vw, 96px);  /* aire abajo */
   --space-gap:         clamp(16px, 3vw, 28px);  /* entre tarjetas */
 
-  /* PUNTOS DE QUIEBRE (contrato del proyecto).
+  /* PUNTOS DE QUIEBRE para código NUEVO.
      Las variables CSS no funcionan dentro de @media, así que se
      documentan aquí y se escriben a mano:
        móvil   ≤ 480px
        tablet  ≤ 768px
        laptop  ≤ 1024px
+     El CSS anterior usa otros valores (1200, 900, 680, 600, 360) y se
+     irá alineando página por página, no de golpe.
      Primero diseño fluido (clamp, auto-fit); @media solo cuando
      cambia la estructura de la página. */
 }
