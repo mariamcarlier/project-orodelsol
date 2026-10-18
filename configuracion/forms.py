@@ -1,7 +1,8 @@
 # Formularios compartidos por las secciones de configuración del panel.
 
 from django import forms
-from .models import CostoEnvio, Impuesto, Moneda, Idioma, ParametroGeneral
+import re
+from .models import CostoEnvio, Impuesto, Moneda, Idioma, MetodoPago, ParametroGeneral
 
 
 class ImpuestoForm(forms.ModelForm):
@@ -95,3 +96,71 @@ class CostoEnvioForm(forms.ModelForm):
         if precio < 0:
             raise forms.ValidationError("El costo de envío no puede ser negativo.")
         return precio
+
+
+class MetodoPagoForm(forms.ModelForm):
+    class Meta:
+        model = MetodoPago
+        fields = [
+            "nombre",
+            "tipo",
+            "banco",
+            "tipo_cuenta",
+            "numero_cuenta",
+            "titular",
+            "documento_titular",
+            "instrucciones",
+            "activo",
+            "orden",
+        ]
+        help_texts = {
+            "nombre": "Nombre comercial o etiqueta visible en checkout (ej: Bancolombia Transferencia, Nequi).",
+            "tipo": "Tipo de método de pago manual (enfoque en transferencias con validación de comprobante).",
+            "banco": "Entidad bancaria o billetera (requerido para transferencias bancarias).",
+            "tipo_cuenta": "Tipo de cuenta o billetera digital.",
+            "numero_cuenta": "Número de cuenta o celular asociado.",
+            "titular": "Nombre completo o razón social del titular.",
+            "documento_titular": "NIT o cédula del titular.",
+            "instrucciones": "Instrucciones de pago y envío de comprobante (WhatsApp, correo, etc.).",
+            "activo": "Marca para que esté disponible para selección de los clientes en checkout.",
+            "orden": "Posición en la lista de opciones (0 aparece primero).",
+        }
+
+    def clean_numero_cuenta(self):
+        numero = self.cleaned_data.get("numero_cuenta", "").strip()
+        if numero and not re.match(r"^[\d\s\-]+$", numero):
+            raise forms.ValidationError(
+                "El número de cuenta solo debe contener dígitos, guiones o espacios."
+            )
+        return numero
+
+    def clean(self):
+        cleaned_data = super().clean()
+        tipo = cleaned_data.get("tipo")
+        banco = (cleaned_data.get("banco") or "").strip()
+        numero_cuenta = (cleaned_data.get("numero_cuenta") or "").strip()
+        titular = (cleaned_data.get("titular") or "").strip()
+
+        if tipo in {"TRANSFERENCIA", "NEQUI", "DAVIPLATA"}:
+            if not numero_cuenta:
+                self.add_error(
+                    "numero_cuenta",
+                    "El número de cuenta o celular es obligatorio para transferencias y billeteras.",
+                )
+            if not titular:
+                self.add_error(
+                    "titular",
+                    "El nombre del titular es obligatorio para transferencias y billeteras.",
+                )
+            if tipo == "TRANSFERENCIA" and not banco:
+                self.add_error(
+                    "banco",
+                    "Debes indicar la entidad bancaria para transferencias.",
+                )
+            elif tipo == "NEQUI" and not banco:
+                cleaned_data["banco"] = "Nequi"
+            elif tipo == "DAVIPLATA" and not banco:
+                cleaned_data["banco"] = "Daviplata"
+
+        return cleaned_data
+

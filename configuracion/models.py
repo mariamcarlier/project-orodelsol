@@ -152,3 +152,87 @@ class CostoEnvio(models.Model):
 
     def __str__(self):
         return f"{self.ciudad}, {self.departamento} — ${self.precio} COP"
+
+
+class MetodoPago(models.Model):
+    TIPO_CHOICES = (
+        ("TRANSFERENCIA", "Transferencia bancaria"),
+        ("NEQUI", "Nequi"),
+        ("DAVIPLATA", "Daviplata"),
+        ("EFECTIVO", "Efectivo / Contraentrega"),
+        ("OTRO", "Otro medio manual"),
+    )
+
+    TIPO_CUENTA_CHOICES = (
+        ("AHORROS", "Cuenta de Ahorros"),
+        ("CORRIENTE", "Cuenta Corriente"),
+        ("BILLETERA", "Billetera digital"),
+        ("NO_APLICA", "No aplica"),
+    )
+
+    nombre = models.CharField(
+        max_length=100,
+        unique=True,
+        help_text="Nombre comercial o etiqueta del método. Ej: Bancolombia Transferencia, Nequi, Daviplata.",
+    )
+    tipo = models.CharField(
+        max_length=20,
+        choices=TIPO_CHOICES,
+        default="TRANSFERENCIA",
+        help_text="Tipo de método de pago manual (enfoque en transferencias con validación de comprobante).",
+    )
+    banco = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Entidad financiera o billetera (ej: Bancolombia, Davivienda, Nequi).",
+    )
+    tipo_cuenta = models.CharField(
+        max_length=20,
+        choices=TIPO_CUENTA_CHOICES,
+        default="AHORROS",
+        help_text="Tipo de cuenta bancaria o billetera digital.",
+    )
+    numero_cuenta = models.CharField(
+        max_length=50,
+        blank=True,
+        default="",
+        help_text="Número de cuenta bancaria o número de celular registrado.",
+    )
+    titular = models.CharField(
+        max_length=150,
+        blank=True,
+        default="",
+        help_text="Nombre completo o razón social del titular de la cuenta.",
+    )
+    documento_titular = models.CharField(
+        max_length=30,
+        blank=True,
+        default="",
+        help_text="NIT o documento de identidad del titular.",
+    )
+    instrucciones = models.TextField(
+        help_text="Instrucciones paso a paso para el cliente (datos de pago y envío de comprobante/captura).",
+    )
+    activo = models.BooleanField(
+        default=True,
+        help_text="Indica si este método de pago está disponible para los clientes en el checkout.",
+    )
+    orden = models.PositiveIntegerField(
+        default=0,
+        help_text="Orden de visualización en el checkout (menor número aparece primero).",
+    )
+
+    class Meta:
+        verbose_name = "Método de pago"
+        verbose_name_plural = "Métodos de pago"
+        ordering = ["orden", "nombre"]
+
+    @property
+    def tipo_display(self):
+        return self.get_tipo_display()
+
+    def __str__(self):
+        estado = "Activo" if self.activo else "Inactivo"
+        return f"{self.nombre} ({self.get_tipo_display()}) — {estado}"
+
