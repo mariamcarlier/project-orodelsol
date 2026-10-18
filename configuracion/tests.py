@@ -3,7 +3,15 @@ from decimal import Decimal
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from configuracion.models import CostoEnvio, Impuesto, Moneda, Idioma, MetodoPago, ParametroGeneral
+from configuracion.models import (
+    CostoEnvio,
+    Idioma,
+    Impuesto,
+    MetodoPago,
+    Moneda,
+    ParametroGeneral,
+    PoliticaComercial,
+)
 
 
 Usuario = get_user_model()
@@ -365,4 +373,178 @@ class MetodoPagoCFG06Tests(TestCase):
 
         response_create = self.client.get(reverse("configuracion:metodo_pago_create"))
         self.assertEqual(response_create.status_code, 302)
-        self.assertEqual(response_create["Location"], self.url)
+        self.assertEqual(response_create["Location"], self.url)
+
+
+class PoliticaComercialCFG08Tests(TestCase):
+    """Pruebas de la historia JODS-197: CFG-08 — Políticas comerciales."""
+
+    def setUp(self):
+        self.admin_user = Usuario.objects.create_superuser(
+            username="admin_politicas",
+            password="password123",
+            email="admin-politicas@example.com",
+            first_name="Admin",
+            last_name="Politicas",
+            tipo_documento="CC",
+            documento="987654323",
+            fecha_nacimiento="1990-01-01",
+            telefono="3001234569",
+        )
+        self.cliente_user = Usuario.objects.create_user(
+            username="cliente_politica",
+            password="password123",
+            email="cliente-pol@example.com",
+            first_name="Cliente",
+            last_name="B2C",
+            tipo_documento="CC",
+            documento="1122334456",
+            fecha_nacimiento="1995-05-05",
+            telefono="3119876544",
+            rol="CLIENTE",
+        )
+        self.mayorista_user = Usuario.objects.create_user(
+            username="mayorista_politica",
+            password="password123",
+            email="mayorista-pol@example.com",
+            first_name="Mayorista",
+            last_name="B2B",
+            tipo_documento="CC",
+            documento="1122334457",
+            fecha_nacimiento="1988-08-08",
+            telefono="3119876545",
+            rol="MAYORISTA",
+        )
+        self.staff_sin_permiso = Usuario.objects.create_user(
+            username="staff_sin_permiso_pol",
+            password="password123",
+            email="staff-pol@example.com",
+            first_name="Staff",
+            last_name="SinPermiso",
+            tipo_documento="CC",
+            documento="9988776656",
+            fecha_nacimiento="1992-02-02",
+            telefono="3009876544",
+            is_staff=True,
+        )
+        self.client.force_login(self.admin_user)
+        self.url = reverse(
+            "core:admin_section",
+            kwargs={"seccion": "politicas_comerciales"},
+        )
+
+    def test_admin_puede_acceder_al_panel_politicas_comerciales(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "admin_custom/section.html")
+        self.assertContains(response, "Políticas comerciales")
+
+    def test_cliente_no_staff_es_redirigido_al_login(self):
+        self.client.force_login(self.cliente_user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response["Location"])
+
+    def test_staff_sin_permiso_de_modelo_es_denegado(self):
+        self.client.force_login(self.staff_sin_permiso)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_edicion_exitosa_politicas_comerciales_singleton(self):
+        politica = PoliticaComercial.get_solo()
+        response = self.client.post(self.url, {
+            "recurso": "politicas_comerciales",
+            "accion": "edit",
+            "registro": str(politica.pk),
+            f"politicas_comerciales-{politica.pk}-monto_minimo_compra_b2c": "50000.00",
+            f"politicas_comerciales-{politica.pk}-monto_minimo_compra_b2b": "200000.00",
+            f"politicas_comerciales-{politica.pk}-monto_minimo_envio_gratis": "150000.00",
+            f"politicas_comerciales-{politica.pk}-tiempo_reserva_carrito_minutos": "45",
+            f"politicas_comerciales-{politica.pk}-vigencia_cupones_dias": "15",
+        })
+        self.assertRedirects(response, f"{self.url}#registros")
+        self.assertEqual(PoliticaComercial.objects.count(), 1)
+        politica.refresh_from_db()
+        self.assertEqual(politica.monto_minimo_compra_b2c, Decimal("50000.00"))
+        self.assertEqual(politica.monto_minimo_compra_b2b, Decimal("200000.00"))
+        self.assertEqual(politica.monto_minimo_envio_gratis, Decimal("150000.00"))
+        self.assertEqual(politica.tiempo_reserva_carrito_minutos, 45)
+        self.assertEqual(politica.vigencia_cupones_dias, 15)
+        self.assertEqual(politica.actualizado_por, self.admin_user)
+
+    def test_rechaza_montos_negativos(self):
+        politica = PoliticaComercial.get_solo()
+        response = self.client.post(self.url, {
+            "recurso": "politicas_comerciales",
+            "accion": "edit",
+            "registro": str(politica.pk),
+            f"politicas_comerciales-{politica.pk}-monto_minimo_compra_b2c": "-500.00",
+            f"politicas_comerciales-{politica.pk}-monto_minimo_compra_b2b": "-1000.00",
+            f"politicas_comerciales-{politica.pk}-monto_minimo_envio_gratis": "-10.00",
+            f"politicas_comerciales-{politica.pk}-tiempo_reserva_carrito_minutos": "30",
+            f"politicas_comerciales-{politica.pk}-vigencia_cupones_dias": "30",
+        })
+        self.assertEqual(response.status_code, 200)
+        formulario = response.context["recurso"]["filas"][0]["formulario"]
+        self.assertIn("monto_minimo_compra_b2c", formulario.errors)
+        self.assertIn("monto_minimo_compra_b2b", formulario.errors)
+        self.assertIn("monto_minimo_envio_gratis", formulario.errors)
+
+    def test_rechaza_tiempos_invalidos(self):
+        politica = PoliticaComercial.get_solo()
+        response = self.client.post(self.url, {
+            "recurso": "politicas_comerciales",
+            "accion": "edit",
+            "registro": str(politica.pk),
+            f"politicas_comerciales-{politica.pk}-monto_minimo_compra_b2c": "0.00",
+            f"politicas_comerciales-{politica.pk}-monto_minimo_compra_b2b": "0.00",
+            f"politicas_comerciales-{politica.pk}-monto_minimo_envio_gratis": "0.00",
+            f"politicas_comerciales-{politica.pk}-tiempo_reserva_carrito_minutos": "0",
+            f"politicas_comerciales-{politica.pk}-vigencia_cupones_dias": "0",
+        })
+        self.assertEqual(response.status_code, 200)
+        formulario = response.context["recurso"]["filas"][0]["formulario"]
+        self.assertIn("tiempo_reserva_carrito_minutos", formulario.errors)
+        self.assertIn("vigencia_cupones_dias", formulario.errors)
+
+    def test_metodo_centralizado_validar_monto_minimo_b2b_y_b2c(self):
+        politica = PoliticaComercial.get_solo()
+        politica.monto_minimo_compra_b2c = Decimal("50000.00")
+        politica.monto_minimo_compra_b2b = Decimal("200000.00")
+        politica.save()
+
+        # Validación cliente regular (B2C)
+        valido_b2c, requerido_b2c = politica.validar_monto_minimo(self.cliente_user, Decimal("30000.00"))
+        self.assertFalse(valido_b2c)
+        self.assertEqual(requerido_b2c, Decimal("50000.00"))
+
+        valido_b2c_ok, _ = politica.validar_monto_minimo(self.cliente_user, Decimal("50000.00"))
+        self.assertTrue(valido_b2c_ok)
+
+        # Validación mayorista (B2B)
+        valido_b2b, requerido_b2b = politica.validar_monto_minimo(self.mayorista_user, Decimal("150000.00"))
+        self.assertFalse(valido_b2b)
+        self.assertEqual(requerido_b2b, Decimal("200000.00"))
+
+        valido_b2b_ok, _ = politica.validar_monto_minimo(self.mayorista_user, Decimal("250000.00"))
+        self.assertTrue(valido_b2b_ok)
+
+    def test_metodo_centralizado_aplica_envio_gratis(self):
+        politica = PoliticaComercial.get_solo()
+        politica.monto_minimo_envio_gratis = Decimal("150000.00")
+        politica.save()
+
+        self.assertFalse(politica.aplica_envio_gratis(Decimal("100000.00")))
+        self.assertTrue(politica.aplica_envio_gratis(Decimal("150000.00")))
+        self.assertTrue(politica.aplica_envio_gratis(Decimal("180000.00")))
+
+        # Con monto 0 queda desactivado
+        politica.monto_minimo_envio_gratis = Decimal("0.00")
+        politica.save()
+        self.assertFalse(politica.aplica_envio_gratis(Decimal("500000.00")))
+
+    def test_ruta_legada_politicas_comerciales_redirige_a_panel(self):
+        response = self.client.get(reverse("configuracion:politica_comercial_detail"))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], self.url)
+
