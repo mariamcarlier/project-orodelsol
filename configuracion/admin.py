@@ -1,6 +1,5 @@
 from django.contrib import admin
-
-from .models import CostoEnvio, Idioma, Impuesto, Moneda, ParametroGeneral
+from .models import CostoEnvio, Idioma, Impuesto, MetodoPago, Moneda, ParametroGeneral
 
 
 @admin.register(ParametroGeneral)
@@ -98,3 +97,29 @@ class CostoEnvioAdmin(admin.ModelAdmin):
     @admin.action(description="Desactivar tarifas seleccionadas")
     def desactivar_tarifas(self, request, queryset):
         queryset.update(activo=False)
+
+
+@admin.register(MetodoPago)
+class MetodoPagoAdmin(admin.ModelAdmin):
+    list_display = (
+        "nombre",
+        "tipo",
+        "banco",
+        "numero_cuenta",
+        "titular",
+        "activo",
+        "orden",
+    )
+    list_filter = ("tipo", "activo")
+    search_fields = ("nombre", "banco", "titular", "numero_cuenta")
+    ordering = ("orden", "nombre")
+    actions = ("activar_metodos", "desactivar_metodos")
+
+    @admin.action(description="Activar métodos de pago seleccionados")
+    def activar_metodos(self, request, queryset):
+        queryset.update(activo=True)
+
+    @admin.action(description="Desactivar métodos de pago seleccionados")
+    def desactivar_metodos(self, request, queryset):
+        queryset.update(activo=False)
+

@@ -16,10 +16,18 @@ from configuracion.forms import (
     CostoEnvioForm,
     IdiomaForm,
     ImpuestoForm,
+    MetodoPagoForm,
     MonedaForm,
     ParametroGeneralForm,
 )
-from configuracion.models import CostoEnvio, Idioma, Impuesto, Moneda, ParametroGeneral
+from configuracion.models import (
+    CostoEnvio,
+    Idioma,
+    Impuesto,
+    MetodoPago,
+    Moneda,
+    ParametroGeneral,
+)
 from usuarios.forms import AdministrarUsuarioForm, RegistroUsuarioForm
 from usuarios.models import Usuario
 
@@ -80,6 +88,31 @@ RECURSOS = (
             ("Activo", "activo"),
         ),
         "search_fields": ("ciudad__icontains", "departamento__icontains"),
+        "bulk_field": "activo",
+    },
+    {
+        "key": "metodos_pago",
+        "title": "Medios de pago",
+        "icon": "bx-credit-card",
+        "grupo": "configuracion",
+        "grupo_orden": "6",
+        "model": MetodoPago,
+        "create_form": MetodoPagoForm,
+        "edit_form": MetodoPagoForm,
+        "columns": (
+            ("Nombre", "nombre"),
+            ("Tipo", "tipo_display"),
+            ("Banco / Entidad", "banco"),
+            ("Cuenta / Celular", "numero_cuenta"),
+            ("Titular", "titular"),
+            ("Activo", "activo"),
+        ),
+        "search_fields": (
+            "nombre__icontains",
+            "banco__icontains",
+            "titular__icontains",
+            "numero_cuenta__icontains",
+        ),
         "bulk_field": "activo",
     },
     {
