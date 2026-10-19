@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.conf import settings
 from django.db import models
 
@@ -116,4 +117,209 @@ class ParametroGeneral(models.Model):
 
     def __str__(self):
         return f"Configuración General — {self.nombre_tienda}"
-
+
+
+class CostoEnvio(models.Model):
+    ciudad = models.CharField(
+        max_length=100,
+        help_text="Ciudad o municipio de destino.",
+    )
+    departamento = models.CharField(
+        max_length=100,
+        help_text="Departamento o región de destino.",
+    )
+    precio = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text="Costo del envío en pesos colombianos (COP).",
+    )
+    tiempo_entrega = models.CharField(
+        max_length=80,
+        default="2 a 4 días hábiles",
+        help_text="Tiempo estimado informado al cliente.",
+    )
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Costo de envío"
+        verbose_name_plural = "Costos de envío"
+        ordering = ["departamento", "ciudad"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["ciudad", "departamento"],
+                name="uniq_costo_envio_ciudad_departamento",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.ciudad}, {self.departamento} — ${self.precio} COP"
+
+
+class MetodoPago(models.Model):
+    TIPO_CHOICES = (
+        ("TRANSFERENCIA", "Transferencia bancaria"),
+        ("NEQUI", "Nequi"),
+        ("DAVIPLATA", "Daviplata"),
+        ("EFECTIVO", "Efectivo / Contraentrega"),
+        ("OTRO", "Otro medio manual"),
+    )
+
+    TIPO_CUENTA_CHOICES = (
+        ("AHORROS", "Cuenta de Ahorros"),
+        ("CORRIENTE", "Cuenta Corriente"),
+        ("BILLETERA", "Billetera digital"),
+        ("NO_APLICA", "No aplica"),
+    )
+
+    nombre = models.CharField(
+        max_length=100,
+        unique=True,
+        help_text="Nombre comercial o etiqueta del método. Ej: Bancolombia Transferencia, Nequi, Daviplata.",
+    )
+    tipo = models.CharField(
+        max_length=20,
+        choices=TIPO_CHOICES,
+        default="TRANSFERENCIA",
+        help_text="Tipo de método de pago manual (enfoque en transferencias con validación de comprobante).",
+    )
+    banco = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Entidad financiera o billetera (ej: Bancolombia, Davivienda, Nequi).",
+    )
+    tipo_cuenta = models.CharField(
+        max_length=20,
+        choices=TIPO_CUENTA_CHOICES,
+        default="AHORROS",
+        help_text="Tipo de cuenta bancaria o billetera digital.",
+    )
+    numero_cuenta = models.CharField(
+        max_length=50,
+        blank=True,
+        default="",
+        help_text="Número de cuenta bancaria o número de celular registrado.",
+    )
+    titular = models.CharField(
+        max_length=150,
+        blank=True,
+        default="",
+        help_text="Nombre completo o razón social del titular de la cuenta.",
+    )
+    documento_titular = models.CharField(
+        max_length=30,
+        blank=True,
+        default="",
+        help_text="NIT o documento de identidad del titular.",
+    )
+    instrucciones = models.TextField(
+        help_text="Instrucciones paso a paso para el cliente (datos de pago y envío de comprobante/captura).",
+    )
+    activo = models.BooleanField(
+        default=True,
+        help_text="Indica si este método de pago está disponible para los clientes en el checkout.",
+    )
+    orden = models.PositiveIntegerField(
+        default=0,
+        help_text="Orden de visualización en el checkout (menor número aparece primero).",
+    )
+
+    class Meta:
+        verbose_name = "Método de pago"
+        verbose_name_plural = "Métodos de pago"
+        ordering = ["orden", "nombre"]
+
+    @property
+    def tipo_display(self):
+        return self.get_tipo_display()
+
+    def __str__(self):
+        estado = "Activo" if self.activo else "Inactivo"
+        return f"{self.nombre} ({self.get_tipo_display()}) — {estado}"
+
+
+class PoliticaComercial(models.Model):
+    monto_minimo_compra_b2c = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="Monto mínimo de compra para clientes particulares (B2C) en COP. 0 significa sin mínimo.",
+    )
+    monto_minimo_compra_b2b = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="Monto mínimo de compra para clientes mayoristas (B2B) en COP. 0 significa sin mínimo.",
+    )
+    monto_minimo_envio_gratis = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="Subtotal a partir del cual el envío nacional es gratuito. 0 desactiva el beneficio.",
+    )
+    tiempo_reserva_carrito_minutos = models.PositiveIntegerField(
+        default=60,
+        help_text="Tiempo en minutos que se retiene el inventario en el carrito antes de liberarlo.",
+    )
+    vigencia_cupones_dias = models.PositiveIntegerField(
+        default=30,
+        help_text="Vigencia por defecto en días calendario para cupones y promociones.",
+    )
+
+    actualizado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="politicas_actualizadas",
+        verbose_name="Actualizado por",
+    )
+    fecha_actualizacion = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Fecha de actualización",
+    )
+
+    class Meta:
+        verbose_name = "Política comercial"
+        verbose_name_plural = "Políticas comerciales"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_solo(cls):
+        obj, created = cls.objects.get_or_create(pk=1)
+        return obj
+
+    @property
+    def tiempo_reserva_display(self):
+        return f"{self.tiempo_reserva_carrito_minutos} min"
+
+    @property
+    def vigencia_cupones_display(self):
+        return f"{self.vigencia_cupones_dias} días"
+
+    def validar_monto_minimo(self, usuario, subtotal):
+        """Centraliza la validación de compra mínima según el rol B2B/B2C del usuario.
+
+        Devuelve (cumple: bool, monto_minimo_requerido: Decimal).
+        """
+        es_mayorista = bool(usuario and getattr(usuario, "rol", None) == "MAYORISTA")
+        monto_requerido = (
+            self.monto_minimo_compra_b2b if es_mayorista else self.monto_minimo_compra_b2c
+        )
+        if monto_requerido > 0 and subtotal < monto_requerido:
+            return False, monto_requerido
+        return True, monto_requerido
+
+    def aplica_envio_gratis(self, subtotal):
+        """Centraliza la regla de negocio para envío gratuito."""
+        if self.monto_minimo_envio_gratis > 0 and subtotal >= self.monto_minimo_envio_gratis:
+            return True
+        return False
+
+    def __str__(self):
+        return "Políticas Comerciales (Reglas del Negocio)"
+
+
