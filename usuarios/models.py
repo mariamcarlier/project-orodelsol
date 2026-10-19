@@ -46,3 +46,25 @@ class Usuario(AbstractUser):
         if self.is_superuser or self.rol == "ADMIN":
             return "Administrador"
         return self.get_rol_display() 
+    
+    @property
+    def nombre_visible(self):
+        """Nombre con el que se saluda al usuario en pantalla.
+
+        Usa first_name sin espacios sobrantes (también los repetidos dentro
+        del nombre). Si está vacío, usa el nombre de usuario. Nunca devuelve
+        None ni una cadena formada solo por espacios.
+        """
+        nombre = " ".join((self.first_name or "").split())
+        return nombre or self.username
+
+    @property
+    def saludo_bienvenida(self):
+        """Frase de bienvenida de la cabecera de la cuenta.
+
+        Hoy es neutra para todas las personas. Cuando exista el campo opcional
+        de género (decisión pendiente, en su propio commit con migración), la
+        variación «Bienvenida» / «Bienvenido» se decide AQUÍ y solo aquí: la
+        plantilla seguirá mostrando este texto sin cambiar.
+        """
+        return f"Te damos la bienvenida, {self.nombre_visible}"
