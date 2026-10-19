@@ -319,6 +319,8 @@ class MenuLateralTests(TestCase):
 		"monedas",
 		"idiomas",
 		"costos_envio",
+  		"metodos_pago",
+    	"politicas_comerciales",
 	]
 	CLAVES_SUELTAS = ["productos", "colecciones", "usuarios", "grupos"]
 
