@@ -1,5 +1,5 @@
-from datetime import date
 import re
+from datetime import date
 
 from django.contrib.auth import get_user_model
 from django.core import mail
@@ -48,7 +48,7 @@ class ConsultarPerfilTests(TestCase):
         self.assertContains(response, "Cliente")
         self.assertNotContains(response, self.otro_usuario.email)
         self.assertNotContains(response, self.otro_usuario.documento)
-        self.assertNotContains(response, "<form", html=False)
+        self.assertNotContains(response, 'name="first_name"', html=False)
         self.assertContains(response, 'href="/usuario/perfil/editar/"', html=False)
 
     def test_muestra_sin_resultados_para_campos_sin_dato(self):
@@ -93,7 +93,7 @@ class ConsultarPerfilTests(TestCase):
 
         self.assertRedirects(
             response,
-            "/accounts/login/?next=/usuario/perfil/",
+            "/login/?next=/usuario/perfil/",
             fetch_redirect_response=False,
         )
 
@@ -118,7 +118,7 @@ class ConsultarPerfilTests(TestCase):
 
         self.assertRedirects(
             response,
-            "/accounts/login/?next=/register/",
+            "/login/?next=/register/",
             fetch_redirect_response=False,
         )
 

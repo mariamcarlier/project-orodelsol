@@ -3,7 +3,6 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/login.css' %}?v=6">
-<link rel="stylesheet" href="{% static 'css/login.css' %}?v=2">
 {% endblock %}
 
 {% block title %}Iniciar Sesión{% endblock %}
@@ -16,6 +15,10 @@
 
     <form method="post">
       {% csrf_token %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+      {% if form.non_field_errors %}
+        <div class="error-message" role="alert">{{ form.non_field_errors }}</div>
+      {% endif %}
       {% for field in form %}
         <p>
           <label for="{{ field.id_for_label }}">{{ field.label }}</label>
@@ -49,8 +52,7 @@
           {% endfor %}
         </p>
       {% endfor %}
-      {{ form.as_p }}
-      <button type="submit">Iniciar Sesion</button>
+      <button type="submit">Iniciar sesión</button>
     </form>
   </div>
 

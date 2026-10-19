@@ -35,13 +35,20 @@
       <a class="sidebar__link" href="/coleccion/quince-soles">Quince Soles</a>
 
       <span class="sidebar__label">Mi cuenta</span>
-      {% if user.is_authenticated %}
+      {% if request.user.is_authenticated %}
+        <p class="sidebar__user">
+          Hola, <strong>{{ request.user.first_name|default:request.user.username }}</strong>
+        </p>
         <a class="sidebar__link" href="{% url 'usuarios:perfil' %}">Mi perfil</a>
-        {% if user.is_staff %}
+        {% if request.user.is_staff %}
           <a class="sidebar__link" href="{% url 'core:admin_dashboard' %}">Panel de administración</a>
         {% endif %}
+        <form class="sidebar__logout-form" method="post" action="{% url 'core:cerrar_sesion' %}">
+          {% csrf_token %}
+          <button class="sidebar__link sidebar__logout" type="submit">Cerrar sesión</button>
+        </form>
       {% else %}
-        <a class="sidebar__link" href="{% url 'login' %}">Iniciar sesión</a>
+        <a class="sidebar__link" href="{% url 'core:iniciar_sesion' %}">Iniciar sesión</a>
       {% endif %}
       <a class="sidebar__link" href="/mayoristas">Acceso Mayoristas</a>
     </div>
@@ -91,13 +98,10 @@
       </a>
 
       <div class="header__right">
-        <a href="{% url 'usuarios:perfil' %}" class="header__icon" aria-label="Mi cuenta">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
-          </svg>
-        </a>
-        {% if user.is_authenticated %}
+        {% if request.user.is_authenticated %}
+          <span class="header__user-name">
+            Hola, {{ request.user.first_name|default:request.user.username }}
+          </span>
           <a href="{% url 'usuarios:perfil' %}" class="header__icon" aria-label="Mi cuenta">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -105,7 +109,7 @@
             </svg>
           </a>
         {% else %}
-          <a href="{% url 'login' %}" class="header__icon" aria-label="Iniciar sesión">
+          <a href="{% url 'core:iniciar_sesion' %}" class="header__icon" aria-label="Iniciar sesión">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
               <circle cx="12" cy="7" r="4"/>
