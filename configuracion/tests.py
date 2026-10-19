@@ -3,7 +3,8 @@ from decimal import Decimal
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from configuracion.models import CostoEnvio, Impuesto, Moneda, Idioma, ParametroGeneral
+from configuracion.models import CostoEnvio, Impuesto, Moneda, Idioma, MetodoPago, ParametroGeneral
+
 
 Usuario = get_user_model()
 
@@ -147,3 +148,221 @@ class CostoEnvioCFG05Tests(TestCase):
         })
         tarifa.refresh_from_db()
         self.assertTrue(tarifa.activo)
+
+
+class MetodoPagoCFG06Tests(TestCase):
+    """Pruebas de la historia JODS-195: CFG-06 — Medios de pago."""
+
+    def setUp(self):
+        self.admin_user = Usuario.objects.create_superuser(
+            username="admin_medios_pago",
+            password="password123",
+            email="admin-pagos@example.com",
+            first_name="Admin",
+            last_name="Pagos",
+            tipo_documento="CC",
+            documento="987654322",
+            fecha_nacimiento="1990-01-01",
+            telefono="3001234568",
+        )
+        self.cliente_user = Usuario.objects.create_user(
+            username="cliente_regular",
+            password="password123",
+            email="cliente@example.com",
+            first_name="Cliente",
+            last_name="Regular",
+            tipo_documento="CC",
+            documento="1122334455",
+            fecha_nacimiento="1995-05-05",
+            telefono="3119876543",
+            rol="CLIENTE",
+        )
+        self.staff_sin_permiso = Usuario.objects.create_user(
+            username="staff_sin_permiso",
+            password="password123",
+            email="staff@example.com",
+            first_name="Staff",
+            last_name="SinPermiso",
+            tipo_documento="CC",
+            documento="9988776655",
+            fecha_nacimiento="1992-02-02",
+            telefono="3009876543",
+            is_staff=True,
+        )
+        self.client.force_login(self.admin_user)
+        self.url = reverse(
+            "core:admin_section",
+            kwargs={"seccion": "metodos_pago"},
+        )
+
+    def test_admin_puede_acceder_al_panel_metodos_pago(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "admin_custom/section.html")
+        self.assertContains(response, "Medios de pago")
+
+    def test_cliente_no_staff_es_redirigido_al_login(self):
+        self.client.force_login(self.cliente_user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response["Location"])
+
+    def test_staff_sin_permiso_de_modelo_es_denegado(self):
+        self.client.force_login(self.staff_sin_permiso)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_creacion_exitosa_de_transferencia_con_comprobante(self):
+        response = self.client.post(self.url, {
+            "recurso": "metodos_pago",
+            "accion": "create",
+            "metodos_pago-nuevo-nombre": "Bancolombia Transferencia",
+            "metodos_pago-nuevo-tipo": "TRANSFERENCIA",
+            "metodos_pago-nuevo-banco": "Bancolombia",
+            "metodos_pago-nuevo-tipo_cuenta": "AHORROS",
+            "metodos_pago-nuevo-numero_cuenta": "123-456789-01",
+            "metodos_pago-nuevo-titular": "Joyas Oro del Sol S.A.S.",
+            "metodos_pago-nuevo-documento_titular": "900.123.456-7",
+            "metodos_pago-nuevo-instrucciones": (
+                "Realiza la transferencia a la cuenta de ahorros y adjunta la captura o comprobante."
+            ),
+            "metodos_pago-nuevo-activo": "on",
+            "metodos_pago-nuevo-orden": "1",
+        })
+        self.assertRedirects(response, f"{self.url}#registros")
+        metodo = MetodoPago.objects.get(nombre="Bancolombia Transferencia")
+        self.assertEqual(metodo.tipo, "TRANSFERENCIA")
+        self.assertEqual(metodo.banco, "Bancolombia")
+        self.assertEqual(metodo.numero_cuenta, "123-456789-01")
+        self.assertEqual(metodo.titular, "Joyas Oro del Sol S.A.S.")
+        self.assertTrue(metodo.activo)
+        self.assertEqual(metodo.orden, 1)
+
+    def test_creacion_exitosa_de_billetera_digital_nequi(self):
+        response = self.client.post(self.url, {
+            "recurso": "metodos_pago",
+            "accion": "create",
+            "metodos_pago-nuevo-nombre": "Nequi",
+            "metodos_pago-nuevo-tipo": "NEQUI",
+            "metodos_pago-nuevo-tipo_cuenta": "BILLETERA",
+            "metodos_pago-nuevo-numero_cuenta": "3001234567",
+            "metodos_pago-nuevo-titular": "Oro del Sol",
+            "metodos_pago-nuevo-instrucciones": "Envía el dinero a la línea Nequi y sube tu comprobante.",
+            "metodos_pago-nuevo-activo": "on",
+            "metodos_pago-nuevo-orden": "2",
+        })
+        self.assertRedirects(response, f"{self.url}#registros")
+        metodo = MetodoPago.objects.get(nombre="Nequi")
+        self.assertEqual(metodo.banco, "Nequi")
+        self.assertTrue(metodo.activo)
+
+    def test_rechaza_transferencia_sin_cuenta_ni_titular(self):
+        response = self.client.post(self.url, {
+            "recurso": "metodos_pago",
+            "accion": "create",
+            "metodos_pago-nuevo-nombre": "Transferencia Incompleta",
+            "metodos_pago-nuevo-tipo": "TRANSFERENCIA",
+            "metodos_pago-nuevo-banco": "Davivienda",
+            "metodos_pago-nuevo-tipo_cuenta": "AHORROS",
+            "metodos_pago-nuevo-numero_cuenta": "",
+            "metodos_pago-nuevo-titular": "",
+            "metodos_pago-nuevo-instrucciones": "Instrucciones de prueba",
+            "metodos_pago-nuevo-activo": "on",
+            "metodos_pago-nuevo-orden": "1",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(MetodoPago.objects.count(), 0)
+        formulario = response.context["recurso"]["crear_formulario"]
+        self.assertIn("numero_cuenta", formulario.errors)
+        self.assertIn("titular", formulario.errors)
+
+    def test_rechaza_nombre_duplicado(self):
+        MetodoPago.objects.create(
+            nombre="Daviplata",
+            tipo="DAVIPLATA",
+            banco="Daviplata",
+            numero_cuenta="3009998877",
+            titular="Oro del Sol",
+            instrucciones="Paga por Daviplata",
+        )
+        response = self.client.post(self.url, {
+            "recurso": "metodos_pago",
+            "accion": "create",
+            "metodos_pago-nuevo-nombre": "Daviplata",
+            "metodos_pago-nuevo-tipo": "DAVIPLATA",
+            "metodos_pago-nuevo-numero_cuenta": "3009998877",
+            "metodos_pago-nuevo-titular": "Oro del Sol",
+            "metodos_pago-nuevo-instrucciones": "Otra descripción",
+            "metodos_pago-nuevo-activo": "on",
+            "metodos_pago-nuevo-orden": "1",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(MetodoPago.objects.count(), 1)
+        formulario = response.context["recurso"]["crear_formulario"]
+        self.assertIn("nombre", formulario.errors)
+
+    def test_edicion_metodo_pago(self):
+        metodo = MetodoPago.objects.create(
+            nombre="Bancolombia Ahorros",
+            tipo="TRANSFERENCIA",
+            banco="Bancolombia",
+            numero_cuenta="111-222-333",
+            titular="Oro del Sol",
+            instrucciones="Instrucción previa",
+            activo=True,
+        )
+        response = self.client.post(self.url, {
+            "recurso": "metodos_pago",
+            "accion": "edit",
+            "registro": str(metodo.pk),
+            f"metodos_pago-{metodo.pk}-nombre": "Bancolombia Ahorros",
+            f"metodos_pago-{metodo.pk}-tipo": "TRANSFERENCIA",
+            f"metodos_pago-{metodo.pk}-banco": "Bancolombia",
+            f"metodos_pago-{metodo.pk}-tipo_cuenta": "AHORROS",
+            f"metodos_pago-{metodo.pk}-numero_cuenta": "111-222-333",
+            f"metodos_pago-{metodo.pk}-titular": "Oro del Sol S.A.S.",
+            f"metodos_pago-{metodo.pk}-documento_titular": "900.123.456-7",
+            f"metodos_pago-{metodo.pk}-instrucciones": "Nueva instrucción actualizada con soporte de WhatsApp",
+            f"metodos_pago-{metodo.pk}-orden": "0",
+            # Sin activo -> se desmarca
+        })
+        self.assertRedirects(response, f"{self.url}#registros")
+        metodo.refresh_from_db()
+        self.assertEqual(metodo.titular, "Oro del Sol S.A.S.")
+        self.assertEqual(metodo.instrucciones, "Nueva instrucción actualizada con soporte de WhatsApp")
+        self.assertFalse(metodo.activo)
+
+    def test_accion_masiva_activa_y_desactiva_metodos(self):
+        metodo = MetodoPago.objects.create(
+            nombre="Efectivo Contraentrega",
+            tipo="EFECTIVO",
+            instrucciones="Pago en efectivo al recibir",
+            activo=True,
+        )
+        response = self.client.post(self.url, {
+            "recurso": "metodos_pago",
+            "accion": "bulk",
+            "estado": "0",
+            "registros": [str(metodo.pk)],
+        })
+        self.assertRedirects(response, f"{self.url}#registros")
+        metodo.refresh_from_db()
+        self.assertFalse(metodo.activo)
+
+        self.client.post(self.url, {
+            "recurso": "metodos_pago",
+            "accion": "bulk",
+            "estado": "1",
+            "registros": [str(metodo.pk)],
+        })
+        metodo.refresh_from_db()
+        self.assertTrue(metodo.activo)
+
+    def test_rutas_legadas_metodos_pago_redirigen_a_panel(self):
+        response_list = self.client.get(reverse("configuracion:metodo_pago_list"))
+        self.assertEqual(response_list.status_code, 302)
+        self.assertEqual(response_list["Location"], self.url)
+
+        response_create = self.client.get(reverse("configuracion:metodo_pago_create"))
+        self.assertEqual(response_create.status_code, 302)
+        self.assertEqual(response_create["Location"], self.url)
