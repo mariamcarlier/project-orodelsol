@@ -55,12 +55,54 @@ class ProductoForm(forms.ModelForm):
             "destacado",
             "activo",
         )
+        labels = {
+            "nombre": "Nombre",
+            "coleccion": "Colección",
+            "detalle": "Detalle",
+            "descripcion": "Descripción",
+            "precio": "Precio",
+            "imagen_url": "URL de la imagen",
+            "destacado": "Destacado",
+            "activo": "Activo",
+        }
+        widgets = {
+            "nombre": forms.TextInput(attrs={"class": "form-control"}),
+            "coleccion": forms.Select(attrs={"class": "form-select select2"}),
+            "detalle": forms.TextInput(attrs={"class": "form-control"}),
+            "descripcion": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
+            "precio": forms.NumberInput(
+                attrs={"class": "form-control", "step": "0.01", "min": "0"}
+            ),
+            "imagen_url": forms.URLInput(attrs={"class": "form-control"}),
+            "destacado": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "activo": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+
+    def clean_precio(self):
+        precio = self.cleaned_data.get("precio")
+        if precio is None or precio <= 0:
+            raise forms.ValidationError("El precio debe ser mayor a cero.")
+        return precio
 
 
 class ColeccionForm(forms.ModelForm):
     class Meta:
         model = Coleccion
         fields = ("nombre", "descripcion", "temporada", "imagen_url", "activa")
+        labels = {
+            "nombre": "Nombre",
+            "descripcion": "Descripción",
+            "temporada": "Temporada",
+            "imagen_url": "URL de imagen",
+            "activa": "Activa",
+        }
+        widgets = {
+            "nombre": forms.TextInput(attrs={"class": "form-control"}),
+            "descripcion": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
+            "temporada": forms.TextInput(attrs={"class": "form-control"}),
+            "imagen_url": forms.URLInput(attrs={"class": "form-control"}),
+            "activa": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
 
 
 RECURSOS = (

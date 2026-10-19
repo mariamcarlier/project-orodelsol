@@ -84,6 +84,16 @@
   z-index: 1; /* sobre el logo absoluto */
 }
 
+.header__user-name {
+  max-width: 180px;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 
 /* ── Íconos — SOLO SVG, sin texto ── */
 .header__icon {
@@ -357,6 +367,28 @@
   width: 8px;
 }
 
+.sidebar__user {
+  padding: 0 32px 14px;
+  color: rgba(246,237,210,.58);
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.sidebar__user strong {
+  color: var(--color-oro);
+  font-weight: 400;
+}
+
+.sidebar__logout-form {
+  margin: 0;
+}
+
+.sidebar__logout {
+  width: 100%;
+  background: transparent;
+  text-align: left;
+}
+
 /* Footer del sidebar */
 .sidebar__footer {
   padding: 24px 32px;
@@ -446,4 +478,5 @@
   .header__inner { padding: 0 16px; }
   .header__icon  { width: 36px; height: 36px; }
   .header__icon svg { width: 17px; height: 17px; }
+  .header__user-name { display: none; }
 }

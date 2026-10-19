@@ -127,10 +127,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = "static/"
-STATIC_ROOT =BASE_DIR / "staticfiles"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
-# Media 
+# Media
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
@@ -141,6 +141,6 @@ MEDIA_ROOT = BASE_DIR / "media"
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = "noreply@orodelsol.local"
 
-LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "profile"
-LOGOUT_REDIRECT_URL = "login"
+LOGIN_URL = "core:iniciar_sesion"
+LOGIN_REDIRECT_URL = "usuarios:perfil"
+LOGOUT_REDIRECT_URL = "core:iniciar_sesion"
