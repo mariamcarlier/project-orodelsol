@@ -536,3 +536,52 @@ class TipoDeCuentaTests(TestCase):
         response = self.etiqueta_en_perfil(self.crear("cli3", "1010"))
 
         self.assertContains(response, "css/perfil.css", count=1)
+ 
+        
+class SaludoBienvenidaTests(TestCase):
+    """El saludo se calcula en Python y nunca muestra None ni espacios sobrantes."""
+
+    def usuario(self, **datos):
+        datos.setdefault("username", "mariam01")
+        return get_user_model()(**datos)
+
+    def test_usa_el_nombre_tal_como_esta_guardado(self):
+        self.assertEqual(self.usuario(first_name="Mariam").nombre_visible, "Mariam")
+
+    def test_conserva_los_nombres_compuestos_y_los_acentos(self):
+        usuario = self.usuario(first_name="María José")
+
+        self.assertEqual(usuario.nombre_visible, "María José")
+
+    def test_quita_espacios_sobrantes_al_inicio_al_final_y_en_medio(self):
+        usuario = self.usuario(first_name="  Luis   Enrique  ")
+
+        self.assertEqual(usuario.nombre_visible, "Luis Enrique")
+
+    def test_si_el_nombre_esta_vacio_usa_el_nombre_de_usuario(self):
+        self.assertEqual(self.usuario(first_name="").nombre_visible, "mariam01")
+
+    def test_si_el_nombre_solo_tiene_espacios_usa_el_nombre_de_usuario(self):
+        self.assertEqual(self.usuario(first_name="   ").nombre_visible, "mariam01")
+
+    def test_si_el_nombre_es_none_usa_el_nombre_de_usuario(self):
+        self.assertEqual(self.usuario(first_name=None).nombre_visible, "mariam01")
+
+    def test_el_saludo_es_neutro(self):
+        usuario = self.usuario(first_name="Mariam")
+
+        self.assertEqual(usuario.saludo_bienvenida, "Te damos la bienvenida, Mariam")
+
+    def test_el_saludo_nunca_contiene_none_ni_espacios_dobles(self):
+        for nombre in ("Mariam", "", "   ", None, "  Luis   Enrique "):
+            with self.subTest(nombre=nombre):
+                saludo = self.usuario(first_name=nombre).saludo_bienvenida
+
+                self.assertNotIn("None", saludo)
+                self.assertEqual(saludo, " ".join(saludo.split()))
+
+    def test_la_propiedad_no_altera_otros_caracteres(self):
+        # El escapado de HTML es responsabilidad de la plantilla, no del modelo.
+        usuario = self.usuario(first_name="<b>Eva</b>")
+
+        self.assertEqual(usuario.nombre_visible, "<b>Eva</b>")
