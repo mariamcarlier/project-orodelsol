@@ -50,9 +50,35 @@ def crear_cuenta(request):
     )
 
 
+def imagen_banner_cuenta(usuario):
+    """Devuelve la URL de la imagen de fondo de la cabecera de la cuenta, o None.
+
+    PUNTO ÚNICO DE DECISIÓN. Hoy no existe una imagen administrable, así que
+    devuelve None y la cabecera se muestra con el degradado de marca
+    (clase .account-hero en static/css/components.css).
+
+    Para poder administrarla más adelante (cada paso, en su propio commit):
+      1. Agregar un campo de imagen en la configuración (por ejemplo en
+         ParametroGeneral) con su migración y su formulario en el panel.
+      2. Devolver aquí la URL de ese campo cuando tenga una imagen cargada.
+         Si se quiere una imagen distinta por tipo de cuenta, se decide aquí
+         con usuario.tipo_cuenta.
+      3. No hay nada más que cambiar: la plantilla ya muestra la imagen
+         cuando recibe una URL y vuelve al degradado cuando recibe None.
+    """
+    return None
+
+
 @login_required
 def perfil(request):
-    return render(request, "usuarios/perfil.html", {"perfil": request.user})
+    return render(
+        request,
+        "usuarios/perfil.html",
+        {
+            "perfil": request.user,
+            "banner_imagen_url": imagen_banner_cuenta(request.user),
+        },
+    )
 
 
 @login_required

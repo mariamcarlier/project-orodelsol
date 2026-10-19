@@ -1,6 +1,5 @@
 from django.contrib import admin
-
-from .models import CostoEnvio, Idioma, Impuesto, Moneda, ParametroGeneral
+from .models import CostoEnvio, Idioma, Impuesto, MetodoPago, Moneda, ParametroGeneral, PoliticaComercial
 
 
 @admin.register(ParametroGeneral)
@@ -98,3 +97,51 @@ class CostoEnvioAdmin(admin.ModelAdmin):
     @admin.action(description="Desactivar tarifas seleccionadas")
     def desactivar_tarifas(self, request, queryset):
         queryset.update(activo=False)
+
+
+@admin.register(MetodoPago)
+class MetodoPagoAdmin(admin.ModelAdmin):
+    list_display = (
+        "nombre",
+        "tipo",
+        "banco",
+        "numero_cuenta",
+        "titular",
+        "activo",
+        "orden",
+    )
+    list_filter = ("tipo", "activo")
+    search_fields = ("nombre", "banco", "titular", "numero_cuenta")
+    ordering = ("orden", "nombre")
+    actions = ("activar_metodos", "desactivar_metodos")
+
+    @admin.action(description="Activar métodos de pago seleccionados")
+    def activar_metodos(self, request, queryset):
+        queryset.update(activo=True)
+
+    @admin.action(description="Desactivar métodos de pago seleccionados")
+    def desactivar_metodos(self, request, queryset):
+        queryset.update(activo=False)
+
+
+@admin.register(PoliticaComercial)
+class PoliticaComercialAdmin(admin.ModelAdmin):
+    list_display = (
+        "__str__",
+        "monto_minimo_compra_b2c",
+        "monto_minimo_compra_b2b",
+        "monto_minimo_envio_gratis",
+        "tiempo_reserva_carrito_minutos",
+        "vigencia_cupones_dias",
+        "actualizado_por",
+        "fecha_actualizacion",
+    )
+    readonly_fields = ("actualizado_por", "fecha_actualizacion")
+
+    def has_add_permission(self, request):
+        return not PoliticaComercial.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+

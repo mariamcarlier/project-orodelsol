@@ -1,5 +1,6 @@
 from datetime import date
 import re
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core import mail
@@ -585,3 +586,88 @@ class SaludoBienvenidaTests(TestCase):
         usuario = self.usuario(first_name="<b>Eva</b>")
 
         self.assertEqual(usuario.nombre_visible, "<b>Eva</b>")
+        
+class CabeceraDeCuentaTests(TestCase):
+    """La cabecera de bienvenida muestra datos reales y la imagen es opcional y segura."""
+
+    def setUp(self):
+        self.usuario = get_user_model().objects.create_user(
+            username="cli",
+            password="ClaveSegura123!",
+            first_name="Mariam",
+            last_name="Alvarado",
+            tipo_documento="CC",
+            documento="1",
+            fecha_nacimiento=date(1990, 1, 1),
+            telefono="3001234567",
+        )
+        self.client.force_login(self.usuario)
+
+    def pagina(self):
+        return self.client.get("/usuario/perfil/")
+
+    def test_muestra_el_saludo_con_el_nombre_real(self):
+        self.assertContains(self.pagina(), "Te damos la bienvenida, Mariam")
+
+    def test_el_saludo_es_el_unico_h1_y_mi_perfil_pasa_a_h2(self):
+        response = self.pagina()
+
+        self.assertContains(response, "<h1", count=1)
+        self.assertContains(
+            response,
+            '<h1 id="account-hero-title" class="account-hero__title">'
+            "Te damos la bienvenida, Mariam</h1>",
+        )
+        self.assertContains(response, '<h2 id="profile-title"')
+
+    def test_sin_nombre_saluda_con_el_nombre_de_usuario(self):
+        self.usuario.first_name = ""
+        self.usuario.save()
+
+        self.assertContains(self.pagina(), "Te damos la bienvenida, cli")
+
+    def test_el_nombre_se_escapa_en_la_cabecera(self):
+        self.usuario.first_name = "<b>Eva</b>"
+        self.usuario.save()
+
+        response = self.pagina()
+
+        self.assertNotContains(response, "<b>Eva</b>")
+        self.assertContains(response, "Te damos la bienvenida, &lt;b&gt;Eva&lt;/b&gt;")
+
+    def test_sin_imagen_solo_se_ve_el_degradado(self):
+        response = self.pagina()
+
+        self.assertContains(response, 'class="account-hero"')
+        self.assertNotContains(response, "account-hero--con-imagen")
+        self.assertNotContains(response, "account-hero__image")
+
+    def test_con_imagen_se_muestra_como_decorativa(self):
+        with patch("usuarios.views.imagen_banner_cuenta", return_value="/media/banner.webp"):
+            response = self.pagina()
+
+        self.assertContains(
+            response,
+            '<img class="account-hero__image" src="/media/banner.webp" alt=""',
+        )
+        self.assertContains(response, "account-hero--con-imagen")
+
+    def test_la_url_de_la_imagen_no_puede_inyectar_html(self):
+        malicioso = '"><script>alert(1)</script>'
+        with patch("usuarios.views.imagen_banner_cuenta", return_value=malicioso):
+            response = self.pagina()
+
+        self.assertNotContains(response, "<script>alert(1)</script>")
+        self.assertContains(response, "&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;")
+
+    def test_hoy_no_hay_imagen_administrable(self):
+        from .views import imagen_banner_cuenta
+
+        self.assertIsNone(imagen_banner_cuenta(self.usuario))
+
+    def test_el_perfil_sigue_mostrando_sus_datos_y_la_foto_inicial(self):
+        response = self.pagina()
+
+        self.assertContains(response, "<dd>Mariam</dd>", html=True)
+        self.assertContains(response, "<dd>Cliente</dd>", html=True)
+        self.assertContains(response, 'class="profile-card__photo"')

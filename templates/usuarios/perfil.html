@@ -6,11 +6,22 @@
 {% endblock %}
 
 {% block content %}
+{# Cabecera de bienvenida. El saludo lo calcula el modelo (Usuario.saludo_bienvenida). #}
+<section class="account-hero{% if banner_imagen_url %} account-hero--con-imagen{% endif %}" aria-labelledby="account-hero-title">
+  {% if banner_imagen_url %}
+    {# Imagen opcional (ver imagen_banner_cuenta en usuarios/views.py). Es decorativa: alt vacío. #}
+    <img class="account-hero__image" src="{{ banner_imagen_url }}" alt="" decoding="async" fetchpriority="high">
+  {% endif %}
+  <div class="account-hero__inner">
+    <span class="account-hero__eyebrow">Mi cuenta</span>
+    <h1 id="account-hero-title" class="account-hero__title">{{ perfil.saludo_bienvenida }}</h1>
+    <p class="account-hero__text">Consulta y mantén al día la información de tu cuenta.</p>
+  </div>
+</section>
+
 <section class="profile-page container" aria-labelledby="profile-title">
   <div class="profile-page__intro">
-    <span class="eyebrow">Mi cuenta</span>
-    <h1 id="profile-title" class="heading">Mi <em>perfil</em></h1>
-    <p class="body-text">Consulta la información registrada en tu cuenta.</p>
+    <h2 id="profile-title" class="heading">Mi <em>perfil</em></h2>
   </div>
 
   <div class="profile-card">
