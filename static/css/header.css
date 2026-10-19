@@ -346,6 +346,18 @@
   transition: all var(--ease-smooth);
 }
 
+.sidebar__logout-form {
+  margin: 0;
+}
+
+.sidebar__logout {
+  width: 100%;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
 .sidebar__link::before {
   content: '';
   position: absolute;

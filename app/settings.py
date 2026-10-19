@@ -13,7 +13,6 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 import os
 import secrets
 from pathlib import Path
-import os
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -33,7 +32,21 @@ if not SECRET_KEY:
         raise ImproperlyConfigured("Define DJANGO_SECRET_KEY when DEBUG is disabled.")
     SECRET_KEY = secrets.token_urlsafe(50)
 
-ALLOWED_HOSTS = ['*']
+# In production, trust only the explicitly configured application hostnames.
+allowed_hosts_setting = os.environ.get("DJANGO_ALLOWED_HOSTS")
+if allowed_hosts_setting is None:
+    if not DEBUG:
+        raise ImproperlyConfigured(
+            "Define DJANGO_ALLOWED_HOSTS when DEBUG is disabled."
+        )
+    allowed_hosts_setting = "localhost,127.0.0.1,testserver"
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in allowed_hosts_setting.split(",")
+    if host.strip()
+]
+if not ALLOWED_HOSTS:
+    raise ImproperlyConfigured("DJANGO_ALLOWED_HOSTS must contain at least one host.")
 
 
 # Application definition
@@ -50,6 +63,23 @@ INSTALLED_APPS = [
     "configuracion",
 ]
 AUTH_USER_MODEL = 'usuarios.Usuario'
+
+# Login attempt counters must use a shared cache in production.
+cache_backend = os.environ.get("DJANGO_CACHE_BACKEND")
+if not DEBUG and (
+    not cache_backend or "locmem" in cache_backend.lower()
+):
+    raise ImproperlyConfigured(
+        "Configure a shared DJANGO_CACHE_BACKEND when DEBUG is disabled."
+    )
+CACHES = {
+    "default": {
+        "BACKEND": cache_backend
+        or "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": os.environ.get("DJANGO_CACHE_LOCATION", "orodelsol"),
+    }
+}
+# For DatabaseCache, create its table with `manage.py createcachetable <table>`.
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -138,9 +168,40 @@ MEDIA_ROOT = BASE_DIR / "media"
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-DEFAULT_FROM_EMAIL = "noreply@orodelsol.local"
+# Development prints reset links to the console; production uses SMTP settings from env.
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend"
+    if DEBUG
+    else "django.core.mail.backends.smtp.EmailBackend",
+)
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "true").lower() in {
+    "true",
+    "1",
+    "yes",
+}
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL")
+if not DEFAULT_FROM_EMAIL:
+    if not DEBUG:
+        raise ImproperlyConfigured(
+            "Define DEFAULT_FROM_EMAIL when DEBUG is disabled."
+        )
+    DEFAULT_FROM_EMAIL = "noreply@orodelsol.local"
+if (
+    not DEBUG
+    and EMAIL_BACKEND == "django.core.mail.backends.smtp.EmailBackend"
+    and not EMAIL_HOST
+):
+    raise ImproperlyConfigured("Define EMAIL_HOST to send production email.")
 
 LOGIN_URL = "core:iniciar_sesion"
 LOGIN_REDIRECT_URL = "usuarios:perfil"
 LOGOUT_REDIRECT_URL = "core:iniciar_sesion"
+
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG

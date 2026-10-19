@@ -1,5 +1,8 @@
-﻿from django.urls import path
 from django.contrib.auth import views as auth_views
+from django.urls import path
+
+from usuarios.forms import RateLimitedAuthenticationForm
+
 from . import views
 
 app_name = "core"
@@ -8,7 +11,10 @@ urlpatterns = [
     path("", views.inicio, name="inicio"),
     path(
         "login/",
-        auth_views.LoginView.as_view(template_name="registration/login.html"),
+        auth_views.LoginView.as_view(
+            template_name="registration/login.html",
+            form_class=RateLimitedAuthenticationForm,
+        ),
         name="iniciar_sesion",
     ),
     path(

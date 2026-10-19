@@ -15,23 +15,40 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
+from django.contrib.auth import urls as auth_urls
+from django.contrib.auth.views import LoginView
 from django.urls import include, path
+
+
+from usuarios.forms import RateLimitedAuthenticationForm
+from usuarios.views import crear_cuenta, perfil, registrar_usuario
+
 from usuarios.views import perfil, registrar_usuario
+
 
 admin.site.site_header = "Administración de Oro del Sol"
 admin.site.site_title = "Oro del Sol"
 admin.site.index_title = "Gestión de la tienda"
 
+auth_urlpatterns = [
+    pattern for pattern in auth_urls.urlpatterns if pattern.name != "login"
+]
+
 urlpatterns = [
-    path("admin/configuracion/", include("configuracion.urls")),
+    path("configuracion/", include("configuracion.urls")),
     path("admin/", admin.site.urls),
-    path("accounts/", include("django.contrib.auth.urls")),
+    path(
+        "accounts/login/",
+        LoginView.as_view(form_class=RateLimitedAuthenticationForm),
+        name="login",
+    ),
+    path("accounts/", include(auth_urlpatterns)),
     path("", include("core.urls")),
     path("usuario/", include("usuarios.urls")),
-    path("register/", registrar_usuario, name="register"),
+    path("register/", crear_cuenta, name="register"),
     path("profile/", perfil, name="profile"),
 ]
 

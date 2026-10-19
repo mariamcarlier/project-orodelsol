@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import redirect, render
 
-from .forms import EditarPerfilForm, RegistroUsuarioForm
+from .forms import EditarPerfilForm, RegistroClienteForm, RegistroUsuarioForm
 
 
 def es_administrador(user):
@@ -26,6 +26,26 @@ def registrar_usuario(request):
         form = RegistroUsuarioForm()
 
     return render(request, "usuarios/registrar.html", {"form": form})
+
+
+def crear_cuenta(request):
+    if request.method == "POST":
+        form = RegistroClienteForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request,
+                "Tu cuenta se creó correctamente. Ya puedes iniciar sesión.",
+            )
+            return redirect("login")
+    else:
+        form = RegistroClienteForm()
+
+    return render(
+        request,
+        "usuarios/registrar.html",
+        {"form": form, "registro_publico": True},
+    )
 
 
 @login_required
