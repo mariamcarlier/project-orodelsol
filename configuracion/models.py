@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.conf import settings
 from django.db import models
 
@@ -235,4 +236,90 @@ class MetodoPago(models.Model):
     def __str__(self):
         estado = "Activo" if self.activo else "Inactivo"
         return f"{self.nombre} ({self.get_tipo_display()}) — {estado}"
+
+
+class PoliticaComercial(models.Model):
+    monto_minimo_compra_b2c = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="Monto mínimo de compra para clientes particulares (B2C) en COP. 0 significa sin mínimo.",
+    )
+    monto_minimo_compra_b2b = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="Monto mínimo de compra para clientes mayoristas (B2B) en COP. 0 significa sin mínimo.",
+    )
+    monto_minimo_envio_gratis = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="Subtotal a partir del cual el envío nacional es gratuito. 0 desactiva el beneficio.",
+    )
+    tiempo_reserva_carrito_minutos = models.PositiveIntegerField(
+        default=60,
+        help_text="Tiempo en minutos que se retiene el inventario en el carrito antes de liberarlo.",
+    )
+    vigencia_cupones_dias = models.PositiveIntegerField(
+        default=30,
+        help_text="Vigencia por defecto en días calendario para cupones y promociones.",
+    )
+
+    actualizado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="politicas_actualizadas",
+        verbose_name="Actualizado por",
+    )
+    fecha_actualizacion = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Fecha de actualización",
+    )
+
+    class Meta:
+        verbose_name = "Política comercial"
+        verbose_name_plural = "Políticas comerciales"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_solo(cls):
+        obj, created = cls.objects.get_or_create(pk=1)
+        return obj
+
+    @property
+    def tiempo_reserva_display(self):
+        return f"{self.tiempo_reserva_carrito_minutos} min"
+
+    @property
+    def vigencia_cupones_display(self):
+        return f"{self.vigencia_cupones_dias} días"
+
+    def validar_monto_minimo(self, usuario, subtotal):
+        """Centraliza la validación de compra mínima según el rol B2B/B2C del usuario.
+
+        Devuelve (cumple: bool, monto_minimo_requerido: Decimal).
+        """
+        es_mayorista = bool(usuario and getattr(usuario, "rol", None) == "MAYORISTA")
+        monto_requerido = (
+            self.monto_minimo_compra_b2b if es_mayorista else self.monto_minimo_compra_b2c
+        )
+        if monto_requerido > 0 and subtotal < monto_requerido:
+            return False, monto_requerido
+        return True, monto_requerido
+
+    def aplica_envio_gratis(self, subtotal):
+        """Centraliza la regla de negocio para envío gratuito."""
+        if self.monto_minimo_envio_gratis > 0 and subtotal >= self.monto_minimo_envio_gratis:
+            return True
+        return False
+
+    def __str__(self):
+        return "Políticas Comerciales (Reglas del Negocio)"
+
 

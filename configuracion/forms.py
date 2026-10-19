@@ -2,7 +2,7 @@
 
 from django import forms
 import re
-from .models import CostoEnvio, Impuesto, Moneda, Idioma, MetodoPago, ParametroGeneral
+from .models import CostoEnvio, Idioma, Impuesto, MetodoPago, Moneda, ParametroGeneral, PoliticaComercial
 
 
 class ImpuestoForm(forms.ModelForm):
@@ -163,4 +163,54 @@ class MetodoPagoForm(forms.ModelForm):
                 cleaned_data["banco"] = "Daviplata"
 
         return cleaned_data
+
+
+class PoliticaComercialForm(forms.ModelForm):
+    class Meta:
+        model = PoliticaComercial
+        fields = [
+            "monto_minimo_compra_b2c",
+            "monto_minimo_compra_b2b",
+            "monto_minimo_envio_gratis",
+            "tiempo_reserva_carrito_minutos",
+            "vigencia_cupones_dias",
+        ]
+        help_texts = {
+            "monto_minimo_compra_b2c": "Monto mínimo requerido para procesar pedidos de clientes particulares (B2C). En COP. 0 indica sin mínimo.",
+            "monto_minimo_compra_b2b": "Monto mínimo requerido para procesar pedidos de clientes mayoristas (B2B). En COP. 0 indica sin mínimo.",
+            "monto_minimo_envio_gratis": "Monto de compra a partir del cual el costo de envío es $0 COP. 0 desactiva el beneficio.",
+            "tiempo_reserva_carrito_minutos": "Tiempo en minutos que se reserva el inventario de una joya en el carrito.",
+            "vigencia_cupones_dias": "Días de validez por defecto para cupones emitidos por la joyería.",
+        }
+
+    def clean_monto_minimo_compra_b2c(self):
+        monto = self.cleaned_data.get("monto_minimo_compra_b2c")
+        if monto is not None and monto < 0:
+            raise forms.ValidationError("El monto mínimo de compra B2C no puede ser negativo.")
+        return monto
+
+    def clean_monto_minimo_compra_b2b(self):
+        monto = self.cleaned_data.get("monto_minimo_compra_b2b")
+        if monto is not None and monto < 0:
+            raise forms.ValidationError("El monto mínimo de compra B2B no puede ser negativo.")
+        return monto
+
+    def clean_monto_minimo_envio_gratis(self):
+        monto = self.cleaned_data.get("monto_minimo_envio_gratis")
+        if monto is not None and monto < 0:
+            raise forms.ValidationError("El monto mínimo para envío gratis no puede ser negativo.")
+        return monto
+
+    def clean_tiempo_reserva_carrito_minutos(self):
+        tiempo = self.cleaned_data.get("tiempo_reserva_carrito_minutos")
+        if tiempo is not None and tiempo < 1:
+            raise forms.ValidationError("El tiempo de reserva de carrito debe ser de al menos 1 minuto.")
+        return tiempo
+
+    def clean_vigencia_cupones_dias(self):
+        dias = self.cleaned_data.get("vigencia_cupones_dias")
+        if dias is not None and dias < 1:
+            raise forms.ValidationError("La vigencia de cupones debe ser de al menos 1 día.")
+        return dias
+
 
