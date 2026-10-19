@@ -19,6 +19,7 @@ from configuracion.forms import (
     MetodoPagoForm,
     MonedaForm,
     ParametroGeneralForm,
+    PoliticaComercialForm,
 )
 from configuracion.models import (
     CostoEnvio,
@@ -27,6 +28,7 @@ from configuracion.models import (
     MetodoPago,
     Moneda,
     ParametroGeneral,
+    PoliticaComercial,
 )
 from usuarios.forms import AdministrarUsuarioForm, RegistroUsuarioForm
 from usuarios.models import Usuario
@@ -249,6 +251,26 @@ RECURSOS = (
         "deletable": False,
         "singleton": True,
     },
+    {
+        "key": "politicas_comerciales",
+        "title": "Políticas comerciales",
+        "icon": "bx-badge-check",
+        "grupo": "configuracion",
+        "grupo_orden": "7",
+        "model": PoliticaComercial,
+        "create_form": PoliticaComercialForm,
+        "edit_form": PoliticaComercialForm,
+        "columns": (
+            ("Mínimo B2C (COP)", "monto_minimo_compra_b2c"),
+            ("Mínimo B2B (COP)", "monto_minimo_compra_b2b"),
+            ("Envío gratis desde", "monto_minimo_envio_gratis"),
+            ("Reserva carrito", "tiempo_reserva_display"),
+            ("Vigencia cupones", "vigencia_cupones_display"),
+        ),
+        "search_fields": (),
+        "deletable": False,
+        "singleton": True,
+    },
 )
 
 
@@ -307,7 +329,7 @@ def crear_contexto(request, clave, formularios=None, formulario_abierto=None):
     registros = modelo.objects.all().order_by("pk")
     if modelo is Group:
         registros = registros.prefetch_related("permissions")
-    if modelo is ParametroGeneral:
+    if configuracion.get("singleton"):
         registros = registros.filter(pk=1)
     if query:
         filtro = Q()
@@ -476,7 +498,7 @@ def procesar_accion(request, clave, configuracion):
         )
         if formulario.is_valid():
             guardado = formulario.save(commit=False)
-            if isinstance(guardado, ParametroGeneral):
+            if hasattr(guardado, "actualizado_por"):
                 guardado.actualizado_por = request.user
             guardado.save()
             formulario.save_m2m()
