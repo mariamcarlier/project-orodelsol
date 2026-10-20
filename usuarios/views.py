@@ -1,12 +1,51 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.http import Http404
 from django.shortcuts import redirect, render
+from django.urls import reverse
 
 from .forms import EditarPerfilForm, RegistroClienteForm, RegistroUsuarioForm
 
 
 def es_administrador(user):
     return user.is_authenticated and (user.is_superuser or user.rol == "ADMIN")
+
+
+# Secciones de la cuenta y roles que pueden verlas.
+# Las claves son los <slug> de la URL. Cuando existan modelos
+# (Pedido, Cotizacion, Direccion...), cada clave podrá tener su
+# propio template con datos reales en lugar del estado vacío.
+SECCIONES_CUENTA = {
+    "tallas":          {"titulo": "Mis Tallas",             "roles": {"CLIENTE", "MAYORISTA"}},
+    "direcciones":     {"titulo": "Libreta de Direcciones", "roles": {"CLIENTE", "MAYORISTA"}},
+    "lista-de-deseos": {"titulo": "Mi Lista de Deseos",     "roles": {"CLIENTE", "MAYORISTA"}},
+    "pedido-reciente": {"titulo": "Mi Pedido Reciente",     "roles": {"CLIENTE", "MAYORISTA"}},
+    "empresa":         {"titulo": "Datos de mi Empresa",    "roles": {"MAYORISTA"}},
+    "solicitud":       {"titulo": "Estado de mi Solicitud", "roles": {"MAYORISTA"}},
+    "cotizaciones":    {"titulo": "Mis Cotizaciones",       "roles": {"MAYORISTA"}},
+}
+
+
+def rol_efectivo(usuario):
+    """Rol mostrado en pantalla.
+
+    Un superusuario creado con createsuperuser conserva rol='CLIENTE'
+    (default del campo), pero para presentación siempre es Administrador.
+    Mismo criterio que es_administrador().
+    """
+    if usuario.is_superuser or usuario.rol == "ADMIN":
+        return "Administrador"
+    return usuario.get_rol_display()
+
+
+def migas_cuenta(ultima=None):
+    migas = [
+        ("Inicio", reverse("core:inicio")),
+        ("Mi cuenta", reverse("usuarios:perfil")),
+    ]
+    if ultima:
+        migas.append(ultima)
+    return migas
 
 
 @login_required
@@ -48,33 +87,35 @@ def crear_cuenta(request):
     )
 
 
-def imagen_banner_cuenta(usuario):
-    """Devuelve la URL de la imagen de fondo de la cabecera de la cuenta, o None.
-
-    PUNTO ÚNICO DE DECISIÓN. Hoy no existe una imagen administrable, así que
-    devuelve None y la cabecera se muestra con el degradado de marca
-    (clase .account-hero en static/css/components.css).
-
-    Para poder administrarla más adelante (cada paso, en su propio commit):
-      1. Agregar un campo de imagen en la configuración (por ejemplo en
-         ParametroGeneral) con su migración y su formulario en el panel.
-      2. Devolver aquí la URL de ese campo cuando tenga una imagen cargada.
-         Si se quiere una imagen distinta por tipo de cuenta, se decide aquí
-         con usuario.tipo_cuenta.
-      3. No hay nada más que cambiar: la plantilla ya muestra la imagen
-         cuando recibe una URL y vuelve al degradado cuando recibe None.
-    """
-    return None
-
-
 @login_required
 def perfil(request):
+    usuario = request.user
     return render(
         request,
         "usuarios/perfil.html",
         {
-            "perfil": request.user,
-            "banner_imagen_url": imagen_banner_cuenta(request.user),
+            "perfil": usuario,
+            # Fallback seguro: nunca muestra "None" ni cadena vacía.
+            "nombre_bienvenida": (usuario.first_name or "").strip() or usuario.username,
+            "rol_efectivo": rol_efectivo(usuario),
+            "es_admin": usuario.is_superuser or usuario.rol == "ADMIN",
+            "breadcrumbs": migas_cuenta(),
+        },
+    )
+
+
+@login_required
+def seccion_cuenta(request, clave):
+    seccion = SECCIONES_CUENTA.get(clave)
+    if seccion is None or request.user.rol not in seccion["roles"]:
+        raise Http404("La sección solicitada no está disponible.")
+
+    return render(
+        request,
+        "usuarios/seccion_cuenta.html",
+        {
+            "titulo_seccion": seccion["titulo"],
+            "breadcrumbs": migas_cuenta((seccion["titulo"], None)),
         },
     )
 

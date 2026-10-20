@@ -34,15 +34,12 @@ body {
   overflow-x: hidden;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
-
-   /* Footer al final de la ventana en páginas cortas */
   display: flex;
   flex-direction: column;
-  min-height: 100vh; /*es la altura real visible en móviles, sin el salto de la barra de direcciones.*/
-  min-height: 100dvh; /*queda como respaldo para navegadores antiguos.*/
+  min-height: 100vh;
 }
 
-body > main {
+main#mainContent {
   flex: 1 0 auto; /*significa «crece para llenar el espacio libre, pero nunca te encojas».*/
 }
 
@@ -795,6 +792,70 @@ button {
   transform: translateY(0);
 }
 
+/* ════════════════════════════════════════════════════════
+   MIGAS DE PAN — reutilizable (tienda, cuenta, admin vía partial)
+   ════════════════════════════════════════════════════════ */
+.breadcrumbs {
+  margin-bottom: 20px;
+}
+
+.breadcrumbs__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+}
+
+.breadcrumbs__item {
+  display: flex;
+  align-items: center;
+  color: var(--color-text-muted);
+}
+
+.breadcrumbs__item + .breadcrumbs__item::before {
+  content: "/";
+  margin: 0 10px;
+  color: var(--color-oro-borde);
+}
+
+.breadcrumbs__item a {
+  padding-bottom: 1px;
+  color: inherit;
+  border-bottom: 1px solid transparent;
+  transition: color var(--ease-fast), border-color var(--ease-fast);
+}
+
+.breadcrumbs__item a:hover {
+  color: var(--color-cacao);
+  border-bottom-color: var(--color-cacao);
+}
+
+.breadcrumbs__item [aria-current="page"] {
+  color: var(--color-cacao);
+}
+
+/* Variante sobre fondos oscuros (hero de la cuenta) */
+.breadcrumbs--light .breadcrumbs__item {
+  color: rgba(246, 237, 210, .6);
+}
+
+.breadcrumbs--light .breadcrumbs__item + .breadcrumbs__item::before {
+  color: rgba(246, 237, 210, .3);
+}
+
+.breadcrumbs--light .breadcrumbs__item a:hover {
+  color: var(--color-oro);
+  border-bottom-color: var(--color-oro);
+}
+
+.breadcrumbs--light .breadcrumbs__item [aria-current="page"] {
+  color: var(--color-marfil);
+}
 
 /* ════════════════════════════════════════════════════════
    ACCESIBILIDAD — Focus visible global
