@@ -51,7 +51,7 @@ class ConsultarPerfilTests(TestCase):
         self.assertNotContains(response, self.otro_usuario.email)
         self.assertNotContains(response, self.otro_usuario.documento)
         self.assertNotContains(response, 'name="first_name"', html=False)
-        self.assertContains(response, 'action="/accounts/logout/"', html=False)
+        self.assertContains(response, 'action="/logout/"', html=False)
         self.assertContains(response, 'href="/usuario/perfil/editar/"', html=False)
 
     def test_muestra_sin_resultados_para_campos_sin_dato(self):
@@ -96,7 +96,7 @@ class ConsultarPerfilTests(TestCase):
 
         self.assertRedirects(
             response,
-            "/accounts/login/?next=/usuario/perfil/",
+            "/login/?next=/usuario/perfil/",
             fetch_redirect_response=False,
         )
 
@@ -200,7 +200,7 @@ class ConsultarPerfilTests(TestCase):
 
         self.assertRedirects(
             response,
-            "/profile/",
+            "/usuario/perfil/",
             fetch_redirect_response=False,
         )
 
@@ -260,7 +260,7 @@ class ConsultarPerfilTests(TestCase):
 
         self.assertRedirects(
             response,
-            "/profile/",
+            "/usuario/perfil/",
             fetch_redirect_response=False,
         )
         self.assertTrue(response.wsgi_request.user.is_authenticated)
@@ -282,7 +282,7 @@ class ConsultarPerfilTests(TestCase):
 
         response = self.client.post("/accounts/logout/")
 
-        self.assertRedirects(response, "/")
+        self.assertRedirects(response, "/login/")
         self.assertFalse(response.wsgi_request.user.is_authenticated)
 
     def test_menu_muestra_cierre_de_sesion_protegido_con_csrf(self):
@@ -290,7 +290,7 @@ class ConsultarPerfilTests(TestCase):
 
         response = self.client.get("/")
 
-        self.assertContains(response, 'action="/accounts/logout/"', html=False)
+        self.assertContains(response, 'action="/logout/"', html=False)
         self.assertContains(response, "Cerrar sesión")
         self.assertContains(response, 'name="csrfmiddlewaretoken"', html=False)
 
@@ -326,7 +326,7 @@ class ConsultarPerfilTests(TestCase):
 
         self.assertRedirects(
             response,
-            "/accounts/login/?next=/usuario/registrar/",
+            "/login/?next=/usuario/registrar/",
             fetch_redirect_response=False,
         )
 

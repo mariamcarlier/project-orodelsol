@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+<link rel="stylesheet" href="{% static 'css/producto-form.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="producto-form-page">
+  <div class="producto-form-shell">
+    <a class="producto-form-back" href="{% url 'core:producto_listar' %}">
+      <span aria-hidden="true">&larr;</span> Volver a productos
+    </a>
+
+    <header class="producto-form-heading">
+      <span class="eyebrow">Administración de catálogo</span>
+      <h1 class="heading">{{ titulo|default:"Producto" }}</h1>
+      <p class="body-text">Completa la información para mantener tu catálogo cuidado y actualizado.</p>
+    </header>
+
+    <div class="producto-form-card">
+      <div class="producto-form-card__top">
+        <div>
+          <span class="producto-form-card__eyebrow">Ficha de producto</span>
+          <h2>Información general</h2>
+        </div>
+        <span class="producto-form-card__mark" aria-hidden="true">18K</span>
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="producto-form-errors" role="alert">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <form method="post" class="producto-form" novalidate>
+        {% csrf_token %}
+        <div class="producto-form__grid">
+          {% for field in form %}
+            {% if field.field.widget.input_type == "checkbox" %}
+              <div class="producto-form__field producto-form__field--toggle">
+                <label class="producto-form__toggle" for="{{ field.id_for_label }}">
+                  {{ field }}
+                  <span class="producto-form__toggle-ui" aria-hidden="true"></span>
+                  <span class="producto-form__toggle-copy">
+                    <span class="producto-form__label">{{ field.label }}</span>
+                    <span class="producto-form__help">Activa esta opción para mostrarla en el catálogo.</span>
+                  </span>
+                </label>
+                {% for error in field.errors %}<span class="producto-form__error">{{ error }}</span>{% endfor %}
+              </div>
+            {% else %}
+              <div class="producto-form__field{% if field.name == 'descripcion' %} producto-form__field--wide{% endif %}{% if field.errors %} is-invalid{% endif %}">
+                <label class="producto-form__label" for="{{ field.id_for_label }}">
+                  {{ field.label }}{% if field.field.required %}<span class="producto-form__required" aria-label="obligatorio">*</span>{% endif %}
+                </label>
+                {{ field }}
+                {% if field.help_text %}<span class="producto-form__help">{{ field.help_text|striptags }}</span>{% endif %}
+                {% for error in field.errors %}<span class="producto-form__error">{{ error }}</span>{% endfor %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        <div class="producto-form__footer">
+          <p><span aria-hidden="true">*</span> Campos obligatorios</p>
+          <div class="producto-form__actions">
+            <a href="{% url 'core:producto_listar' %}" class="producto-form__cancel">Cancelar</a>
+            <button type="submit" class="producto-form__submit">
+              Guardar producto <span aria-hidden="true">&rarr;</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <p class="producto-form-note"><span aria-hidden="true">i</span> El precio debe ser mayor que cero. Los cambios se guardan al confirmar el formulario.</p>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'js/modulos/formularios/select2/init.js' %}"></script>
+{% endblock %}

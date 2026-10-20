@@ -19,4 +19,9 @@ urlpatterns = [
     path("monedas/nuevo/", redirigir_al_panel, {"seccion": "monedas"}, name="moneda_create"),
     path("idiomas/", redirigir_al_panel, {"seccion": "idiomas"}, name="idioma_list"),
     path("idiomas/nuevo/", redirigir_al_panel, {"seccion": "idiomas"}, name="idioma_create"),
+    path("costos-envio/", redirigir_al_panel, {"seccion": "costos_envio"}, name="costo_envio_list"),
+    path("costos-envio/nuevo/", redirigir_al_panel, {"seccion": "costos_envio"}, name="costo_envio_create"),
+    path("metodos-pago/", redirigir_al_panel, {"seccion": "metodos_pago"}, name="metodo_pago_list"),
+    path("metodos-pago/nuevo/", redirigir_al_panel, {"seccion": "metodos_pago"}, name="metodo_pago_create"),
+    path("politicas-comerciales/", redirigir_al_panel, {"seccion": "politicas_comerciales"}, name="politica_comercial_detail"),
 ]

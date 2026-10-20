@@ -1,0 +1,7 @@
+{% if messages %}
+<div class="js-django-messages" hidden>
+  {% for message in messages %}
+  <span data-icon="{% if 'error' in message.tags %}error{% elif 'warning' in message.tags %}warning{% elif 'success' in message.tags %}success{% else %}info{% endif %}">{{ message }}</span>
+  {% endfor %}
+</div>
+{% endif %}
