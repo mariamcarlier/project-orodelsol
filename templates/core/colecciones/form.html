@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/coleccion-form.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="coleccion-form-page">
+  <div class="coleccion-form-shell">
+    <a class="coleccion-form-back" href="{% url 'core:coleccion_listar' %}">
+      <span aria-hidden="true">&larr;</span> Volver a colecciones
+    </a>
+
+    <header class="coleccion-form-heading">
+      <span class="eyebrow">Administración de catálogo</span>
+      <h1 class="heading">{{ titulo|default:"Nueva colección" }}</h1>
+      <p class="body-text">Crea una colección para organizar y presentar tus diseños de forma especial.</p>
+    </header>
+
+    <div class="coleccion-form-card">
+      <div class="coleccion-form-card__top">
+        <div>
+          <span class="coleccion-form-card__eyebrow">Catálogo Oro del Sol</span>
+          <h2>Detalles de la colección</h2>
+        </div>
+        <span class="coleccion-form-card__mark" aria-hidden="true">✦</span>
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="coleccion-form-errors" role="alert">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <form method="post" class="coleccion-form" novalidate>
+        {% csrf_token %}
+        <div class="coleccion-form__grid">
+          {% for field in form %}
+            {% if field.field.widget.input_type == "checkbox" %}
+              <div class="coleccion-form__field coleccion-form__field--toggle">
+                <label class="coleccion-form__toggle" for="{{ field.id_for_label }}">
+                  {{ field }}
+                  <span class="coleccion-form__toggle-ui" aria-hidden="true"></span>
+                  <span class="coleccion-form__toggle-copy">
+                    <span class="coleccion-form__label">{{ field.label }}</span>
+                    <span class="coleccion-form__help">Las colecciones activas pueden mostrarse en la tienda.</span>
+                  </span>
+                </label>
+                {% for error in field.errors %}<span class="coleccion-form__error">{{ error }}</span>{% endfor %}
+              </div>
+            {% else %}
+              <div class="coleccion-form__field{% if field.name == 'descripcion' %} coleccion-form__field--wide{% endif %}{% if field.errors %} is-invalid{% endif %}">
+                <label class="coleccion-form__label" for="{{ field.id_for_label }}">
+                  {{ field.label }}{% if field.field.required %}<span class="coleccion-form__required" aria-label="obligatorio">*</span>{% endif %}
+                </label>
+                {{ field }}
+                {% if field.help_text %}<span class="coleccion-form__help">{{ field.help_text|striptags }}</span>{% endif %}
+                {% for error in field.errors %}<span class="coleccion-form__error">{{ error }}</span>{% endfor %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        <div class="coleccion-form__footer">
+          <p><span aria-hidden="true">*</span> Campos obligatorios</p>
+          <div class="coleccion-form__actions">
+            <a href="{% url 'core:coleccion_listar' %}" class="coleccion-form__cancel">Cancelar</a>
+            <button type="submit" class="coleccion-form__submit">
+              Guardar colección <span aria-hidden="true">&rarr;</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <p class="coleccion-form-note"><span aria-hidden="true">i</span> Los productos asociados permanecen vinculados a su colección.</p>
+  </div>
+</section>
+{% endblock %}
