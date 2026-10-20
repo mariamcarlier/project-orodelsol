@@ -270,63 +270,131 @@
   gap: var(--space-gap);
   
 }
-/* CABECERA DE CUENTA — franja clara de marca.
-   Colores: tokens.css. Imagen administrable: ver imagen_banner_cuenta()
-   en usuarios/views.py. Con imagen se activa el velo oscuro; sin imagen
-   solo se ve este degradado. */
+
+/* ────────────────────────────────────────────────────────
+   CABECERA DE CUENTA  (.account-hero)
+   Franja de bienvenida de las páginas de «Mi cuenta».
+
+   CAPAS, de abajo hacia arriba:
+     1. Degradado de marca ...... background de .account-hero (siempre está)
+     2. Imagen opcional ......... <img class="account-hero__image">; solo
+                                  aparece si la vista envía una URL
+     3. Capa oscura ............. ::after, solo con el modificador
+                                  .account-hero--con-imagen; asegura que el
+                                  texto se lea sobre cualquier imagen
+                                  (contraste mínimo 3:1 en el título y 4.5:1
+                                  en el texto)
+     4. Texto ................... .account-hero__inner
+
+   PARA CAMBIAR EL FONDO:
+     · Colores del degradado: las variables --hero-* de más abajo.
+     · Imagen administrable: ver imagen_banner_cuenta() en usuarios/views.py.
+     · Fondo distinto por tipo de cuenta (futuro): agregar un modificador,
+       por ejemplo .account-hero--mayorista { --hero-medio: …; }, y ponerlo
+       desde la plantilla. No hace falta duplicar el HTML ni el CSS.
+   ──────────────────────────────────────────────────────── */
 .account-hero {
+  /* Colores del degradado de marca (se editan aquí) */
+  --hero-oscuro:     var(--color-tierra);
+  --hero-intermedio: var(--color-cacao-hover);
+  --hero-medio:      var(--color-cacao);
+  --hero-calido:     #a8864a;
+  --hero-brillo:     var(--gold);
+  /* Zona de la imagen que se conserva al recortar (70% = hacia la derecha) */
+  --hero-foco:   70% 50%;
+
   position: relative;
-  isolation: isolate;
+  isolation: isolate;          /* las capas internas no se mezclan con el resto */
   overflow: hidden;
   display: grid;
   align-items: center;
-  min-height: clamp(150px, 20vw, 210px);
+  /* Altura fluida: 180px en móvil, hasta 300px en escritorio. Es un mínimo:
+     si el nombre es largo y ocupa más líneas, la franja crece y no corta nada. */
+  min-height: clamp(180px, 28vw, 300px);
+  color: var(--color-marfil);
+  /* Degradado de marca: oscuro del lado del texto y dorado hacia la derecha,
+     con un brillo suave tipo satén arriba a la derecha. */
   background:
-    radial-gradient(55% 130% at 92% 0%, rgba(201,168,76,.25), transparent 60%),
-    linear-gradient(115deg, var(--color-marfil) 0%, #f5eedd 60%, rgba(201,168,76,.30) 100%);
-  border-bottom: 1px solid var(--color-oro-borde);
+    radial-gradient(55% 130% at 92% 10%, rgba(246,237,210,.26), transparent 62%),
+    linear-gradient(115deg,
+      var(--hero-oscuro) 0%,
+      var(--hero-intermedio) 40%,
+      var(--hero-medio) 70%,
+      var(--hero-calido) 90%,
+      var(--hero-brillo) 100%);
 }
 
 .account-hero__image {
-  position: absolute; inset: 0; z-index: 0;
-  width: 100%; height: 100%; object-fit: cover;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;           /* se recorta, nunca se deforma */
+  object-position: var(--hero-foco);
 }
 
+/* Capa oscura de legibilidad. SOLO se activa cuando hay una imagen
+   (modificador --con-imagen): el degradado de marca ya se lee por sí solo.
+   Es más fuerte del lado del texto (izquierda). */
 .account-hero--con-imagen::after {
-  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
-  background: linear-gradient(90deg, rgba(44,26,16,.90) 0%, rgba(44,26,16,.70) 60%, rgba(44,26,16,.30) 100%);
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    rgba(44,26,16,.92) 0%,
+    rgba(44,26,16,.80) 55%,
+    rgba(44,26,16,.35) 100%);
 }
 
 .account-hero__inner {
-  position: relative; z-index: 2;
-  width: min(100%, var(--container-md, 1120px));
+  position: relative;
+  z-index: 2;
+  width: min(100%, var(--container-md));   /* alineado con el contenido de la página */
   margin-inline: auto;
-  padding: clamp(26px, 4vw, 40px) var(--gutter, 24px);
+  padding: clamp(28px, 5vw, 48px) var(--gutter);
 }
 
 .account-hero__eyebrow {
-  display: block; margin-bottom: 10px;
-  font-size: 10px; letter-spacing: 4px; text-transform: uppercase;
-  color: var(--color-cacao);
+  display: block;
+  margin-bottom: 12px;
+  font-size: 11px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--color-oro);
 }
 
 .account-hero__title {
   font-family: var(--font-display);
+  font-size: clamp(30px, 5vw, 52px);
   font-weight: 300;
-  font-size: clamp(28px, 4vw, 44px);
-  line-height: 1.15;
-  color: var(--color-text-dark);
-  overflow-wrap: anywhere;
+  line-height: 1.1;
+  color: var(--color-marfil);
+  max-width: 14em;             /* un nombre largo pasa a otra línea antes de llegar a la zona dorada */
+  overflow-wrap: anywhere;     /* un nombre muy largo no desborda la pantalla */
+  text-wrap: balance;
 }
-
-.account-hero__title em { font-style: italic; color: var(--color-cacao); }
 
 .account-hero__text {
-  max-width: 480px; margin-top: 10px;
-  font-size: 14px; color: var(--color-text-muted);
+  max-width: 480px;
+  margin-top: 14px;
+  font-size: 15px;
+  color: var(--color-marfil);
 }
 
-/* Con imagen, el texto vuelve a claro para mantener contraste */
-.account-hero--con-imagen .account-hero__title,
-.account-hero--con-imagen .account-hero__text { color: var(--color-text-on-dark); }
-.account-hero--con-imagen .account-hero__title em { color: var(--color-oro); }
+/* En pantallas angostas el texto ocupa casi todo el ancho, así que el dorado ya no
+   puede ir a la derecha (el texto quedaría sobre una zona clara). Pasa a ser un
+   destello pequeño en la esquina inferior derecha, y la capa oscura es pareja. */
+@media (max-width: 768px) {
+  .account-hero {
+    background:
+      radial-gradient(40% 50% at 100% 100%, rgba(201,168,76,.42), transparent 70%),  /* = --gold */
+      linear-gradient(160deg, var(--hero-oscuro) 0%, var(--hero-intermedio) 55%, var(--hero-medio) 100%);
+  }
+
+  .account-hero--con-imagen::after {
+    background: linear-gradient(90deg, rgba(44,26,16,.88), rgba(44,26,16,.74));
+  }
+}
