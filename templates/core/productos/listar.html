@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Productos | Oro del Sol{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="{% static 'css/catalogo-listas.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="catalog-list-page">
+  <div class="catalog-list-shell">
+    <header class="catalog-list-heading">
+      <div>
+        <span class="eyebrow">Administración de catálogo</span>
+        <h1 class="heading">Nuestros <em>productos</em></h1>
+        <p class="body-text">Organiza las piezas de Oro del Sol y mantén tu catálogo al día.</p>
+      </div>
+      <a class="catalog-list-primary" href="{% url 'core:producto_crear' %}">
+        <span aria-hidden="true">+</span> Nuevo producto
+      </a>
+    </header>
+
+    <div class="catalog-list-card">
+      <div class="catalog-list-card__top">
+        <div>
+          <span class="catalog-list-card__eyebrow">Inventario</span>
+          <h2>Listado de productos</h2>
+        </div>
+        <span class="catalog-list-count">{{ productos|length }} en total</span>
+      </div>
+
+      <div class="catalog-list-table-wrap">
+        <table class="catalog-list-table js-data-table" id="tabla-productos" data-singular="producto" data-plural="productos">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Colección</th>
+              <th>Precio</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for producto in productos %}
+            <tr>
+              <td>
+                <span class="catalog-list-name">{{ producto.nombre }}</span>
+                {% if producto.detalle %}<span class="catalog-list-subtitle">{{ producto.detalle }}</span>{% endif %}
+              </td>
+              <td>{{ producto.coleccion.nombre }}</td>
+              <td class="catalog-list-price">COP ${{ producto.precio|floatformat:0 }}</td>
+              <td><span class="catalog-list-status{% if not producto.activo %} is-inactive{% endif %}">{{ producto.activo|yesno:"Activo,Inactivo" }}</span></td>
+              <td>
+                <div class="catalog-list-actions">
+                  <a class="catalog-list-action" href="{% url 'core:producto_editar' producto.pk %}">Editar</a>
+                  <button
+                    type="button"
+                    class="catalog-list-action is-delete js-confirm-delete"
+                    data-confirm-form="eliminar-producto-{{ producto.pk }}"
+                    data-item-name="{{ producto.nombre }}"
+                  >Eliminar</button>
+                  <form
+                    id="eliminar-producto-{{ producto.pk }}"
+                    method="post"
+                    action="{% url 'core:producto_eliminar' producto.pk %}"
+                    class="catalog-list-hidden-form"
+                    hidden
+                  >
+                    {% csrf_token %}
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="catalog-list-note"><span aria-hidden="true">✦</span> Cada pieza cuenta una historia. Mantén la información de tu catálogo actualizada.</p>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% include "partials/sweetalert-messages.html" %}
+<script src="{% static 'js/modulos/productos/tabla/datatable.js' %}"></script>
+<script src="{% static 'js/modulos/catalogo/eliminar/confirmar.js' %}"></script>
+<script src="{% static 'js/modulos/mensajes/sweetalert/init.js' %}"></script>
+{% endblock %}

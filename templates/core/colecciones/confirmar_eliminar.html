@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <h1>{{ titulo }}</h1>
+      <p>¿Seguro que deseas eliminar la colección <strong>{{ object.nombre }}</strong>? Esta acción no se puede deshacer.</p>
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+        <a href="{% url 'core:coleccion_listar' %}" class="btn btn-outline-secondary">Cancelar</a>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}
