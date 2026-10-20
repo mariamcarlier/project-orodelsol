@@ -1,97 +1,217 @@
-/* Debajo de la cabecera de bienvenida basta menos aire arriba que en una página sola. */
-.profile-page {
-  padding-top: clamp(28px, 5vw, 48px);
-}
+/* ═══════════════════════════════════════════════
+   perfil.css — Página "Mi cuenta" (hero + tarjetas)
+   ═══════════════════════════════════════════════ */
 
-.profile-page__intro {
-  max-width: 560px;
-  margin-bottom: 8px;
-}
-
-.profile-page__intro .heading {
-  margin-bottom: 14px;
-}
-
-.profile-card {
+/* ── 1. HERO / banner de bienvenida ── */
+.account-hero {
   position: relative;
-  padding: clamp(20px, 4vw, 36px);
-  border: 1px solid rgba(196,174,136,.65);
-  background: linear-gradient(135deg, var(--color-white), var(--color-marfil));
+  overflow: hidden;
+  padding: clamp(64px, 10vw, 120px) clamp(16px, 4vw, 32px) clamp(56px, 8vw, 96px);
+  /* Rosa cobrizo con luz dorada (referencia visual del proyecto) */
+  background:
+     radial-gradient(ellipse at 50% 30%, rgba(255, 230, 220, 0.55) 0%, transparent 60%),
+     linear-gradient(105deg, #7d4747 0%, #a86565 25%, #d9a1a1 50%, #a86565 75%, #7d4747 100%);
+}
+
+.account-hero__inner {
+  position: relative;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.account-hero__eyebrow {
+  display: block;
+  margin: 18px 0 14px;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: #7d4747; /* Tono vino/cobrizo oscuro para contraste */
+}
+
+.account-hero__title {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 64px);
+  font-weight: 300;
+  line-height: 1.1;
+  color: #3a1c13; /* Marrón muy oscuro, casi negro, se lee perfecto */
+}
+
+.account-hero__title em {
+  font-style: italic;
+  color: white;
+}
+
+.account-hero__desc {
+  max-width: 480px;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #4a2519; /* Café oscuro */
+}
+
+/* ── 2. DASHBOARD (pila de tarjetas) ── */
+.account-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: min(100%, 924px);
+  margin: 0 auto;
+  padding: clamp(36px, 6vw, 56px) clamp(16px, 4vw, 32px) clamp(56px, 9vw, 96px);
+}
+
+/* ── 3. TARJETA ── */
+.account-card {
+  padding: 24px;
+  background: var(--color-white);
+  border: 1px solid #e5e5e5;
   box-shadow: var(--shadow-soft);
 }
 
-.profile-card__photo {
-  display: grid;
-  width: 112px;
-  height: 112px;
-  margin: 0 auto 32px;
-  overflow: hidden;
-  place-items: center;
-  border: 1px solid var(--color-oro-borde);
-  border-radius: 50%;
-  background: var(--color-cacao);
-  color: var(--color-marfil);
-  font-family: var(--font-display);
-  font-size: 42px;
+.account-card__header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(196, 174, 136, .45);
 }
 
-.profile-card__photo img {
+.account-card__icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  color: var(--color-cacao);
+}
+
+.account-card__icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.account-card__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-text-dark);
+}
+
+.account-card__link {
+  margin-left: auto;
+  padding-bottom: 2px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-oro-borde);
+  transition: color var(--ease-fast), border-color var(--ease-fast);
+}
+
+.account-card__link:hover {
+  color: var(--color-cacao);
+  border-bottom-color: var(--color-cacao);
+}
+
+/* Foto de perfil dentro de la tarjeta */
+.account-card__photo {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 24px;
+  overflow: hidden;
+  background: var(--color-cacao);
+  border: 1px solid var(--color-oro-borde);
+  border-radius: 50%;
+  color: var(--color-marfil);
+  font-family: var(--font-display);
+  font-size: 36px;
+}
+
+.account-card__photo img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.profile-details {
+/* Grid de datos: etiquetas gris claro, valores negro suave */
+.account-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
-  gap: 0 clamp(16px, 3vw, 28px);
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
   margin: 0;
 }
 
-.profile-detail {
-  padding: 18px 0;
-  border-bottom: 1px solid rgba(196,174,136,.45);
-}
-
-.profile-detail dt {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--color-text-dark);
+.account-grid__item dt {
+  margin-bottom: 4px;
+  color: #777;
   font-size: 11px;
   letter-spacing: 1.8px;
   text-transform: uppercase;
 }
 
-.profile-detail dd {
+.account-grid__item dd {
   margin: 0;
-  color: var(--color-text-dark);
+  color: #222;
   font-size: 15px;
   overflow-wrap: anywhere;
 }
 
-.profile-card__actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 32px;
+/* Estado vacío */
+.account-card__empty {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--color-text-muted);
 }
 
-.profile-card__actions .btn {
-  max-width: 100%;
+.account-card__empty strong {
+  color: var(--color-text-dark);
+  font-weight: 400;
+}
+
+/* ── 4. Página genérica de sección (estado "próximamente") ── */
+.account-section-page {
+  width: min(100%, 924px);
+  margin: 0 auto;
+  padding: clamp(40px, 7vw, 72px) clamp(16px, 4vw, 32px) clamp(56px, 9vw, 96px);
+}
+
+.account-section-page__title {
+  margin: 0 0 24px;
+  font-family: var(--font-display);
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 300;
+  color: var(--color-text-dark);
+}
+
+.account-card--center {
+  padding: clamp(36px, 6vw, 64px) 24px;
   text-align: center;
 }
 
-.profile-card__actions span {
-  font-size: 18px;
-  line-height: 0;
+.account-card--center p {
+  margin: 0 0 20px;
+  color: var(--color-text-muted);
 }
 
+/* ── 5. Responsive ── */
 @media (max-width: 680px) {
-  .profile-card__actions {
-    justify-content: stretch;
+  .account-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 360px) {
+  .account-dashboard,
+  .account-section-page {
+    padding-inline: 12px;
   }
 
-  .profile-card__actions .btn {
-    width: 100%;
-    justify-content: center;
+  .account-card {
+    padding: 20px 16px;
   }
 }

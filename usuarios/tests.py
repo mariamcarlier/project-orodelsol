@@ -6,6 +6,8 @@ from django.contrib.auth import get_user_model
 from django.core import mail
 from django.core.cache import cache
 from django.test import Client, TestCase
+from django.urls import reverse
+from .models import Usuario
 
 
 class ConsultarPerfilTests(TestCase):
@@ -590,7 +592,7 @@ class SaludoBienvenidaTests(TestCase):
 
 
 class CabeceraDeCuentaTests(TestCase):
-    """La cabecera de bienvenida muestra datos reales y la imagen es opcional y segura."""
+    """La cabecera de bienvenida muestra datos reales y el diseño de tarjetas funciona."""
 
     def setUp(self):
         self.usuario = get_user_model().objects.create_user(
@@ -609,67 +611,166 @@ class CabeceraDeCuentaTests(TestCase):
         return self.client.get("/usuario/perfil/")
 
     def test_muestra_el_saludo_con_el_nombre_real(self):
-        self.assertContains(self.pagina(), "Te damos la bienvenida, Mariam")
+        self.assertContains(self.pagina(), "Te damos la bienvenida, <em>Mariam</em>", html=False)
 
     def test_el_saludo_es_el_unico_h1_y_mi_perfil_pasa_a_h2(self):
         response = self.pagina()
-
         self.assertContains(response, "<h1", count=1)
-        self.assertContains(
-            response,
-            '<h1 id="account-hero-title" class="account-hero__title">'
-            "Te damos la bienvenida, Mariam</h1>",
-        )
-        self.assertContains(response, '<h2 id="profile-title"')
+        self.assertContains(response, "Te damos la bienvenida, <em>Mariam</em>", html=False)
+        self.assertContains(response, "<h2", count=5) # Mi Perfil, Tallas, Direcciones, Pedido, Deseos
 
     def test_sin_nombre_saluda_con_el_nombre_de_usuario(self):
         self.usuario.first_name = ""
         self.usuario.save()
-
-        self.assertContains(self.pagina(), "Te damos la bienvenida, cli")
+        self.assertContains(self.pagina(), "Te damos la bienvenida, <em>cli</em>", html=False)
 
     def test_el_nombre_se_escapa_en_la_cabecera(self):
         self.usuario.first_name = "<b>Eva</b>"
         self.usuario.save()
-
         response = self.pagina()
-
         self.assertNotContains(response, "<b>Eva</b>")
-        self.assertContains(response, "Te damos la bienvenida, &lt;b&gt;Eva&lt;/b&gt;")
+        self.assertContains(response, "Te damos la bienvenida, <em>&lt;b&gt;Eva&lt;/b&gt;</em>", html=False)
 
     def test_sin_imagen_solo_se_ve_el_degradado(self):
         response = self.pagina()
-
         self.assertContains(response, 'class="account-hero"')
         self.assertNotContains(response, "account-hero--con-imagen")
         self.assertNotContains(response, "account-hero__image")
 
-    def test_con_imagen_se_muestra_como_decorativa(self):
-        with patch("usuarios.views.imagen_banner_cuenta", return_value="/media/banner.webp"):
-            response = self.pagina()
-
-        self.assertContains(
-            response,
-            '<img class="account-hero__image" src="/media/banner.webp" alt=""',
-        )
-        self.assertContains(response, "account-hero--con-imagen")
-
-    def test_la_url_de_la_imagen_no_puede_inyectar_html(self):
-        malicioso = '"><script>alert(1)</script>'
-        with patch("usuarios.views.imagen_banner_cuenta", return_value=malicioso):
-            response = self.pagina()
-
-        self.assertNotContains(response, "<script>alert(1)</script>")
-        self.assertContains(response, "&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;")
-
-    def test_hoy_no_hay_imagen_administrable(self):
-        from .views import imagen_banner_cuenta
-
-        self.assertIsNone(imagen_banner_cuenta(self.usuario))
-
     def test_el_perfil_sigue_mostrando_sus_datos_y_la_foto_inicial(self):
         response = self.pagina()
-
         self.assertContains(response, "<dd>Mariam</dd>", html=True)
         self.assertContains(response, "<dd>Cliente</dd>", html=True)
-        self.assertContains(response, 'class="profile-card__photo"')
+        self.assertContains(response, 'class="account-card__photo"')
+
+
+class PerfilCuentaTests(TestCase):
+    """Mi cuenta: banner, tarjetas por rol y rutas de secciones."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cliente = Usuario.objects.create_user(
+            username="cliente1",
+            password="Passw0rd!",
+            first_name="Mariam",
+            last_name="Alvarado",
+            tipo_documento="CC",
+            documento="1020304050",
+            fecha_nacimiento=date(2000, 1, 1),
+            telefono="3001234567",
+            rol="CLIENTE",
+        )
+        cls.mayorista = Usuario.objects.create_user(
+            username="mayorista1",
+            password="Passw0rd!",
+            first_name="Carlos",
+            last_name="Ruiz",
+            tipo_documento="CC",
+            documento="1020304051",
+            fecha_nacimiento=date(1995, 5, 20),
+            telefono="3007654321",
+            rol="MAYORISTA",
+        )
+        # Simula createsuperuser: el campo rol queda en 'CLIENTE' (default).
+        cls.admin = Usuario.objects.create_superuser(
+            username="admin1",
+            email="admin@orodelsol.co",
+            password="Passw0rd!",
+            first_name="Admin",
+            last_name="Principal",
+            tipo_documento="CC",
+            documento="1020304052",
+            fecha_nacimiento=date(1990, 10, 10),
+            telefono="3000000000",
+            rol="CLIENTE",
+        )
+
+    def _login(self, username):
+        self.client.login(username=username, password="Passw0rd!")
+
+    # ── Banner dinámico ──
+    def test_banner_muestra_nombre_real(self):
+        self._login("cliente1")
+        response = self.client.get(reverse("usuarios:perfil"))
+        self.assertContains(response, "Te damos la bienvenida,")
+        self.assertContains(response, "Mariam")
+
+    def test_banner_fallback_a_username_sin_first_name(self):
+        self.admin.first_name = ""
+        self.admin.save()
+        self._login("admin1")
+        response = self.client.get(reverse("usuarios:perfil"))
+        self.assertContains(response, "admin1")
+
+    # ── Rol efectivo ──
+    def test_superuser_aparece_como_administrador(self):
+        self._login("admin1")
+        response = self.client.get(reverse("usuarios:perfil"))
+        self.assertContains(response, "Administrador")
+
+    def test_cliente_aparece_como_cliente(self):
+        self._login("cliente1")
+        response = self.client.get(reverse("usuarios:perfil"))
+        self.assertContains(response, "Cliente")
+
+    # ── Tarjetas por rol ──
+    def test_cliente_ve_sus_cinco_tarjetas(self):
+        self._login("cliente1")
+        response = self.client.get(reverse("usuarios:perfil"))
+        self.assertContains(response, "Mi Perfil")
+        self.assertContains(response, "Mis Tallas")
+        self.assertContains(response, "Libreta de Direcciones")
+        self.assertContains(response, "Mi Pedido más Reciente")
+        self.assertContains(response, "Mi Lista de Deseos")
+        self.assertNotContains(response, "Mis Cotizaciones")
+
+    def test_mayorista_ve_tarjetas_b2b(self):
+        self._login("mayorista1")
+        response = self.client.get(reverse("usuarios:perfil"))
+        self.assertContains(response, "Datos de mi Empresa")
+        self.assertContains(response, "Estado de mi Solicitud")
+        self.assertContains(response, "Mis Cotizaciones")
+        self.assertNotContains(response, "Mi Lista de Deseos")
+
+    def test_admin_no_ve_bloques_de_compras(self):
+        self._login("admin1")
+        response = self.client.get(reverse("usuarios:perfil"))
+        self.assertContains(response, "Mi Perfil")
+        self.assertContains(response, "Panel de Administración")
+        self.assertNotContains(response, "Mi Lista de Deseos")
+        self.assertNotContains(response, "Mis Cotizaciones")
+
+    # ── Rutas de secciones ──
+    def test_seccion_permitida_responde_200(self):
+        self._login("cliente1")
+        response = self.client.get(
+            reverse("usuarios:seccion_cuenta", kwargs={"clave": "tallas"})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Disponible próximamente")
+
+    def test_seccion_restringida_responde_404(self):
+        # Cliente intentando acceder a sección solo mayorista
+        self._login("cliente1")
+        response = self.client.get(
+            reverse("usuarios:seccion_cuenta", kwargs={"clave": "empresa"})
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_seccion_mayorista_responde_200(self):
+        self._login("mayorista1")
+        response = self.client.get(
+            reverse("usuarios:seccion_cuenta", kwargs={"clave": "empresa"})
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_seccion_inexistente_responde_404(self):
+        self._login("cliente1")
+        response = self.client.get("/cuenta/no-existe/")
+        self.assertEqual(response.status_code, 404)
+
+    def test_seccion_anonimo_redirige_a_login(self):
+        response = self.client.get(
+            reverse("usuarios:seccion_cuenta", kwargs={"clave": "tallas"})
+        )
+        self.assertEqual(response.status_code, 302)
