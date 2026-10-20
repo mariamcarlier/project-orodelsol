@@ -438,6 +438,7 @@ class ConsultarPerfilTests(TestCase):
         self.assertContains(response, "Este enlace ya se utilizó o venció")
         self.assertContains(response, "Solicitar otro enlace")
 
+
 class TipoDeCuentaTests(TestCase):
     """El perfil muestra la etiqueta correcta sin alterar los permisos."""
 
@@ -537,8 +538,8 @@ class TipoDeCuentaTests(TestCase):
         response = self.etiqueta_en_perfil(self.crear("cli3", "1010"))
 
         self.assertContains(response, "css/perfil.css", count=1)
- 
-        
+
+
 class SaludoBienvenidaTests(TestCase):
     """El saludo se calcula en Python y nunca muestra None ni espacios sobrantes."""
 
@@ -586,7 +587,8 @@ class SaludoBienvenidaTests(TestCase):
         usuario = self.usuario(first_name="<b>Eva</b>")
 
         self.assertEqual(usuario.nombre_visible, "<b>Eva</b>")
-        
+
+
 class CabeceraDeCuentaTests(TestCase):
     """La cabecera de bienvenida muestra datos reales y la imagen es opcional y segura."""
 
