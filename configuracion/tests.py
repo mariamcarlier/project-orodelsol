@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
@@ -10,8 +11,10 @@ from configuracion.models import (
     MetodoPago,
     Moneda,
     ParametroGeneral,
+    PlantillaDocumento,
     PoliticaComercial,
 )
+from configuracion.services import obtener_plantilla_vigente
 
 
 Usuario = get_user_model()
@@ -547,4 +550,303 @@ class PoliticaComercialCFG08Tests(TestCase):
         response = self.client.get(reverse("configuracion:politica_comercial_detail"))
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response["Location"], self.url)
+
+
+class PlantillaDocumentoCFG07Tests(TestCase):
+    """Pruebas de aceptación para CFG-07 (Plantillas de certificados, garantías y facturas)."""
+
+    def setUp(self):
+        self.admin_user = Usuario.objects.create_superuser(
+            username="admin_docs",
+            password="password123",
+            email="admin-docs@example.com",
+            first_name="Admin",
+            last_name="Documentos",
+            tipo_documento="CC",
+            documento="987654324",
+            fecha_nacimiento="1990-01-01",
+            telefono="3001234570",
+        )
+        self.cliente_user = Usuario.objects.create_user(
+            username="cliente_docs",
+            password="password123",
+            email="cliente-docs@example.com",
+            first_name="Cliente",
+            last_name="Docs",
+            tipo_documento="CC",
+            documento="1122334458",
+            fecha_nacimiento="1995-05-05",
+            telefono="3119876546",
+            rol="CLIENTE",
+        )
+        self.staff_sin_permiso = Usuario.objects.create_user(
+            username="staff_sin_permiso_docs",
+            password="password123",
+            email="staff-docs@example.com",
+            first_name="Staff",
+            last_name="SinPermisoDocs",
+            tipo_documento="CC",
+            documento="9988776657",
+            fecha_nacimiento="1992-02-02",
+            telefono="3009876545",
+            is_staff=True,
+        )
+        self.client.force_login(self.admin_user)
+        self.url = reverse(
+            "core:admin_section",
+            kwargs={"seccion": "plantillas_documentos"},
+        )
+
+    def test_admin_puede_acceder_al_panel_plantillas_documentos(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "admin_custom/section.html")
+        self.assertContains(response, "Certificados y documentos")
+
+    def test_cliente_no_staff_es_redirigido_al_login(self):
+        self.client.force_login(self.cliente_user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/login/", response["Location"])
+
+    def test_staff_sin_permiso_de_modelo_es_denegado(self):
+        self.client.force_login(self.staff_sin_permiso)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_creacion_exitosa_de_plantilla_pdf(self):
+        archivo_pdf = SimpleUploadedFile(
+            "certificado_pureza_18k.pdf",
+            b"%PDF-1.4 simulacion de certificado de autenticidad en oro 18k",
+            content_type="application/pdf",
+        )
+        response = self.client.post(self.url, {
+            "recurso": "plantillas_documentos",
+            "accion": "create",
+            "plantillas_documentos-nuevo-nombre": "Certificado Pureza Oro 18K",
+            "plantillas_documentos-nuevo-tipo": "CERTIFICADO",
+            "plantillas_documentos-nuevo-archivo": archivo_pdf,
+            "plantillas_documentos-nuevo-activa": "on",
+            "plantillas_documentos-nuevo-descripcion": "Versión inicial del certificado oficial de pureza",
+        })
+        self.assertRedirects(response, f"{self.url}#registros")
+        self.assertEqual(PlantillaDocumento.objects.count(), 1)
+
+        plantilla = PlantillaDocumento.objects.first()
+        self.assertEqual(plantilla.nombre, "Certificado Pureza Oro 18K")
+        self.assertEqual(plantilla.tipo, "CERTIFICADO")
+        self.assertEqual(plantilla.version, 1)
+        self.assertTrue(plantilla.activa)
+        self.assertEqual(plantilla.subido_por, self.admin_user)
+        self.assertTrue(plantilla.archivo.name.endswith(".pdf"))
+
+    def test_creacion_exitosa_de_plantilla_docx(self):
+        archivo_docx = SimpleUploadedFile(
+            "garantia_joyeria.docx",
+            b"PK simulacion de contenido docx de garantia",
+            content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+        response = self.client.post(self.url, {
+            "recurso": "plantillas_documentos",
+            "accion": "create",
+            "plantillas_documentos-nuevo-nombre": "Póliza de Garantía Extendida",
+            "plantillas_documentos-nuevo-tipo": "GARANTIA",
+            "plantillas_documentos-nuevo-archivo": archivo_docx,
+            "plantillas_documentos-nuevo-activa": "on",
+            "plantillas_documentos-nuevo-descripcion": "Formato editable docx para garantías",
+        })
+        self.assertRedirects(response, f"{self.url}#registros")
+        self.assertEqual(PlantillaDocumento.objects.count(), 1)
+        plantilla = PlantillaDocumento.objects.first()
+        self.assertEqual(plantilla.tipo, "GARANTIA")
+        self.assertTrue(plantilla.archivo.name.endswith(".docx"))
+
+    def test_versionado_conserva_anterior_e_incrementa_version_y_vigencia(self):
+        # 1. Crear versión 1
+        archivo_v1 = SimpleUploadedFile("cert_v1.pdf", b"%PDF-1.4 version 1", content_type="application/pdf")
+        self.client.post(self.url, {
+            "recurso": "plantillas_documentos",
+            "accion": "create",
+            "plantillas_documentos-nuevo-nombre": "Certificado Pureza",
+            "plantillas_documentos-nuevo-tipo": "CERTIFICADO",
+            "plantillas_documentos-nuevo-archivo": archivo_v1,
+            "plantillas_documentos-nuevo-activa": "on",
+            "plantillas_documentos-nuevo-descripcion": "Primera edición 2026",
+        })
+        self.assertEqual(PlantillaDocumento.objects.count(), 1)
+        v1 = PlantillaDocumento.objects.first()
+        self.assertEqual(v1.version, 1)
+        self.assertTrue(v1.activa)
+        archivo_v1_nombre = v1.archivo.name
+
+        # 2. Subir versión 2 (marcada como activa)
+        archivo_v2 = SimpleUploadedFile("cert_v2.pdf", b"%PDF-1.4 version 2 mejorada", content_type="application/pdf")
+        self.client.post(self.url, {
+            "recurso": "plantillas_documentos",
+            "accion": "create",
+            "plantillas_documentos-nuevo-nombre": "Certificado Pureza Actualizado",
+            "plantillas_documentos-nuevo-tipo": "CERTIFICADO",
+            "plantillas_documentos-nuevo-archivo": archivo_v2,
+            "plantillas_documentos-nuevo-activa": "on",
+            "plantillas_documentos-nuevo-descripcion": "Segunda edición con sello holográfico",
+        })
+
+        # Criterio: Se conservan versiones anteriores (no se sobreescribe ni se borra)
+        self.assertEqual(PlantillaDocumento.objects.count(), 2)
+
+        v1.refresh_from_db()
+        v2 = PlantillaDocumento.objects.get(version=2)
+
+        # La versión 1 se conserva histórica e inactiva
+        self.assertFalse(v1.activa)
+        self.assertEqual(v1.version, 1)
+        self.assertEqual(v1.archivo.name, archivo_v1_nombre)
+
+        # La versión 2 queda como vigente
+        self.assertTrue(v2.activa)
+        self.assertEqual(v2.version, 2)
+        self.assertEqual(v2.subido_por, self.admin_user)
+        self.assertNotEqual(v1.archivo.name, v2.archivo.name)
+
+    def test_rechaza_formato_de_archivo_no_permitido(self):
+        archivo_invalido = SimpleUploadedFile(
+            "script_malicioso.exe",
+            b"MZ peligro",
+            content_type="application/x-msdownload",
+        )
+        response = self.client.post(self.url, {
+            "recurso": "plantillas_documentos",
+            "accion": "create",
+            "plantillas_documentos-nuevo-nombre": "Documento Inválido",
+            "plantillas_documentos-nuevo-tipo": "FACTURA",
+            "plantillas_documentos-nuevo-archivo": archivo_invalido,
+            "plantillas_documentos-nuevo-activa": "on",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(PlantillaDocumento.objects.count(), 0)
+        formulario = response.context["recurso"]["crear_formulario"]
+        self.assertIn("archivo", formulario.errors)
+        self.assertTrue(any("Formato de archivo no permitido" in e for e in formulario.errors["archivo"]))
+
+    def test_rechaza_archivo_que_supera_tamano_maximo_10mb(self):
+        # Archivo simulado de 11 MB
+        tamano_11mb = 11 * 1024 * 1024
+        archivo_pesado = SimpleUploadedFile(
+            "archivo_gigante.pdf",
+            b"0" * tamano_11mb,
+            content_type="application/pdf",
+        )
+        response = self.client.post(self.url, {
+            "recurso": "plantillas_documentos",
+            "accion": "create",
+            "plantillas_documentos-nuevo-nombre": "Plantilla Pesada",
+            "plantillas_documentos-nuevo-tipo": "FACTURA",
+            "plantillas_documentos-nuevo-archivo": archivo_pesado,
+            "plantillas_documentos-nuevo-activa": "on",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(PlantillaDocumento.objects.count(), 0)
+        formulario = response.context["recurso"]["crear_formulario"]
+        self.assertIn("archivo", formulario.errors)
+        self.assertTrue(any("excede el tamaño máximo permitido de 10 MB" in e for e in formulario.errors["archivo"]))
+
+    def test_rechaza_campos_obligatorios_vacios(self):
+        # Sin nombre ni archivo
+        response = self.client.post(self.url, {
+            "recurso": "plantillas_documentos",
+            "accion": "create",
+            "plantillas_documentos-nuevo-nombre": "",
+            "plantillas_documentos-nuevo-tipo": "CERTIFICADO",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(PlantillaDocumento.objects.count(), 0)
+        formulario = response.context["recurso"]["crear_formulario"]
+        self.assertIn("nombre", formulario.errors)
+        self.assertIn("archivo", formulario.errors)
+
+    def test_edicion_metadatos_plantilla(self):
+        archivo_pdf = SimpleUploadedFile("garantia.pdf", b"%PDF-1.4 garantia", content_type="application/pdf")
+        plantilla = PlantillaDocumento.objects.create(
+            nombre="Garantía Estándar",
+            tipo="GARANTIA",
+            archivo=archivo_pdf,
+            version=1,
+            activa=True,
+            subido_por=self.admin_user,
+        )
+
+        response = self.client.post(self.url, {
+            "recurso": "plantillas_documentos",
+            "accion": "edit",
+            "registro": str(plantilla.pk),
+            f"plantillas_documentos-{plantilla.pk}-nombre": "Garantía Estándar Modificada",
+            f"plantillas_documentos-{plantilla.pk}-tipo": "GARANTIA",
+            f"plantillas_documentos-{plantilla.pk}-descripcion": "Ajuste de descripción sin cambiar archivo",
+        })
+        self.assertRedirects(response, f"{self.url}#registros")
+        plantilla.refresh_from_db()
+        self.assertEqual(plantilla.nombre, "Garantía Estándar Modificada")
+        self.assertEqual(plantilla.descripcion, "Ajuste de descripción sin cambiar archivo")
+        self.assertEqual(plantilla.actualizado_por, self.admin_user)
+
+    def test_asociacion_automatica_de_plantilla_vigente(self):
+        # 1. Crear versión 1 inactiva y versión 2 activa de CERTIFICADO
+        pdf1 = SimpleUploadedFile("cert1.pdf", b"%PDF v1", content_type="application/pdf")
+        p1 = PlantillaDocumento.objects.create(
+            nombre="Cert v1", tipo="CERTIFICADO", archivo=pdf1, version=1, activa=False, subido_por=self.admin_user
+        )
+        pdf2 = SimpleUploadedFile("cert2.pdf", b"%PDF v2", content_type="application/pdf")
+        p2 = PlantillaDocumento.objects.create(
+            nombre="Cert v2", tipo="CERTIFICADO", archivo=pdf2, version=2, activa=True, subido_por=self.admin_user
+        )
+
+        # 2. Crear GARANTIA activa
+        pdf_gar = SimpleUploadedFile("gar.pdf", b"%PDF gar", content_type="application/pdf")
+        p_gar = PlantillaDocumento.objects.create(
+            nombre="Garantía Vigente", tipo="GARANTIA", archivo=pdf_gar, version=1, activa=True, subido_por=self.admin_user
+        )
+
+        # Verificación mediante método de dominio
+        vigente_cert = PlantillaDocumento.obtener_vigente("CERTIFICADO")
+        self.assertEqual(vigente_cert, p2)
+
+        # Verificación mediante servicio desacoplado
+        vigente_gar = obtener_plantilla_vigente("GARANTIA")
+        self.assertEqual(vigente_gar, p_gar)
+
+        # Tipo sin plantilla configurada
+        vigente_factura = obtener_plantilla_vigente("FACTURA")
+        self.assertIsNone(vigente_factura)
+
+    def test_accion_masiva_desactiva_plantillas(self):
+        pdf1 = SimpleUploadedFile("doc1.pdf", b"%PDF 1", content_type="application/pdf")
+        pdf2 = SimpleUploadedFile("doc2.pdf", b"%PDF 2", content_type="application/pdf")
+        p1 = PlantillaDocumento.objects.create(
+            nombre="Doc 1", tipo="CERTIFICADO", archivo=pdf1, version=1, activa=True, subido_por=self.admin_user
+        )
+        p2 = PlantillaDocumento.objects.create(
+            nombre="Doc 2", tipo="GARANTIA", archivo=pdf2, version=1, activa=True, subido_por=self.admin_user
+        )
+
+        response = self.client.post(self.url, {
+            "recurso": "plantillas_documentos",
+            "accion": "bulk",
+            "estado": "0",
+            "registros": [str(p1.pk), str(p2.pk)],
+        })
+        self.assertRedirects(response, f"{self.url}#registros")
+        p1.refresh_from_db()
+        p2.refresh_from_db()
+        self.assertFalse(p1.activa)
+        self.assertFalse(p2.activa)
+
+    def test_rutas_legadas_plantillas_redirigen_a_panel(self):
+        res1 = self.client.get(reverse("configuracion:plantilla_documento_list"))
+        self.assertEqual(res1.status_code, 302)
+        self.assertEqual(res1["Location"], self.url)
+
+        res2 = self.client.get(reverse("configuracion:plantilla_documento_create"))
+        self.assertEqual(res2.status_code, 302)
+        self.assertEqual(res2["Location"], self.url)
+
 
