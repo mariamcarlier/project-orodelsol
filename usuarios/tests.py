@@ -895,3 +895,47 @@ class TarjetasYSeccionesTests(TestCase):
 
         self.assertContains(response, '<a href="/usuario/perfil/">Mi cuenta</a>', html=True)
         self.assertContains(response, '<span aria-current="page">Mis Tallas</span>', html=True)
+
+
+class ImagenDeCabeceraTests(TestCase):
+    """La imagen de la cabecera es opcional: sin ella se ve el color por defecto."""
+
+    def setUp(self):
+        usuario = get_user_model().objects.create_user(
+            username="cli",
+            password="ClaveSegura123!",
+            first_name="Mariam",
+            last_name="Alvarado",
+            tipo_documento="CC",
+            documento="1",
+            fecha_nacimiento=date(1990, 1, 1),
+            telefono="3001234567",
+        )
+        self.client.force_login(usuario)
+
+    def test_hoy_no_hay_imagen_administrable(self):
+        from .views import imagen_banner_cuenta
+
+        self.assertIsNone(imagen_banner_cuenta(None))
+
+    def test_con_imagen_se_muestra_como_decorativa_y_activa_el_velo(self):
+        with patch("usuarios.views.imagen_banner_cuenta", return_value="/media/banner.webp"):
+            response = self.client.get("/usuario/perfil/")
+
+        self.assertContains(response, '<img class="account-hero__image" src="/media/banner.webp" alt=""')
+        self.assertContains(response, "account-hero--con-imagen")
+
+    def test_la_url_de_la_imagen_no_puede_inyectar_html(self):
+        malicioso = '"><script>alert(1)</script>'
+        with patch("usuarios.views.imagen_banner_cuenta", return_value=malicioso):
+            response = self.client.get("/usuario/perfil/")
+
+        self.assertNotContains(response, "<script>alert(1)</script>")
+        self.assertContains(response, "&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;")
+
+    def test_sin_imagen_vuelve_al_color_por_defecto(self):
+        with patch("usuarios.views.imagen_banner_cuenta", return_value=None):
+            response = self.client.get("/usuario/perfil/")
+
+        self.assertNotContains(response, "account-hero__image")
+        self.assertNotContains(response, "account-hero--con-imagen")

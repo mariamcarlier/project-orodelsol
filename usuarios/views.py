@@ -13,6 +13,33 @@ def es_administrador(user):
     return user.is_authenticated and user.es_administrador
 
 
+def imagen_banner_cuenta(usuario):
+    """Devuelve la URL de la imagen de la cabecera de «Mi cuenta», o None.
+
+    PUNTO ÚNICO DE DECISIÓN. Hoy no hay una imagen administrable, así que
+    devuelve None y la cabecera se ve con su color por defecto (el degradado
+    rosa y oro rosa de .account-hero en static/css/perfil.css).
+
+    Para que el administrador pueda cambiarla desde el panel (cada paso, en su
+    propio commit):
+      1. Agregar un campo de imagen en la configuración, por ejemplo
+         imagen_banner_cuenta = models.ImageField(upload_to="banners/", blank=True)
+         en configuracion.ParametroGeneral, con su migración y su formulario en
+         el panel (junto a los demás parámetros generales).
+      2. Devolver aquí su URL cuando tenga una imagen cargada:
+             imagen = ParametroGeneral.get_solo().imagen_banner_cuenta
+             return imagen.url if imagen else None
+         Si se quiere una imagen distinta por tipo de cuenta, se decide aquí con
+         usuario.rol_efectivo.
+      3. No hay nada más que cambiar: la plantilla muestra la imagen cuando recibe
+         una URL y vuelve sola al color por defecto cuando recibe None.
+
+    Medidas recomendadas: 2400 × 800 px (3:1), WebP de menos de 200 KB, con el
+    motivo en el 60 % derecho. Debe tener derechos de uso comercial.
+    """
+    return None
+
+
 def migas_cuenta(ultima=None):
     """Migas de pan de la cuenta: (texto, url). La página actual va sin enlace (url None).
 
@@ -74,6 +101,8 @@ def perfil(request):
         "usuarios/perfil.html",
         {
             "perfil": usuario,
+            # None = color por defecto; con URL se muestra la imagen (ver imagen_banner_cuenta).
+            "banner_imagen_url": imagen_banner_cuenta(usuario),
             # Tarjetas según el tipo de cuenta (ver usuarios/secciones.py).
             "tarjetas": tarjetas_para(usuario),
             "breadcrumbs": migas_cuenta(),
