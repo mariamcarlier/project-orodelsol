@@ -2,51 +2,131 @@
    perfil.css — Página "Mi cuenta" (hero + tarjetas)
    ═══════════════════════════════════════════════ */
 
-/* ── 1. HERO / banner de bienvenida ── */
+/* ── 1. CABECERA DE BIENVENIDA (.account-hero) ──────────────────────────
+   Franja de la página «Mi cuenta». Es la ÚNICA definición de este componente
+   (antes también estaba en components.css y las dos se mezclaban).
+
+   CAPAS, de abajo hacia arriba:
+     1. Color por defecto ... el degradado rosa y oro rosa de este bloque.
+                              Siempre está: si no hay imagen, esto es lo que se ve.
+     2. Imagen opcional ..... <img class="account-hero__image">. La plantilla
+                              solo la pinta si la vista envía una URL.
+     3. Velo de legibilidad . ::before, solo con .account-hero--con-imagen.
+                              Mantiene el texto oscuro legible sobre CUALQUIER foto
+                              (contraste medido: ≥ 4.5:1 en texto y ≥ 3:1 en el título,
+                              incluso con una foto totalmente blanca o negra).
+     4. Texto ............... .account-hero__inner
+
+   CÓMO SE CAMBIA MÁS ADELANTE
+     · Colores por defecto: las variables --hero-* de abajo (un solo lugar).
+     · Imagen administrable: el administrador subirá la imagen desde el panel y la
+       vista usuarios.views.imagen_banner_cuenta() devolverá su URL. Ahí están los
+       pasos. Sin imagen cargada vuelve solo al color por defecto; no hay que
+       tocar este CSS ni la plantilla.
+     · Imagen recomendada: 2400 × 800 px (3:1), WebP de menos de 200 KB, con el
+       motivo en el 60 % derecho y la izquierda tranquila. Sin personas, texto,
+       logotipos ni marcas de agua.
+     · Fondo distinto por tipo de cuenta (futuro): un modificador, por ejemplo
+       .account-hero--mayorista { --hero-rosa-2: …; }, puesto desde la plantilla.
+   ──────────────────────────────────────────────────────────────────── */
 .account-hero {
+  /* Color por defecto (se edita aquí) */
+  --hero-rosa-1:   #c98f8f;   /* rosa cobrizo (izquierda) */
+  --hero-rosa-2:   #dfaaa6;   /* rosa */
+  --hero-oro-rosa: #efc6b6;   /* oro rosa claro */
+  --hero-oro:      #d9b17f;   /* oro suave (derecha) */
+  --hero-brillo:   rgba(255, 236, 226, .55);   /* luz satinada */
+  --hero-velo:     223, 170, 166;              /* RGB del velo sobre imagen (= rosa) */
+  --hero-foco:     70% 50%;   /* parte de la imagen que se conserva al recortar */
+
   position: relative;
+  isolation: isolate;          /* las capas internas no se mezclan con el resto de la página */
   overflow: hidden;
-  padding: clamp(64px, 10vw, 120px) clamp(16px, 4vw, 32px) clamp(56px, 8vw, 96px);
-  /* Rosa cobrizo con luz dorada (referencia visual del proyecto) */
+  /* Altura mínima fluida; si el nombre es largo la franja crece y no corta nada. */
+  min-height: clamp(180px, 22vw, 260px);
+  padding: clamp(32px, 5vw, 56px) clamp(16px, 4vw, 32px);
   background:
-     radial-gradient(ellipse at 50% 30%, rgba(255, 230, 220, 0.55) 0%, transparent 60%),
-     linear-gradient(105deg, #7d4747 0%, #a86565 25%, #d9a1a1 50%, #a86565 75%, #7d4747 100%);
+    radial-gradient(ellipse at 72% 15%, var(--hero-brillo) 0%, transparent 60%),
+    linear-gradient(105deg,
+      var(--hero-rosa-1) 0%,
+      var(--hero-rosa-2) 38%,
+      var(--hero-oro-rosa) 68%,
+      var(--hero-oro) 100%);
+  color: var(--color-tierra);
+}
+
+.account-hero__image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;           /* se recorta, nunca se deforma */
+  object-position: var(--hero-foco);
+}
+
+/* Velo: solo existe cuando hay imagen. Es casi opaco bajo el texto (así se lee con
+   cualquier foto, incluso totalmente negra o blanca) y se aclara hacia la derecha,
+   donde no hay texto, para que se vea la foto. Si se quiere ver MÁS foto, usar
+   imágenes claras y de poca textura; no bajar estos valores sin volver a medir el
+   contraste (mínimo 4.5:1 en texto pequeño y 3:1 en el título). */
+.account-hero--con-imagen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    rgba(var(--hero-velo), .94) 0%,
+    rgba(var(--hero-velo), .92) 78%,
+    rgba(var(--hero-velo), .45) 100%);
+}
+
+/* En pantallas angostas el texto ocupa todo el ancho: velo parejo. */
+@media (max-width: 768px) {
+  .account-hero--con-imagen::before {
+    background: rgba(var(--hero-velo), .92);
+  }
 }
 
 .account-hero__inner {
   position: relative;
+  z-index: 2;
   max-width: 860px;
   margin: 0 auto;
 }
 
 .account-hero__eyebrow {
   display: block;
-  margin: 18px 0 14px;
-  font-size: 10px;
+  margin: 18px 0 12px;
+  font-size: 11px;
   letter-spacing: 4px;
   text-transform: uppercase;
-  color: #7d4747; /* Tono vino/cobrizo oscuro para contraste */
+  color: var(--color-tierra);
 }
 
 .account-hero__title {
-  margin: 0 0 18px;
+  margin: 0 0 14px;
   font-family: var(--font-display);
-  font-size: clamp(36px, 5vw, 64px);
+  font-size: clamp(32px, 4.6vw, 56px);
   font-weight: 300;
   line-height: 1.1;
-  color: #3a1c13; /* Marrón muy oscuro, casi negro, se lee perfecto */
+  color: var(--color-tierra);
+  overflow-wrap: anywhere;     /* un nombre muy largo no desborda la pantalla */
+  text-wrap: balance;
 }
 
 .account-hero__title em {
   font-style: italic;
-  color: white;
+  color: var(--color-cacao-hover);   /* el blanco no llegaba a 3:1 sobre el rosa */
 }
 
 .account-hero__desc {
   max-width: 480px;
-  font-size: 14px;
-  line-height: 1.8;
-  color: #4a2519; /* Café oscuro */
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--color-tierra);
 }
 
 /* ── 2. DASHBOARD (pila de tarjetas) ── */

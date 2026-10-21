@@ -839,22 +839,27 @@ button {
   color: var(--color-cacao);
 }
 
-/* Variante sobre fondos oscuros (hero de la cuenta) */
-.breadcrumbs--light .breadcrumbs__item {
-  color: rgba(246, 237, 210, .6);
+/* Variante sobre la cabecera rosa de la cuenta (texto oscuro, contraste ≥ 4.5:1).
+   Los enlaces llevan línea para distinguirlos de la página actual, que no la lleva. */
+.breadcrumbs--hero .breadcrumbs__item {
+  color: var(--color-tierra);
 }
 
-.breadcrumbs--light .breadcrumbs__item + .breadcrumbs__item::before {
-  color: rgba(246, 237, 210, .3);
+.breadcrumbs--hero .breadcrumbs__item + .breadcrumbs__item::before {
+  color: var(--color-tierra);
+  opacity: .6;
 }
 
-.breadcrumbs--light .breadcrumbs__item a:hover {
-  color: var(--color-oro);
-  border-bottom-color: var(--color-oro);
+.breadcrumbs--hero .breadcrumbs__item a {
+  border-bottom-color: rgba(44, 26, 16, .4);
 }
 
-.breadcrumbs--light .breadcrumbs__item [aria-current="page"] {
-  color: var(--color-marfil);
+.breadcrumbs--hero .breadcrumbs__item a:hover {
+  border-bottom-color: var(--color-tierra);
+}
+
+.breadcrumbs--hero .breadcrumbs__item [aria-current="page"] {
+  color: var(--color-tierra);
 }
 
 /* ════════════════════════════════════════════════════════
