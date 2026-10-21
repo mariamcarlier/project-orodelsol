@@ -5,46 +5,25 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 
 from .forms import EditarPerfilForm, RegistroClienteForm, RegistroUsuarioForm
+from .secciones import pagina_para, tarjetas_para
 
 
 def es_administrador(user):
-    return user.is_authenticated and (user.is_superuser or user.rol == "ADMIN")
-
-
-# Secciones de la cuenta y roles que pueden verlas.
-# Las claves son los <slug> de la URL. Cuando existan modelos
-# (Pedido, Cotizacion, Direccion...), cada clave podrá tener su
-# propio template con datos reales en lugar del estado vacío.
-SECCIONES_CUENTA = {
-    "tallas":          {"titulo": "Mis Tallas",             "roles": {"CLIENTE", "MAYORISTA"}},
-    "direcciones":     {"titulo": "Libreta de Direcciones", "roles": {"CLIENTE", "MAYORISTA"}},
-    "lista-de-deseos": {"titulo": "Mi Lista de Deseos",     "roles": {"CLIENTE", "MAYORISTA"}},
-    "pedido-reciente": {"titulo": "Mi Pedido Reciente",     "roles": {"CLIENTE", "MAYORISTA"}},
-    "empresa":         {"titulo": "Datos de mi Empresa",    "roles": {"MAYORISTA"}},
-    "solicitud":       {"titulo": "Estado de mi Solicitud", "roles": {"MAYORISTA"}},
-    "cotizaciones":    {"titulo": "Mis Cotizaciones",       "roles": {"MAYORISTA"}},
-}
-
-
-def rol_efectivo(usuario):
-    """Rol mostrado en pantalla.
-
-    Un superusuario creado con createsuperuser conserva rol='CLIENTE'
-    (default del campo), pero para presentación siempre es Administrador.
-    Mismo criterio que es_administrador().
-    """
-    if usuario.is_superuser or usuario.rol == "ADMIN":
-        return "Administrador"
-    return usuario.get_rol_display()
+    # La regla vive en el modelo (Usuario.es_administrador); aquí solo se comprueba la sesión.
+    return user.is_authenticated and user.es_administrador
 
 
 def migas_cuenta(ultima=None):
-    migas = [
-        ("Inicio", reverse("core:inicio")),
-        ("Mi cuenta", reverse("usuarios:perfil")),
-    ]
+    """Migas de pan de la cuenta: (texto, url). La página actual va sin enlace (url None).
+
+    Sin «ultima» se está en «Mi cuenta» y esa es la página actual; con «ultima»
+    «Mi cuenta» pasa a ser un enlace de regreso.
+    """
+    migas = [("Inicio", reverse("core:inicio"))]
     if ultima:
-        migas.append(ultima)
+        migas += [("Mi cuenta", reverse("usuarios:perfil")), ultima]
+    else:
+        migas.append(("Mi cuenta", None))
     return migas
 
 
@@ -95,10 +74,8 @@ def perfil(request):
         "usuarios/perfil.html",
         {
             "perfil": usuario,
-            # Fallback seguro: nunca muestra "None" ni cadena vacía.
-            "nombre_bienvenida": (usuario.first_name or "").strip() or usuario.username,
-            "rol_efectivo": rol_efectivo(usuario),
-            "es_admin": usuario.is_superuser or usuario.rol == "ADMIN",
+            # Tarjetas según el tipo de cuenta (ver usuarios/secciones.py).
+            "tarjetas": tarjetas_para(usuario),
             "breadcrumbs": migas_cuenta(),
         },
     )
@@ -106,16 +83,16 @@ def perfil(request):
 
 @login_required
 def seccion_cuenta(request, clave):
-    seccion = SECCIONES_CUENTA.get(clave)
-    if seccion is None or request.user.rol not in seccion["roles"]:
+    pagina = pagina_para(request.user, clave)
+    if pagina is None:
         raise Http404("La sección solicitada no está disponible.")
 
     return render(
         request,
         "usuarios/seccion_cuenta.html",
         {
-            "titulo_seccion": seccion["titulo"],
-            "breadcrumbs": migas_cuenta((seccion["titulo"], None)),
+            "titulo_seccion": pagina["titulo"],
+            "breadcrumbs": migas_cuenta((pagina["titulo"], None)),
         },
     )
 
