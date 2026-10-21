@@ -6,12 +6,23 @@
 {% endblock %}
 
 {% block content %}
-<section class="account-hero" aria-labelledby="account-hero-title">
+{% comment %}
+  Cabecera de bienvenida. Sin imagen se ve el color por defecto (degradado rosa y oro rosa
+  de perfil.css). Si la vista envía banner_imagen_url se muestra esa imagen con un velo que
+  mantiene el texto legible. Cómo hacerla administrable: ver imagen_banner_cuenta() en
+  usuarios/views.py.
+{% endcomment %}
+<section class="account-hero{% if banner_imagen_url %} account-hero--con-imagen{% endif %}" aria-labelledby="account-hero-title">
+  {% if banner_imagen_url %}
+    {# Imagen decorativa: alt vacío, porque el saludo ya dice lo importante. Django escapa la URL. #}
+    <img class="account-hero__image" src="{{ banner_imagen_url }}" alt="" decoding="async" fetchpriority="high">
+  {% endif %}
   <div class="account-hero__inner">
-    {% include "partials/breadcrumbs.html" with clase="breadcrumbs--light" %}
+    {% include "partials/breadcrumbs.html" with clase="breadcrumbs--hero" %}
     <span class="account-hero__eyebrow">Mi cuenta</span>
+    {# La frase y el nombre salen del modelo (Usuario.frase_bienvenida / nombre_visible). #}
     <h1 id="account-hero-title" class="account-hero__title">
-      Te damos la bienvenida, <em>{{ nombre_bienvenida }}</em>
+      {{ perfil.frase_bienvenida }}, <em>{{ perfil.nombre_visible }}</em>
     </h1>
     <p class="account-hero__desc">Consulta y mantén al día la información de tu cuenta.</p>
   </div>
@@ -19,21 +30,16 @@
 
 <div class="account-dashboard">
 
-  {# ══ TARJETA: MI PERFIL (todos los roles) ══ #}
+  {# ══ TARJETA: MI PERFIL (todos los tipos de cuenta) ══ #}
   <section class="account-card" aria-labelledby="card-perfil">
-    <header class="account-card__header">
-      <span class="account-card__icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
-      </span>
-      <h2 id="card-perfil" class="account-card__title">Mi Perfil</h2>
-      <a class="account-card__link" href="{% url 'usuarios:editar_perfil' %}">Editar</a>
-    </header>
+    {% url 'usuarios:editar_perfil' as url_editar %}
+    {% include "usuarios/_tarjeta_cabecera.html" with card_id="perfil" icono="perfil" titulo="Mi Perfil" enlace_url=url_editar enlace_texto="Editar" %}
 
     <div class="account-card__photo">
       {% if perfil.foto %}
-        <img src="{{ perfil.foto.url }}" alt="Foto de perfil de {{ nombre_bienvenida }}">
+        <img src="{{ perfil.foto.url }}" alt="Foto de perfil de {{ perfil.nombre_visible }}">
       {% else %}
-        <span aria-hidden="true">{{ nombre_bienvenida|first|upper }}</span>
+        <span aria-hidden="true">{{ perfil.nombre_visible|first|upper }}</span>
       {% endif %}
     </div>
 
@@ -72,127 +78,29 @@
       </div>
       <div class="account-grid__item">
         <dt>Tipo de cuenta</dt>
-        <dd>{{ rol_efectivo|default:"Sin resultados" }}</dd>
+        <dd>{{ perfil.tipo_cuenta }}</dd>
       </div>
     </dl>
   </section>
 
-  {% if es_admin %}
-    {# ══ ADMINISTRADOR: acceso al panel (sin bloques de compras) ══ #}
-    {% if perfil.is_staff or perfil.is_superuser %}
+  {% comment %}
+    TARJETAS SEGÚN EL TIPO DE CUENTA: la lista sale de usuarios/secciones.py (TARJETAS),
+    así que no se repite el HTML por cada tarjeta.
+  {% endcomment %}
+  {% for tarjeta in tarjetas %}
+    <section class="account-card" aria-labelledby="card-{{ forloop.counter }}">
+      {% url 'usuarios:seccion_cuenta' tarjeta.slug as url_seccion %}
+      {% include "usuarios/_tarjeta_cabecera.html" with card_id=forloop.counter icono=tarjeta.icono titulo=tarjeta.titulo enlace_url=url_seccion enlace_texto=tarjeta.enlace %}
+      <p class="account-card__empty">{% if tarjeta.ayuda %}{{ tarjeta.ayuda }} {% endif %}<strong>{{ tarjeta.vacio }}</strong></p>
+    </section>
+  {% endfor %}
+
+  {# ══ ADMINISTRADOR: acceso al panel (solo con is_staff; no tiene bloques de compras) ══ #}
+  {% if perfil.es_administrador and perfil.is_staff %}
     <section class="account-card" aria-labelledby="card-panel">
-      <header class="account-card__header">
-        <span class="account-card__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        </span>
-        <h2 id="card-panel" class="account-card__title">Panel de Administración</h2>
-        <a class="account-card__link" href="{% url 'core:admin_dashboard' %}">Ir al panel</a>
-      </header>
+      {% url 'core:admin_dashboard' as url_panel %}
+      {% include "usuarios/_tarjeta_cabecera.html" with card_id="panel" icono="panel" titulo="Panel de Administración" enlace_url=url_panel enlace_texto="Ir al panel" %}
       <p class="account-card__empty">Gestiona productos, colecciones, usuarios y configuración de la tienda.</p>
-    </section>
-    {% endif %}
-
-  {% elif perfil.rol == "CLIENTE" %}
-    {# ══ CLIENTE: tallas, direcciones, pedido, deseos ══ #}
-    <section class="account-card" aria-labelledby="card-tallas">
-      <header class="account-card__header">
-        <span class="account-card__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17L17 3l4 4L7 21H3v-4z"/><path d="M8 12l1.5 1.5M11 9l1.5 1.5M14 6l1.5 1.5"/></svg>
-        </span>
-        <h2 id="card-tallas" class="account-card__title">Mis Tallas</h2>
-        <a class="account-card__link" href="{% url 'usuarios:seccion_cuenta' 'tallas' %}">Ver tallas</a>
-      </header>
-      <p class="account-card__empty">Guarda y consulta tus tallas de joyería aquí. <strong>Aún no tienes tallas registradas.</strong></p>
-    </section>
-
-    <section class="account-card" aria-labelledby="card-direcciones">
-      <header class="account-card__header">
-        <span class="account-card__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
-        </span>
-        <h2 id="card-direcciones" class="account-card__title">Libreta de Direcciones</h2>
-        <a class="account-card__link" href="{% url 'usuarios:seccion_cuenta' 'direcciones' %}">Añadir dirección</a>
-      </header>
-      <p class="account-card__empty"><strong>Aún no tienes direcciones guardadas.</strong></p>
-    </section>
-
-    <section class="account-card" aria-labelledby="card-pedido">
-      <header class="account-card__header">
-        <span class="account-card__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>
-        </span>
-        <h2 id="card-pedido" class="account-card__title">Mi Pedido más Reciente</h2>
-        <a class="account-card__link" href="{% url 'usuarios:seccion_cuenta' 'pedido-reciente' %}">Ver todo</a>
-      </header>
-      <p class="account-card__empty"><strong>Aún no hay pedidos disponibles.</strong></p>
-    </section>
-
-    <section class="account-card" aria-labelledby="card-deseos">
-      <header class="account-card__header">
-        <span class="account-card__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-8-4.8-8-10.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 8 3.5C20 16.2 12 21 12 21z"/></svg>
-        </span>
-        <h2 id="card-deseos" class="account-card__title">Mi Lista de Deseos</h2>
-        <a class="account-card__link" href="{% url 'usuarios:seccion_cuenta' 'lista-de-deseos' %}">Ver todo</a>
-      </header>
-      <p class="account-card__empty"><strong>Aún no tienes productos en tu lista de deseos.</strong></p>
-    </section>
-
-  {% elif perfil.rol == "MAYORISTA" %}
-    {# ══ MAYORISTA: empresa, solicitud, cotizaciones, pedidos, direcciones ══ #}
-    <section class="account-card" aria-labelledby="card-empresa">
-      <header class="account-card__header">
-        <span class="account-card__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="14"/><path d="M9 7V4h6v3M3 13h18"/></svg>
-        </span>
-        <h2 id="card-empresa" class="account-card__title">Datos de mi Empresa</h2>
-        <a class="account-card__link" href="{% url 'usuarios:seccion_cuenta' 'empresa' %}">Ver datos</a>
-      </header>
-      <p class="account-card__empty"><strong>Aún no has registrado los datos de tu empresa.</strong></p>
-    </section>
-
-    <section class="account-card" aria-labelledby="card-solicitud">
-      <header class="account-card__header">
-        <span class="account-card__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-        </span>
-        <h2 id="card-solicitud" class="account-card__title">Estado de mi Solicitud</h2>
-        <a class="account-card__link" href="{% url 'usuarios:seccion_cuenta' 'solicitud' %}">Ver estado</a>
-      </header>
-      <p class="account-card__empty"><strong>Aún no hay una solicitud registrada.</strong></p>
-    </section>
-
-    <section class="account-card" aria-labelledby="card-cotizaciones">
-      <header class="account-card__header">
-        <span class="account-card__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15h6M9 11h2"/></svg>
-        </span>
-        <h2 id="card-cotizaciones" class="account-card__title">Mis Cotizaciones</h2>
-        <a class="account-card__link" href="{% url 'usuarios:seccion_cuenta' 'cotizaciones' %}">Ver todo</a>
-      </header>
-      <p class="account-card__empty"><strong>Aún no tienes cotizaciones.</strong></p>
-    </section>
-
-    <section class="account-card" aria-labelledby="card-pedidos">
-      <header class="account-card__header">
-        <span class="account-card__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>
-        </span>
-        <h2 id="card-pedidos" class="account-card__title">Mis Pedidos</h2>
-        <a class="account-card__link" href="{% url 'usuarios:seccion_cuenta' 'pedido-reciente' %}">Ver todo</a>
-      </header>
-      <p class="account-card__empty"><strong>Aún no hay pedidos disponibles.</strong></p>
-    </section>
-
-    <section class="account-card" aria-labelledby="card-direcciones-b2b">
-      <header class="account-card__header">
-        <span class="account-card__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
-        </span>
-        <h2 id="card-direcciones-b2b" class="account-card__title">Libreta de Direcciones</h2>
-        <a class="account-card__link" href="{% url 'usuarios:seccion_cuenta' 'direcciones' %}">Añadir dirección</a>
-      </header>
-      <p class="account-card__empty"><strong>Aún no tienes direcciones guardadas.</strong></p>
     </section>
   {% endif %}
 
