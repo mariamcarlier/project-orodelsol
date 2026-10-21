@@ -20,6 +20,7 @@ from configuracion.forms import (
     MetodoPagoForm,
     MonedaForm,
     ParametroGeneralForm,
+    PlantillaDocumentoForm,
     PoliticaComercialForm,
 )
 from configuracion.models import (
@@ -29,6 +30,7 @@ from configuracion.models import (
     MetodoPago,
     Moneda,
     ParametroGeneral,
+    PlantillaDocumento,
     PoliticaComercial,
 )
 from usuarios.forms import AdministrarUsuarioForm, RegistroUsuarioForm
@@ -332,6 +334,27 @@ RECURSOS = (
         "deletable": False,
         "singleton": True,
     },
+    {
+        "key": "plantillas_documentos",
+        "title": "Certificados y documentos",
+        "icon": "bxs-file-pdf",
+        "grupo": "configuracion",
+        "grupo_orden": "8",
+        "model": PlantillaDocumento,
+        "create_form": PlantillaDocumentoForm,
+        "edit_form": PlantillaDocumentoForm,
+        "columns": (
+            ("Nombre", "nombre"),
+            ("Tipo", "tipo_display"),
+            ("Versión", "version_display"),
+            ("Archivo", "archivo_enlace"),
+            ("Vigente", "activa"),
+            ("Subido por", "subido_por__username"),
+            ("Fecha creación", "creado_en_display"),
+        ),
+        "search_fields": ("nombre__icontains", "tipo__icontains"),
+        "bulk_field": "activa",
+    },
 )
 
 
@@ -624,6 +647,8 @@ def procesar_accion(request, clave, configuracion):
             guardado = formulario.save(commit=False)
             if hasattr(guardado, "actualizado_por"):
                 guardado.actualizado_por = request.user
+            if hasattr(guardado, "subido_por") and not guardado.subido_por_id:
+                guardado.subido_por = request.user
             guardado.save()
             formulario.save_m2m()
             messages.success(request, "Los cambios se guardaron correctamente.")

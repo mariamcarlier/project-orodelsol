@@ -1,5 +1,14 @@
 from django.contrib import admin
-from .models import CostoEnvio, Idioma, Impuesto, MetodoPago, Moneda, ParametroGeneral, PoliticaComercial
+from .models import (
+    CostoEnvio,
+    Idioma,
+    Impuesto,
+    MetodoPago,
+    Moneda,
+    ParametroGeneral,
+    PlantillaDocumento,
+    PoliticaComercial,
+)
 
 
 @admin.register(ParametroGeneral)
@@ -143,5 +152,28 @@ class PoliticaComercialAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(PlantillaDocumento)
+class PlantillaDocumentoAdmin(admin.ModelAdmin):
+    list_display = (
+        "nombre",
+        "tipo",
+        "version",
+        "activa",
+        "archivo",
+        "subido_por",
+        "creado_en",
+    )
+    list_filter = ("tipo", "activa", "creado_en")
+    search_fields = ("nombre", "descripcion")
+    readonly_fields = ("version", "creado_en", "actualizado_en", "subido_por", "actualizado_por")
+
+    def save_model(self, request, obj, form, change):
+        if not change or not obj.subido_por:
+            obj.subido_por = request.user
+        obj.actualizado_por = request.user
+        super().save_model(request, obj, form, change)
+
 
 
