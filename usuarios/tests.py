@@ -766,7 +766,9 @@ class PerfilCuentaTests(TestCase):
 
     def test_seccion_inexistente_responde_404(self):
         self._login("cliente1")
-        response = self.client.get("/cuenta/no-existe/")
+        response = self.client.get(
+            reverse("usuarios:seccion_cuenta", kwargs={"clave": "no-existe"})
+        )
         self.assertEqual(response.status_code, 404)
 
     def test_seccion_anonimo_redirige_a_login(self):
@@ -774,3 +776,122 @@ class PerfilCuentaTests(TestCase):
             reverse("usuarios:seccion_cuenta", kwargs={"clave": "tallas"})
         )
         self.assertEqual(response.status_code, 302)
+
+
+class RolEfectivoYSaludoTests(TestCase):
+    """La regla «superusuario = administrador» y la frase de bienvenida viven en el modelo."""
+
+    def usuario(self, **datos):
+        datos.setdefault("username", "u1")
+        return get_user_model()(**datos)
+
+    def test_superusuario_con_rol_cliente_cuenta_como_administrador(self):
+        # createsuperuser deja el campo rol en CLIENTE.
+        usuario = self.usuario(is_superuser=True, rol="CLIENTE")
+
+        self.assertEqual(usuario.rol_efectivo, "ADMIN")
+        self.assertTrue(usuario.es_administrador)
+        self.assertEqual(usuario.tipo_cuenta, "Administrador")
+
+    def test_roles_normales(self):
+        for rol, etiqueta in (("CLIENTE", "Cliente"), ("MAYORISTA", "Mayorista"), ("ADMIN", "Administrador")):
+            with self.subTest(rol=rol):
+                usuario = self.usuario(rol=rol)
+
+                self.assertEqual(usuario.rol_efectivo, rol)
+                self.assertEqual(usuario.tipo_cuenta, etiqueta)
+
+    def test_la_frase_de_bienvenida_no_incluye_el_nombre(self):
+        usuario = self.usuario(first_name="Mariam")
+
+        self.assertEqual(usuario.frase_bienvenida, "Te damos la bienvenida")
+        self.assertEqual(usuario.saludo_bienvenida, "Te damos la bienvenida, Mariam")
+
+
+class TarjetasYSeccionesTests(TestCase):
+    """Las tarjetas salen de usuarios/secciones.py y cada una lleva a una página permitida."""
+
+    def crear(self, username, documento, **extra):
+        return get_user_model().objects.create_user(
+            username=username,
+            password="ClaveSegura123!",
+            first_name="Mariam",
+            last_name="Alvarado",
+            tipo_documento="CC",
+            documento=documento,
+            fecha_nacimiento=date(1990, 1, 1),
+            telefono="3001234567",
+            **extra,
+        )
+
+    def test_cada_tarjeta_apunta_a_una_pagina_que_existe_y_su_rol_puede_abrirla(self):
+        from .secciones import PAGINAS, TARJETAS
+
+        for tarjeta in TARJETAS:
+            with self.subTest(tarjeta=tarjeta["titulo"], roles=sorted(tarjeta["roles"])):
+                self.assertIn(tarjeta["slug"], PAGINAS)
+                self.assertTrue(tarjeta["roles"] <= PAGINAS[tarjeta["slug"]]["roles"])
+
+    def test_toda_pagina_tiene_tarjeta_para_cada_rol_que_puede_abrirla(self):
+        from .secciones import PAGINAS, TARJETAS
+
+        for slug, pagina in PAGINAS.items():
+            with self.subTest(pagina=slug):
+                roles_con_tarjeta = set().union(*(t["roles"] for t in TARJETAS if t["slug"] == slug))
+                self.assertEqual(roles_con_tarjeta, pagina["roles"])
+
+    def test_los_ids_de_las_tarjetas_no_se_repiten(self):
+        self.client.force_login(self.crear("may", "1", rol="MAYORISTA"))
+
+        ids = re.findall(r'<h2 id="(card-[^"]+)"', self.client.get("/usuario/perfil/").content.decode())
+
+        self.assertGreaterEqual(len(ids), 6)
+        self.assertEqual(len(ids), len(set(ids)))
+
+    def test_superusuario_con_rol_cliente_no_abre_paginas_de_compras(self):
+        superusuario = self.crear("sup", "2", is_superuser=True, is_staff=True)
+        self.client.force_login(superusuario)
+
+        response = self.client.get(reverse("usuarios:seccion_cuenta", kwargs={"clave": "tallas"}))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_mayorista_no_abre_la_pagina_de_tallas(self):
+        self.client.force_login(self.crear("may2", "3", rol="MAYORISTA"))
+
+        response = self.client.get(reverse("usuarios:seccion_cuenta", kwargs={"clave": "tallas"}))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_la_tarjeta_del_panel_solo_aparece_para_administradores_con_is_staff(self):
+        casos = (
+            (self.crear("a1", "4", rol="ADMIN", is_staff=True), True),
+            (self.crear("a2", "5", rol="ADMIN"), False),
+            (self.crear("a3", "6", is_staff=True), False),  # cliente con is_staff: sin tarjeta
+            (self.crear("a4", "7"), False),
+        )
+        for usuario, debe_verla in casos:
+            with self.subTest(usuario=usuario.username):
+                self.client.force_login(usuario)
+
+                response = self.client.get("/usuario/perfil/")
+
+                if debe_verla:
+                    self.assertContains(response, 'id="card-panel"')
+                else:
+                    self.assertNotContains(response, 'id="card-panel"')
+
+    def test_en_mi_cuenta_la_miga_actual_no_es_un_enlace(self):
+        self.client.force_login(self.crear("cli", "8"))
+
+        response = self.client.get("/usuario/perfil/")
+
+        self.assertContains(response, '<span aria-current="page">Mi cuenta</span>', html=True)
+
+    def test_en_una_seccion_mi_cuenta_es_enlace_y_la_seccion_es_la_actual(self):
+        self.client.force_login(self.crear("cli2", "9"))
+
+        response = self.client.get(reverse("usuarios:seccion_cuenta", kwargs={"clave": "tallas"}))
+
+        self.assertContains(response, '<a href="/usuario/perfil/">Mi cuenta</a>', html=True)
+        self.assertContains(response, '<span aria-current="page">Mis Tallas</span>', html=True)

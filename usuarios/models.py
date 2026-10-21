@@ -37,16 +37,30 @@ class Usuario(AbstractUser):
     ]
 
     @property
-    def tipo_cuenta(self):
-        """Etiqueta del tipo de cuenta que se muestra en pantalla.
+    def rol_efectivo(self):
+        """Código del rol con el que se decide qué ve el usuario: ADMIN, MAYORISTA o CLIENTE.
 
-        Es solo presentación: no concede ni quita permisos. Aplica la misma
-        regla que usuarios.views.es_administrador (superusuario o rol ADMIN).
+        ÚNICO lugar donde vive la regla «un superusuario cuenta como administrador»:
+        createsuperuser deja el campo «rol» en CLIENTE (su valor por defecto), así
+        que mirar solo «rol» mostraría a un administrador como cliente.
+        Es solo presentación: no concede ni quita permisos.
         """
         if self.is_superuser or self.rol == "ADMIN":
+            return "ADMIN"
+        return self.rol
+
+    @property
+    def es_administrador(self):
+        """True si el usuario cuenta como administrador (superusuario o rol ADMIN)."""
+        return self.rol_efectivo == "ADMIN"
+
+    @property
+    def tipo_cuenta(self):
+        """Etiqueta del tipo de cuenta que se muestra en pantalla."""
+        if self.es_administrador:
             return "Administrador"
-        return self.get_rol_display() 
-    
+        return self.get_rol_display()
+
     @property
     def nombre_visible(self):
         """Nombre con el que se saluda al usuario en pantalla.
@@ -59,12 +73,17 @@ class Usuario(AbstractUser):
         return nombre or self.username
 
     @property
-    def saludo_bienvenida(self):
-        """Frase de bienvenida de la cabecera de la cuenta.
+    def frase_bienvenida(self):
+        """Frase de la cabecera de la cuenta, SIN el nombre: «Te damos la bienvenida».
 
         Hoy es neutra para todas las personas. Cuando exista el campo opcional
         de género (decisión pendiente, en su propio commit con migración), la
-        variación «Bienvenida» / «Bienvenido» se decide AQUÍ y solo aquí: la
-        plantilla seguirá mostrando este texto sin cambiar.
+        variación «Bienvenida» / «Bienvenido» se decide AQUÍ y solo aquí. La
+        plantilla pone el nombre aparte (en cursiva) con nombre_visible.
         """
-        return f"Te damos la bienvenida, {self.nombre_visible}"
+        return "Te damos la bienvenida"
+
+    @property
+    def saludo_bienvenida(self):
+        """Frase completa en texto plano: «Te damos la bienvenida, Mariam»."""
+        return f"{self.frase_bienvenida}, {self.nombre_visible}"
