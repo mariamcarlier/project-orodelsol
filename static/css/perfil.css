@@ -31,13 +31,15 @@
    ──────────────────────────────────────────────────────────────────── */
 .account-hero {
   /* Color por defecto (se edita aquí) */
-  --hero-rosa-1:   #c98f8f;   /* rosa cobrizo (izquierda) */
-  --hero-rosa-2:   #dfaaa6;   /* rosa */
-  --hero-oro-rosa: #efc6b6;   /* oro rosa claro */
-  --hero-oro:      #d9b17f;   /* oro suave (derecha) */
+  --hero-rosa-1:   #9E6B70;   /* rosa cobrizo (izquierda) */
+  --hero-rosa-2:   #c98f8f;   /* rosa */
+  --hero-oro-rosa: #AD747A;   /* oro rosa claro */
+  --hero-oro:      #9E6B70;   /* oro suave (derecha) */
   --hero-brillo:   rgba(255, 236, 226, .55);   /* luz satinada */
   --hero-velo:     223, 170, 166;              /* RGB del velo sobre imagen (= rosa) */
   --hero-foco:     70% 50%;   /* parte de la imagen que se conserva al recortar */
+
+  --text-user: #6e3f48;  /* color del nombre de usuario */
 
   position: relative;
   isolation: isolate;          /* las capas internas no se mezclan con el resto de la página */
@@ -118,7 +120,7 @@
 
 .account-hero__title em {
   font-style: italic;
-  color: var(--color-cacao-hover);   /* el blanco no llegaba a 3:1 sobre el rosa */
+  color: var(--text-user);   /* el blanco no llegaba a 3:1 sobre el rosa */
 }
 
 .account-hero__desc {
@@ -137,6 +139,13 @@
   width: min(100%, 924px);
   margin: 0 auto;
   padding: clamp(36px, 6vw, 56px) clamp(16px, 4vw, 32px) clamp(56px, 9vw, 96px);
+}
+
+/* Contenedor de las migas de pan: alineado y con un margen pequeño */
+.account-crumbs {
+  width: min(100%, 924px); /* El mismo ancho de las tarjetas */
+  margin: 0 auto;
+  padding: 24px clamp(16px, 4vw, 32px) 16px; /* 24px arriba (separación de la cabecera), 16px abajo (separación de la tarjeta) */
 }
 
 /* ── 3. TARJETA ── */
