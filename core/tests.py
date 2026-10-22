@@ -2,6 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.contrib.auth.models import Permission
 from django.test import TestCase
 from django.urls import reverse
@@ -74,6 +75,15 @@ class PanelAdministracionTests(TestCase):
                         kwargs={"seccion": recurso["key"]},
                     ),
                 )
+                self.assertContains(response, recurso["description"])
+
+    def test_seccion_actual_se_marca_como_pagina_activa(self):
+        response = self.client.get(
+            reverse("core:admin_section", kwargs={"seccion": "impuestos"})
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content.count(b'aria-current="page"'), 1)
 
     def test_usuario_con_rol_admin_pero_sin_is_staff_no_accede_al_panel(self):
         usuario = get_user_model().objects.create_user(
@@ -137,6 +147,107 @@ class PanelAdministracionTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
+
+    def test_editar_permisos_de_grupo_actualiza_acceso_de_sus_miembros(self):
+        grupo = Group.objects.create(name="Operadores de catálogo")
+        permiso_anterior = Permission.objects.get(
+            content_type__app_label="core",
+            codename="view_producto",
+        )
+        permiso_nuevo = Permission.objects.get(
+            content_type__app_label="core",
+            codename="change_producto",
+        )
+        grupo.permissions.add(permiso_anterior)
+        miembro = get_user_model().objects.create_user(
+            username="miembro_catalogo",
+            password="PruebaSegura123!",
+            is_staff=True,
+            first_name="Miembro",
+            last_name="Catálogo",
+            tipo_documento="CC",
+            documento="345678901",
+            fecha_nacimiento=date(1990, 1, 1),
+        )
+        miembro.groups.add(grupo)
+        url = reverse("core:admin_section", kwargs={"seccion": "grupos"})
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Permisos del grupo")
+        self.assertContains(response, "dashboard-form--groups")
+        self.assertContains(response, "dashboard-field--permissions")
+        self.assertContains(response, "dashboard-permissions")
+        self.assertContains(response, "· Cambiar")
+        self.assertContains(
+            response,
+            "Los usuarios miembros del grupo reciben estos permisos.",
+        )
+        self.assertRegex(
+            response.content.decode(),
+            rf'<input[^>]*name="grupos-{grupo.pk}-permissions"'
+            rf'[^>]*value="{permiso_anterior.pk}"[^>]*checked',
+        )
+
+        response = self.client.post(
+            url,
+            {
+                "recurso": "grupos",
+                "accion": "edit",
+                "registro": grupo.pk,
+                f"grupos-{grupo.pk}-name": grupo.name,
+                f"grupos-{grupo.pk}-permissions": [permiso_nuevo.pk],
+            },
+        )
+
+        self.assertRedirects(response, f"{url}#registros")
+        grupo.refresh_from_db()
+        self.assertQuerySetEqual(
+            grupo.permissions.order_by("pk"),
+            [permiso_nuevo],
+        )
+        miembro_actualizado = get_user_model().objects.get(pk=miembro.pk)
+        self.assertTrue(miembro_actualizado.has_perm("core.change_producto"))
+        self.assertFalse(miembro_actualizado.has_perm("core.view_producto"))
+
+    def test_staff_sin_permiso_para_cambiar_grupos_no_puede_modificarlos(self):
+        grupo = Group.objects.create(name="Grupo protegido")
+        permiso_ver_grupo = Permission.objects.get(
+            content_type__app_label="auth",
+            codename="view_group",
+        )
+        permiso_cambiar_producto = Permission.objects.get(
+            content_type__app_label="core",
+            codename="change_producto",
+        )
+        usuario = get_user_model().objects.create_user(
+            username="staff_solo_lectura_grupos",
+            password="PruebaSegura123!",
+            is_staff=True,
+            first_name="Staff",
+            last_name="Lectura",
+            tipo_documento="CC",
+            documento="456789012",
+            fecha_nacimiento=date(1990, 1, 1),
+        )
+        usuario.user_permissions.add(permiso_ver_grupo)
+        self.client.force_login(usuario)
+        url = reverse("core:admin_section", kwargs={"seccion": "grupos"})
+
+        response = self.client.post(
+            url,
+            {
+                "recurso": "grupos",
+                "accion": "edit",
+                "registro": grupo.pk,
+                f"grupos-{grupo.pk}-name": grupo.name,
+                f"grupos-{grupo.pk}-permissions": [permiso_cambiar_producto.pk],
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(grupo.permissions.exists())
 
     def test_crear_impuesto_desde_el_panel_respeta_nombre_unico(self):
         url = reverse("core:admin_section", kwargs={"seccion": "impuestos"})

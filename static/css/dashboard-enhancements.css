@@ -1,0 +1,106 @@
+.dashboard-home-card {
+    min-height: 96px;
+}
+
+.dashboard-home-card__content {
+    display: grid;
+    gap: 0.3rem;
+    min-width: 0;
+}
+
+.dashboard-home-card__content strong {
+    font-weight: 600;
+}
+
+.dashboard-home-card__content small {
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.dashboard-form--groups {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.dashboard-section__heading--groups {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.dashboard-create--groups {
+    width: 100%;
+}
+
+.dashboard-create--groups .dashboard-form {
+    width: 100%;
+}
+
+.dashboard-field--permissions .dashboard-permissions {
+    box-sizing: border-box;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    max-height: 320px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 0.75rem;
+    position: static;
+    width: 100%;
+}
+
+.dashboard-permissions > div {
+    box-sizing: border-box;
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    min-width: 0;
+    padding: 0.55rem 0.65rem;
+    position: static;
+}
+
+.dashboard-permissions > div > label {
+    align-items: center;
+    display: flex;
+    font-weight: 400;
+    gap: 0.6rem;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.dashboard-permissions input[type="checkbox"] {
+    accent-color: var(--accent-brown);
+    flex: 0 0 auto;
+    height: 1rem;
+    margin: 0;
+    width: 1rem;
+}
+
+@media (max-width: 640px) {
+    .dashboard-field--permissions .dashboard-permissions {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.menu-item a[aria-current="page"] {
+    background-color: rgba(197, 160, 89, 0.15);
+    border-left: 4px solid var(--primary-gold);
+    color: var(--primary-gold);
+}
+
+.dashboard-home-card:focus-visible,
+.sidebar-menu a:focus-visible,
+.sidebar-footer a:focus-visible,
+.sidebar-footer button:focus-visible,
+.dashboard-content a:focus-visible,
+.dashboard-content button:focus-visible,
+.dashboard-content input:focus-visible,
+.dashboard-content select:focus-visible,
+.dashboard-content textarea:focus-visible,
+.dashboard-content summary:focus-visible {
+    outline: 3px solid var(--primary-gold);
+    outline-offset: 3px;
+    position: relative;
+    z-index: 1;
+}
