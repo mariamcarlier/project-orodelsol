@@ -199,3 +199,6 @@ media/
 *.njsproj
 *.sln
 *.swp
+
+# DB Browser for SQLite (archivo de proyecto local)
+*.sqbpro
