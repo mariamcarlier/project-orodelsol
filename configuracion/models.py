@@ -323,3 +323,134 @@ class PoliticaComercial(models.Model):
         return "Políticas Comerciales (Reglas del Negocio)"
 
 
+class PlantillaDocumento(models.Model):
+    TIPO_CHOICES = (
+        ("CERTIFICADO", "Certificado de autenticidad / pureza 18K"),
+        ("GARANTIA", "Póliza de garantía"),
+        ("FACTURA", "Factura / Comprobante de venta"),
+        ("OTRO", "Otro documento"),
+    )
+
+    nombre = models.CharField(
+        max_length=150,
+        help_text="Nombre descriptivo de la plantilla. Ej: Certificado de Pureza Oro 18K.",
+    )
+    tipo = models.CharField(
+        max_length=30,
+        choices=TIPO_CHOICES,
+        default="CERTIFICADO",
+        help_text="Tipo de documento oficial asociado a esta plantilla.",
+    )
+    archivo = models.FileField(
+        upload_to="plantillas_documentos/%Y/%m/",
+        help_text="Archivo de plantilla en formato PDF (.pdf) o Word (.docx), tamaño máx. 10 MB.",
+    )
+    version = models.PositiveIntegerField(
+        default=1,
+        help_text="Número secuencial de versión. Se incrementa automáticamente en nuevas publicaciones.",
+    )
+    activa = models.BooleanField(
+        default=True,
+        help_text="Indica si esta plantilla es la versión vigente para su tipo de documento.",
+    )
+    descripcion = models.TextField(
+        blank=True,
+        default="",
+        help_text="Descripción o notas sobre las modificaciones de esta versión.",
+    )
+    creado_en = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de creación",
+    )
+    actualizado_en = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Fecha de actualización",
+    )
+    subido_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="plantillas_subidas",
+        verbose_name="Subido por",
+    )
+    actualizado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="plantillas_actualizadas",
+        verbose_name="Actualizado por",
+    )
+
+    class Meta:
+        verbose_name = "Plantilla de documento"
+        verbose_name_plural = "Plantillas de documentos"
+        ordering = ["tipo", "-version", "-creado_en"]
+
+    def __str__(self):
+        estado = "Vigente" if self.activa else "Histórico"
+        return f"{self.nombre} (v{self.version}) [{self.get_tipo_display()}] — {estado}"
+
+    @property
+    def tipo_display(self):
+        return self.get_tipo_display()
+
+    @property
+    def version_display(self):
+        return f"v{self.version}"
+
+    @property
+    def archivo_nombre(self):
+        if self.archivo:
+            import os
+            return os.path.basename(self.archivo.name)
+        return "—"
+
+    @property
+    def archivo_enlace(self):
+        if self.archivo:
+            import os
+            from django.utils.html import format_html
+            nombre = os.path.basename(self.archivo.name)
+            try:
+                url = self.archivo.url
+                return format_html(
+                    '<a href="{}" target="_blank" rel="noopener noreferrer" style="color: var(--color-dorado, #bfa15f); text-decoration: underline;">{}</a>',
+                    url,
+                    nombre,
+                )
+            except ValueError:
+                return nombre
+        return "—"
+
+    @property
+    def creado_en_display(self):
+        if self.creado_en:
+            return self.creado_en.strftime("%d/%m/%Y %H:%M")
+        return "—"
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        if is_new and self.version == 1:
+            max_ver = PlantillaDocumento.objects.filter(tipo=self.tipo).aggregate(
+                models.Max("version")
+            )["version__max"]
+            if max_ver:
+                self.version = max_ver + 1
+
+        super().save(*args, **kwargs)
+
+        if self.activa:
+            PlantillaDocumento.objects.filter(tipo=self.tipo).exclude(pk=self.pk).update(activa=False)
+
+    @classmethod
+    def obtener_vigente(cls, tipo):
+        """Devuelve la plantilla activa y vigente para un tipo de documento determinado.
+
+        Punto de integración para Pedidos, Facturación y Certificados de autenticidad.
+        """
+        return cls.objects.filter(tipo=tipo, activa=True).order_by("-version", "-creado_en").first()
+
+
+

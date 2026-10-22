@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ titulo_seccion }} | Mi cuenta{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/perfil.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="account-section-page">
+  {% include "partials/breadcrumbs.html" %}
+
+  <h1 class="account-section-page__title">{{ titulo_seccion }}</h1>
+
+  <div class="account-card account-card--center">
+    <p><strong>Disponible próximamente.</strong><br>
+       Estamos preparando esta sección para ti.</p>
+    <a class="btn btn--primary" href="{% url 'usuarios:perfil' %}">Volver a mi cuenta</a>
+  </div>
+</div>
+{% endblock %}

@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 import os
 import secrets
+import sys
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -205,3 +206,9 @@ LOGOUT_REDIRECT_URL = "core:iniciar_sesion"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
+
+# Acelera SOLO las pruebas (python manage.py test): con el cifrado real cada
+# usuario de prueba tarda ~0.3 s. NUNCA debe activarse al correr el servidor:
+# MD5 es inseguro y guardaría así las contraseñas reales de tu base de datos.
+if "test" in sys.argv:
+    PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]

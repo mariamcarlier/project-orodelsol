@@ -1,0 +1,9 @@
+{% comment %}
+  Cabecera de una tarjeta de «Mi cuenta».
+  Variables: card_id (único en la página), icono, titulo y, opcionales, enlace_url + enlace_texto.
+{% endcomment %}
+<header class="account-card__header">
+  <span class="account-card__icon" aria-hidden="true">{% include "usuarios/_icono_cuenta.html" with nombre=icono %}</span>
+  <h2 id="card-{{ card_id }}" class="account-card__title">{{ titulo }}</h2>
+  {% if enlace_url %}<a class="account-card__link" href="{{ enlace_url }}">{{ enlace_texto }}</a>{% endif %}
+</header>
