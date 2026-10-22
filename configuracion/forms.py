@@ -1,13 +1,13 @@
 # Formularios compartidos por las secciones de configuración del panel.
 
 from django import forms
-<<<<<<< HEAD
+
 
 from .models import CostoEnvio, Idioma, Impuesto, Moneda, ParametroGeneral
-=======
+
 import re
 from .models import CostoEnvio, Idioma, Impuesto, MetodoPago, Moneda, ParametroGeneral, PoliticaComercial
->>>>>>> 7105873bd9b50e0dc814377634d2193e02420856
+
 
 
 class ImpuestoForm(forms.ModelForm):

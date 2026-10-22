@@ -119,7 +119,7 @@ class ParametroGeneral(models.Model):
     def __str__(self):
         return f"Configuración General — {self.nombre_tienda}"
 
-<<<<<<< HEAD
+
 
 class CostoEnvio(models.Model):
     ciudad = models.CharField(
@@ -155,7 +155,6 @@ class CostoEnvio(models.Model):
 
     def __str__(self):
         return f"{self.ciudad}, {self.departamento} — ${self.precio} COP"
-=======
 
 class CostoEnvio(models.Model):
     ciudad = models.CharField(
@@ -361,4 +360,4 @@ class PoliticaComercial(models.Model):
         return "Políticas Comerciales (Reglas del Negocio)"
 
 
->>>>>>> 7105873bd9b50e0dc814377634d2193e02420856
+
