@@ -11,6 +11,7 @@ from django.db.models import Q
 from django.db.models.deletion import ProtectedError
 from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from configuracion.forms import (
     CostoEnvioForm,
@@ -19,6 +20,7 @@ from configuracion.forms import (
     MetodoPagoForm,
     MonedaForm,
     ParametroGeneralForm,
+    PlantillaDocumentoForm,
     PoliticaComercialForm,
 )
 from configuracion.models import (
@@ -28,6 +30,7 @@ from configuracion.models import (
     MetodoPago,
     Moneda,
     ParametroGeneral,
+    PlantillaDocumento,
     PoliticaComercial,
 )
 from usuarios.forms import AdministrarUsuarioForm, RegistroUsuarioForm
@@ -144,13 +147,18 @@ class ColeccionForm(forms.ModelForm):
             "activa": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
 
+GRUPOS_MENU = {
+    "configuracion": {"title": "Configuración", "icon": "bx-cog"},
+}
 
 RECURSOS = (
     {
         "key": "costos_envio",
         "title": "Costos de envío",
         "description": "Configura tarifas y tiempos de entrega por ciudad y departamento.",
-        "icon": "bx-car",
+        "icon": "bxs-truck",
+        "grupo": "configuracion",
+        "grupo_orden": "5",
         "model": CostoEnvio,
         "create_form": CostoEnvioForm,
         "edit_form": CostoEnvioForm,
@@ -268,6 +276,9 @@ RECURSOS = (
         "title": "Impuestos",
         "description": "Configura tasas y vigencia de impuestos aplicables.",
         "icon": "bx-receipt",
+        "grupo": "configuracion",
+        "grupo_orden": "2",
+
         "model": Impuesto,
         "create_form": ImpuestoForm,
         "edit_form": ImpuestoForm,
@@ -284,6 +295,9 @@ RECURSOS = (
         "title": "Monedas",
         "description": "Administra monedas, tasas de cambio y moneda principal.",
         "icon": "bx-dollar-circle",
+        "grupo": "configuracion",
+        "grupo_orden": "3",
+        
         "model": Moneda,
         "create_form": MonedaForm,
         "edit_form": MonedaForm,
@@ -302,6 +316,9 @@ RECURSOS = (
         "title": "Idiomas",
         "description": "Configura los idiomas disponibles y el idioma principal.",
         "icon": "bx-globe",
+        "grupo": "configuracion",
+        "grupo_orden": "4",
+
         "model": Idioma,
         "create_form": IdiomaForm,
         "edit_form": IdiomaForm,
@@ -319,6 +336,9 @@ RECURSOS = (
         "title": "Parámetros generales",
         "description": "Edita los datos de contacto y la información general de la tienda.",
         "icon": "bx-cog",
+        "grupo": "configuracion",
+        "grupo_orden": "1",
+
         "model": ParametroGeneral,
         "create_form": ParametroGeneralForm,
         "edit_form": ParametroGeneralForm,
@@ -353,6 +373,28 @@ RECURSOS = (
         "deletable": False,
         "singleton": True,
     },
+    {
+        "key": "plantillas_documentos",
+        "title": "Certificados y documentos",
+        "description": "Administra certificados y documentos disponibles para la tienda.",
+        "icon": "bxs-file-pdf",
+        "grupo": "configuracion",
+        "grupo_orden": "8",
+        "model": PlantillaDocumento,
+        "create_form": PlantillaDocumentoForm,
+        "edit_form": PlantillaDocumentoForm,
+        "columns": (
+            ("Nombre", "nombre"),
+            ("Tipo", "tipo_display"),
+            ("Versión", "version_display"),
+            ("Archivo", "archivo_enlace"),
+            ("Vigente", "activa"),
+            ("Subido por", "subido_por__username"),
+            ("Fecha creación", "creado_en_display"),
+        ),
+        "search_fields": ("nombre__icontains", "tipo__icontains"),
+        "bulk_field": "activa",
+    },
 )
 
 
@@ -367,6 +409,64 @@ def recursos_visibles(usuario):
         if usuario.has_perm(permiso(item["model"], "view"))
     ]
 
+def construir_menu(recursos, clave_activa=None):
+    """Organiza los recursos visibles para pintar el menú lateral.
+
+    Devuelve un diccionario con dos listas:
+    - "sueltos": recursos que no pertenecen a ningún grupo.
+    - "grupos": grupos desplegables con sus recursos ordenados.
+    Cada recurso viaja como {"recurso": ..., "activo": bool}. Un grupo
+    se marca como "abierto" cuando contiene el recurso activo.
+    """
+    sueltos = []
+    agrupados = {}
+    for recurso in recursos:
+        entrada = {"recurso": recurso, "activo": recurso["key"] == clave_activa}
+        clave_grupo = recurso.get("grupo")
+        if clave_grupo in GRUPOS_MENU:
+            agrupados.setdefault(clave_grupo, []).append(entrada)
+        else:
+            sueltos.append(entrada)
+
+    grupos = []
+    for clave_grupo, datos in GRUPOS_MENU.items():
+        items = sorted(
+            agrupados.get(clave_grupo, []),
+            key=lambda entrada: entrada["recurso"].get("grupo_orden", 0),
+        )
+        if items:
+            grupos.append(
+                {
+                    "key": clave_grupo,
+                    "title": datos["title"],
+                    "icon": datos["icon"],
+                    "items": items,
+                    "abierto": any(entrada["activo"] for entrada in items),
+                }
+            )
+    return {"sueltos": sueltos, "grupos": grupos}
+
+def construir_migas(clave=None):
+    """Arma las migas de pan: Mi cuenta > Admin > [grupo] > [recurso].
+
+    Cada miga es {"title": str, "url": str | None}. La última nunca lleva
+    enlace porque es la página actual; el grupo tampoco, porque no tiene
+    página propia.
+    """
+    migas = [{"title": "Mi cuenta", "url": reverse("usuarios:perfil")}]
+    if clave is None:
+        migas.append({"title": "Admin", "url": None})
+        return migas
+
+    migas.append({"title": "Admin", "url": reverse("core:admin_dashboard")})
+    recurso = next((r for r in RECURSOS if r["key"] == clave), None)
+    if recurso is None:
+        return migas
+    grupo = GRUPOS_MENU.get(recurso.get("grupo"))
+    if grupo:
+        migas.append({"title": grupo["title"], "url": None})
+    migas.append({"title": recurso["title"], "url": None})
+    return migas
 
 def obtener_celda(objeto, campo):
     valor = objeto
@@ -494,7 +594,12 @@ def crear_contexto(request, clave, formularios=None, formulario_abierto=None):
         "bulk_field": configuracion.get("bulk_field") if puede_cambiar else None,
         "abrir_crear": formulario_abierto == (clave, "create", ""),
     }
-    return {"recursos": menu, "recurso": recurso}
+    return {
+            "recursos": menu, 
+            "recurso": recurso,
+            "menu_lateral": construir_menu(menu, clave),
+            "migas": construir_migas(clave),
+        }
 
 
 def procesar_accion(request, clave, configuracion):
@@ -585,6 +690,8 @@ def procesar_accion(request, clave, configuracion):
             guardado = formulario.save(commit=False)
             if hasattr(guardado, "actualizado_por"):
                 guardado.actualizado_por = request.user
+            if hasattr(guardado, "subido_por") and not guardado.subido_por_id:
+                guardado.subido_por = request.user
             guardado.save()
             formulario.save_m2m()
             messages.success(request, "Los cambios se guardaron correctamente.")
@@ -601,10 +708,12 @@ def procesar_accion(request, clave, configuracion):
 def admin_dashboard(request):
     if request.method != "GET":
         return HttpResponseNotAllowed(["GET"])
+    
+    recursos = recursos_visibles(request.user)
     return render(
         request,
         "admin_custom/index.html",
-        {"recursos": recursos_visibles(request.user)},
+        {"recursos": recursos, "menu_lateral": construir_menu(recursos), "migas": construir_migas()},
     )
 
 

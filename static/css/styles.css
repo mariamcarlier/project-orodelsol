@@ -34,6 +34,14 @@ body {
   overflow-x: hidden;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;   /* respaldo para navegadores antiguos */
+  min-height: 100dvh;  /* altura real visible en móviles, sin el salto de la barra de direcciones */
+}
+
+main#mainContent {
+  flex: 1 0 auto; /*significa «crece para llenar el espacio libre, pero nunca te encojas».*/
 }
 
 img {
@@ -785,6 +793,75 @@ button {
   transform: translateY(0);
 }
 
+/* ════════════════════════════════════════════════════════
+   MIGAS DE PAN — reutilizable (tienda, cuenta, admin vía partial)
+   ════════════════════════════════════════════════════════ */
+.breadcrumbs {
+  margin-bottom: 20px;
+}
+
+.breadcrumbs__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+}
+
+.breadcrumbs__item {
+  display: flex;
+  align-items: center;
+  color: var(--color-text-muted);
+}
+
+.breadcrumbs__item + .breadcrumbs__item::before {
+  content: "/";
+  margin: 0 10px;
+  color: var(--color-oro-borde);
+}
+
+.breadcrumbs__item a {
+  padding-bottom: 1px;
+  color: inherit;
+  border-bottom: 1px solid transparent;
+  transition: color var(--ease-fast), border-color var(--ease-fast);
+}
+
+.breadcrumbs__item a:hover {
+  color: var(--color-cacao);
+  border-bottom-color: var(--color-cacao);
+}
+
+.breadcrumbs__item [aria-current="page"] {
+  color: var(--color-cacao);
+}
+
+/* Variante sobre la cabecera rosa de la cuenta (texto oscuro, contraste ≥ 4.5:1).
+   Los enlaces llevan línea para distinguirlos de la página actual, que no la lleva. */
+.breadcrumbs--hero .breadcrumbs__item {
+  color: var(--color-tierra);
+}
+
+.breadcrumbs--hero .breadcrumbs__item + .breadcrumbs__item::before {
+  color: var(--color-tierra);
+  opacity: .6;
+}
+
+.breadcrumbs--hero .breadcrumbs__item a {
+  border-bottom-color: rgba(44, 26, 16, .4);
+}
+
+.breadcrumbs--hero .breadcrumbs__item a:hover {
+  border-bottom-color: var(--color-tierra);
+}
+
+.breadcrumbs--hero .breadcrumbs__item [aria-current="page"] {
+  color: var(--color-tierra);
+}
 
 /* ════════════════════════════════════════════════════════
    ACCESIBILIDAD — Focus visible global

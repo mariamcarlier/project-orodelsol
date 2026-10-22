@@ -82,6 +82,74 @@ body.dashboard-body {
     border-left: 4px solid var(--primary-gold);
 }
 
+/* Grupo desplegable del menú (<details>) */
+.menu-group summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0.8rem 1.5rem;
+    color: var(--sidebar-text);
+    font-size: 0.95rem;
+    cursor: pointer;
+    list-style: none;
+    transition: 0.2s;
+}
+
+.menu-group summary::-webkit-details-marker {
+    display: none;
+}
+
+.menu-group summary i {
+    font-size: 1.2rem;
+}
+
+.menu-group summary:hover,
+.menu-group.has-active summary {
+    color: var(--primary-gold);
+}
+
+.menu-group summary:hover {
+    background-color: rgba(197, 160, 89, 0.15);
+}
+
+.menu-group__chevron {
+    margin-left: auto;
+    transition: transform 0.2s;
+}
+
+.menu-group details[open] > summary .menu-group__chevron {
+    transform: rotate(180deg);
+}
+
+.menu-group .submenu {
+    padding: 0;
+} /*anula la regla existente .sidebar-menu ul { padding: 1rem 0 }, que de lo contrario separaría de más los subítems. */
+
+.menu-group details[open] > .submenu {
+    animation: submenu-in 0.2s ease;
+}
+
+.submenu .menu-item a {
+    padding-left: 3.4rem;
+    font-size: 0.9rem;
+}
+
+.menu-item a:focus-visible,
+.menu-group summary:focus-visible {
+    outline: 2px solid var(--primary-gold);
+    outline-offset: -2px;
+}
+
+@keyframes submenu-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .menu-group details[open] > .submenu { animation: none; } 
+    .menu-group__chevron { transition: none; }
+}
+
 .sidebar-footer {
     padding: 1.5rem;
     display: flex;
@@ -423,21 +491,142 @@ body.dashboard-body {
     border-bottom: 1px solid var(--border-color);
 }
 
-@media (max-width: 640px) {
+/* Migas de pan */
+.breadcrumb {
+    margin-bottom: 0.75rem;
+}
+
+.breadcrumb__list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.breadcrumb__item + .breadcrumb__item::before {
+    content: "\203A";
+    content: "\203A" / "";
+    margin-right: 0.4rem;
+}
+
+.breadcrumb__item a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.breadcrumb__item a:hover,
+.breadcrumb__item a:focus-visible {
+    color: var(--accent-brown);
+    text-decoration: underline;
+}
+
+.breadcrumb__item [aria-current="page"] {
+    color: var(--accent-brown);
+    font-weight: 600;
+}
+
+/* Botón de menú (solo visible en móvil) */
+.topbar__menu-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-right: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    background: var(--bg-card);
+    color: var(--text-dark);
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.topbar__menu-btn:hover,
+.topbar__menu-btn:focus-visible {
+    border-color: var(--primary-gold);
+    color: var(--accent-brown);
+}
+
+.topbar__menu-btn:focus-visible {
+    outline: 2px solid var(--primary-gold);
+    outline-offset: 2px;
+}
+
+/* Tablet: sidebar más angosto */
+@media (max-width: 1024px) {
     .sidebar {
-        flex-basis: 180px;
-        width: 180px;
+        width: 220px;
+        flex-basis: 220px;
     }
 
-    .menu-item a {
-        gap: 8px;
-        padding: 0.75rem 0.8rem;
+    .dashboard-content {
+        padding: 1.5rem;
+    }
+}
+
+/* Móvil: el sidebar pasa a ser un panel lateral que se abre con la hamburguesa */
+@media (max-width: 768px) {
+    .topbar__menu-btn {
+        display: flex;
     }
 
-    .sidebar-footer {
-        padding: 1rem 0.8rem;
+    .sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        height: auto;
+        width: min(280px, 85vw);
+        flex-basis: auto;
+        z-index: 1000;
+        transform: translateX(-100%);
+        visibility: hidden;
+        transition: transform 0.3s ease, visibility 0s linear 0.3s;
     }
 
+    .sidebar.is-open {
+        transform: translateX(0);
+        visibility: visible;
+        transition-delay: 0s;
+        box-shadow: 8px 0 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .dashboard-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 900;
+        background: rgba(28, 25, 23, 0.55);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+    }
+
+    .dashboard-overlay.is-open {
+        opacity: 1;
+        visibility: visible;
+        transition-delay: 0s;
+    }
+
+    body.menu-open {
+        overflow: hidden;
+    }
+}
+
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+    .sidebar,
+    .dashboard-overlay {
+        transition: none;
+    }
+}
+
+@media (max-width: 640px) {
     .topbar {
         padding: 0 1rem;
     }

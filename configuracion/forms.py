@@ -1,8 +1,18 @@
 # Formularios compartidos por las secciones de configuración del panel.
 
-from django import forms
+import os
 import re
-from .models import CostoEnvio, Idioma, Impuesto, MetodoPago, Moneda, ParametroGeneral, PoliticaComercial
+from django import forms
+from .models import (
+    CostoEnvio,
+    Idioma,
+    Impuesto,
+    MetodoPago,
+    Moneda,
+    ParametroGeneral,
+    PlantillaDocumento,
+    PoliticaComercial,
+)
 
 
 class ImpuestoForm(forms.ModelForm):
@@ -212,5 +222,55 @@ class PoliticaComercialForm(forms.ModelForm):
         if dias is not None and dias < 1:
             raise forms.ValidationError("La vigencia de cupones debe ser de al menos 1 día.")
         return dias
+
+
+class PlantillaDocumentoForm(forms.ModelForm):
+    class Meta:
+        model = PlantillaDocumento
+        fields = [
+            "nombre",
+            "tipo",
+            "archivo",
+            "activa",
+            "descripcion",
+        ]
+        help_texts = {
+            "nombre": "Nombre descriptivo de la plantilla. Ej: Certificado de Autenticidad Oro 18K.",
+            "tipo": "Tipo de documento legal o comercial.",
+            "archivo": "Archivo en formato PDF (.pdf) o Word (.docx). Tamaño máximo: 10 MB.",
+            "activa": "Si se marca como activa, sustituirá la vigencia de cualquier otra plantilla anterior de este tipo.",
+            "descripcion": "Notas adicionales o control de cambios para esta versión.",
+        }
+
+    def clean_nombre(self):
+        nombre = self.cleaned_data.get("nombre", "").strip()
+        if not nombre:
+            raise forms.ValidationError("El nombre de la plantilla es obligatorio.")
+        return nombre
+
+    def clean_archivo(self):
+        archivo = self.cleaned_data.get("archivo")
+        if not archivo:
+            if not self.instance.pk or not self.instance.archivo:
+                raise forms.ValidationError("Debes adjuntar un archivo para la plantilla.")
+            return archivo
+
+        nombre_archivo = getattr(archivo, "name", "")
+        extension = os.path.splitext(nombre_archivo)[1].lower()
+        formatos_permitidos = [".pdf", ".docx"]
+        if extension not in formatos_permitidos:
+            raise forms.ValidationError(
+                f"Formato de archivo no permitido ({extension}). Solo se aceptan documentos en formato PDF (.pdf) o Word (.docx)."
+            )
+
+        max_tamano = 10 * 1024 * 1024  # 10 MB
+        if archivo.size > max_tamano:
+            tamano_actual = round(archivo.size / (1024 * 1024), 2)
+            raise forms.ValidationError(
+                f"El archivo ({tamano_actual} MB) excede el tamaño máximo permitido de 10 MB."
+            )
+
+        return archivo
+
 
 

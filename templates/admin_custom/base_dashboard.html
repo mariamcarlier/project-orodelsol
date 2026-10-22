@@ -30,15 +30,37 @@
                         <i class="bx bx-home" aria-hidden="true"></i><span>Resumen</span>
                     </a>
                 </li>
-                {% for recurso in recursos %}
-                    <li class="menu-item{% if request.resolver_match.kwargs.seccion == recurso.key %} active{% endif %}">
-                        <a href="{% url 'core:admin_section' recurso.key %}" {% if request.resolver_match.kwargs.seccion == recurso.key %}aria-current="page"{% endif %}>
-                            <i class="bx {{ recurso.icon }}" aria-hidden="true"></i><span>{{ recurso.title }}</span>
+                {% for entrada in menu_lateral.sueltos %}
+                    <li class="menu-item{% if entrada.activo %} active{% endif %}">
+                        <a href="{% url 'core:admin_section' entrada.recurso.key %}"{% if entrada.activo %} aria-current="page"{% endif %}>
+                            <i class="bx {{ entrada.recurso.icon }}" aria-hidden="true"></i><span>{{ entrada.recurso.title }}</span>
                         </a>
+                    </li>
+                {% endfor %}
+                {% for grupo in menu_lateral.grupos %}
+                    <li class="menu-group{% if grupo.abierto %} has-active{% endif %}">
+                        <details{% if grupo.abierto %} open{% endif %}>
+                            <summary>
+                                <i class="bx {{ grupo.icon }}" aria-hidden="true"></i><span>{{ grupo.title }}</span>
+                                <i class="bx bx-chevron-down menu-group__chevron" aria-hidden="true"></i>
+                            </summary>
+                            <ul class="submenu">
+                                {% for entrada in grupo.items %}
+                                    <li class="menu-item submenu-item{% if entrada.activo %} active{% endif %}">
+                                        <a href="{% url 'core:admin_section' entrada.recurso.key %}"{% if entrada.activo %} aria-current="page"{% endif %}>
+                                            <span>{{ entrada.recurso.title }}</span>
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </details>
                     </li>
                 {% endfor %}
             </ul>
         </nav>
+
+            <!-- Fondo oscuro del menú en móvil -->
+    <div class="dashboard-overlay" id="dashboardOverlay"></div>
 
         <div class="sidebar-footer">
             <a href="{% url 'core:inicio' %}" class="btn-site">
@@ -57,6 +79,12 @@
     <div class="main-wrapper">
         <!-- BARRA SUPERIOR (NAVBAR) -->
         <header class="topbar">
+
+            <button type="button" class="topbar__menu-btn" id="menuToggle"
+                    aria-controls="sidebar" aria-expanded="false" aria-label="Abrir menú">
+                <i class="bx bx-menu" aria-hidden="true"></i>
+            </button>
+            
             <a href="{% url 'usuarios:perfil' %}" class="admin-profile-link" aria-label="Ir al perfil de administrador">
                 <span class="admin-profile-link__avatar">
                     <i class="bx bx-user" aria-hidden="true"></i>
@@ -67,6 +95,7 @@
 
         <!-- AREA DE CONTENIDO -->
         <main class="dashboard-content">
+            {% include 'admin_custom/_migas.html' %}
             {% if messages %}
                 <ul class="dashboard-messages" role="status">
                     {% for message in messages %}
@@ -77,6 +106,7 @@
             {% block content %}{% endblock %}
         </main>
     </div>
+    <script src="{% static 'js/dashboard.js' %}"></script>
 
 </body>
 </html>
