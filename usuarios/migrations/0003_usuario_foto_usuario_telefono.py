@@ -5,11 +5,11 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
+    dependencies = [  # noqa: RUF012
         ('usuarios', '0002_alter_usuario_fecha_nacimiento'),
     ]
 
-    operations = [
+    operations = [  # noqa: RUF012
         migrations.AddField(
             model_name='usuario',
             name='foto',
