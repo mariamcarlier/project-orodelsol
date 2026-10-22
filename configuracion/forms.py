@@ -1,6 +1,13 @@
 # Formularios compartidos por las secciones de configuración del panel.
 
+from django import forms
+
+
+from .models import CostoEnvio, Idioma, Impuesto, Moneda, ParametroGeneral
+
+
 import os
+
 import re
 from django import forms
 from .models import (
@@ -15,13 +22,14 @@ from .models import (
 )
 
 
+
 class ImpuestoForm(forms.ModelForm):
     class Meta:
         model  = Impuesto
-        fields = ['nombre', 'tasa', 'vigente']
+        fields = ['nombre', 'tasa', 'vigente']  # noqa: RUF012
 
         # Textos de ayuda visibles debajo de cada campo en el HTML
-        help_texts = {
+        help_texts = {  # noqa: RUF012
             'nombre':  'Ej: IVA 19%',
             'tasa':    'Porcentaje numérico. Ej: 19.00',
             'vigente': 'Desmarca si el impuesto ya no aplica.',
@@ -31,9 +39,9 @@ class ImpuestoForm(forms.ModelForm):
 class MonedaForm(forms.ModelForm):
     class Meta:
         model  = Moneda
-        fields = ['codigo_iso', 'nombre', 'simbolo', 'tasa_cambio', 'es_principal', 'activa']
+        fields = ['codigo_iso', 'nombre', 'simbolo', 'tasa_cambio', 'es_principal', 'activa']  # noqa: RUF012
 
-        help_texts = {
+        help_texts = {  # noqa: RUF012
             'codigo_iso':   'Código ISO 4217 en mayúsculas. Ej: COP, USD, EUR',
             'nombre':       'Nombre completo de la moneda. Ej: Peso colombiano',
             'simbolo':      'Símbolo corto. Ej: $, €, £',
@@ -46,9 +54,9 @@ class MonedaForm(forms.ModelForm):
 class IdiomaForm(forms.ModelForm):
     class Meta:
         model  = Idioma
-        fields = ['codigo', 'nombre', 'es_principal', 'activo']
+        fields = ['codigo', 'nombre', 'es_principal', 'activo']  # noqa: RUF012
 
-        help_texts = {
+        help_texts = {  # noqa: RUF012
             'codigo':       'Código estándar del idioma. Ej: es, en, fr, pt',
             'nombre':       'Nombre descriptivo del idioma. Ej: Español, English',
             'es_principal': 'Al marcar este idioma como principal, el anterior se desmarcará automáticamente.',
@@ -59,7 +67,7 @@ class IdiomaForm(forms.ModelForm):
 class ParametroGeneralForm(forms.ModelForm):
     class Meta:
         model = ParametroGeneral
-        fields = [
+        fields = [  # noqa: RUF012
             'nombre_tienda',
             'lema',
             'nit',
@@ -69,7 +77,7 @@ class ParametroGeneralForm(forms.ModelForm):
             'ciudad',
             'horario_atencion',
         ]
-        help_texts = {
+        help_texts = {  # noqa: RUF012
             'nombre_tienda':     'Nombre oficial de la joyería.',
             'lema':              'Frase distintiva o descripción corta de la marca.',
             'nit':               'Número de Identificación Tributaria (NIT/RUT).',
@@ -86,14 +94,14 @@ class ParametroGeneralForm(forms.ModelForm):
 class CostoEnvioForm(forms.ModelForm):
     class Meta:
         model = CostoEnvio
-        fields = [
+        fields = [  # noqa: RUF012
             "ciudad",
             "departamento",
             "precio",
             "tiempo_entrega",
             "activo",
         ]
-        help_texts = {
+        help_texts = {  # noqa: RUF012
             "ciudad": "Nombre de la ciudad o municipio de destino.",
             "departamento": "Departamento o región de destino.",
             "precio": "Valor en COP. Debe ser cero o un valor positivo.",

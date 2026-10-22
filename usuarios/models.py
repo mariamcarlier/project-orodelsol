@@ -1,5 +1,6 @@
-from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db import models
+
 
 # Create your models here.
 class Usuario(AbstractUser):
@@ -27,7 +28,7 @@ class Usuario(AbstractUser):
     fecha_nacimiento = models.DateField(blank=False, verbose_name="Fecha de Nacimiento")
     telefono = models.CharField(max_length=15, blank=False, verbose_name="Teléfono")
     foto = models.ImageField(upload_to="perfiles/", blank=True, null=True, verbose_name="Foto de perfil")
-    REQUIRED_FIELDS = [
+    REQUIRED_FIELDS = [  # noqa: RUF012
         "first_name",
         "last_name",
         "tipo_documento",
