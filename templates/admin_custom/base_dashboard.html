@@ -10,6 +10,7 @@
     <!-- CSS del Proyecto -->
     <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard-enhancements.css' %}">
     <!-- Iconos Boxicons -->
     <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
 </head>
@@ -19,19 +20,19 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h2 class="brand-title">ORO DEL SOL</h2>
-            <span class="brand-subtitle">Panel Administador</span>
+            <span class="brand-subtitle">Panel Administrador</span>
         </div>
 
-        <nav class="sidebar-menu">
+        <nav class="sidebar-menu" aria-label="Navegación del panel de administración">
             <ul>
                 <li class="menu-item{% if request.resolver_match.url_name == 'admin_dashboard' %} active{% endif %}">
-                    <a href="{% url 'core:admin_dashboard' %}">
+                    <a href="{% url 'core:admin_dashboard' %}" {% if request.resolver_match.url_name == 'admin_dashboard' %}aria-current="page"{% endif %}>
                         <i class="bx bx-home" aria-hidden="true"></i><span>Resumen</span>
                     </a>
                 </li>
                 {% for recurso in recursos %}
                     <li class="menu-item{% if request.resolver_match.kwargs.seccion == recurso.key %} active{% endif %}">
-                        <a href="{% url 'core:admin_section' recurso.key %}">
+                        <a href="{% url 'core:admin_section' recurso.key %}" {% if request.resolver_match.kwargs.seccion == recurso.key %}aria-current="page"{% endif %}>
                             <i class="bx {{ recurso.icon }}" aria-hidden="true"></i><span>{{ recurso.title }}</span>
                         </a>
                     </li>

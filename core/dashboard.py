@@ -37,9 +37,38 @@ from .models import Coleccion, Producto
 
 
 class GrupoPermisosForm(forms.ModelForm):
+    ETIQUETAS_ACCION = {
+        "add": "Agregar",
+        "change": "Cambiar",
+        "delete": "Eliminar",
+        "view": "Ver",
+    }
+
     class Meta:
         model = Group
         fields = ("name", "permissions")
+        labels = {
+            "name": "Nombre del grupo",
+            "permissions": "Permisos del grupo",
+        }
+        help_texts = {
+            "permissions": (
+                "Los usuarios miembros del grupo reciben estos permisos."
+            ),
+        }
+        widgets = {
+            "permissions": forms.CheckboxSelectMultiple(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["permissions"].label_from_instance = self.etiqueta_permiso
+
+    @classmethod
+    def etiqueta_permiso(cls, permiso):
+        accion = permiso.codename.split("_", maxsplit=1)[0]
+        etiqueta_accion = cls.ETIQUETAS_ACCION.get(accion, permiso.name)
+        return f"{permiso.content_type.app_labeled_name} · {etiqueta_accion}"
 
 
 class AdministrarUsuarioCreacionForm(RegistroUsuarioForm):
@@ -120,7 +149,8 @@ RECURSOS = (
     {
         "key": "costos_envio",
         "title": "Costos de envío",
-        "icon": "bx-truck",
+        "description": "Configura tarifas y tiempos de entrega por ciudad y departamento.",
+        "icon": "bx-car",
         "model": CostoEnvio,
         "create_form": CostoEnvioForm,
         "edit_form": CostoEnvioForm,
@@ -137,6 +167,7 @@ RECURSOS = (
     {
         "key": "metodos_pago",
         "title": "Medios de pago",
+        "description": "Administra las formas de pago disponibles para las compras.",
         "icon": "bx-credit-card",
         "grupo": "configuracion",
         "grupo_orden": "6",
@@ -162,6 +193,7 @@ RECURSOS = (
     {
         "key": "productos",
         "title": "Productos",
+        "description": "Crea y actualiza el catálogo de joyas y su disponibilidad.",
         "icon": "bx-package",
         "model": Producto,
         "create_form": ProductoForm,
@@ -178,6 +210,7 @@ RECURSOS = (
     {
         "key": "colecciones",
         "title": "Colecciones",
+        "description": "Organiza productos en colecciones y temporadas.",
         "icon": "bx-collection",
         "model": Coleccion,
         "create_form": ColeccionForm,
@@ -193,6 +226,7 @@ RECURSOS = (
     {
         "key": "usuarios",
         "title": "Usuarios",
+        "description": "Consulta cuentas, perfiles, roles y estado de acceso.",
         "icon": "bx-user",
         "model": Usuario,
         "create_form": AdministrarUsuarioCreacionForm,
@@ -217,6 +251,7 @@ RECURSOS = (
     {
         "key": "grupos",
         "title": "Grupos y permisos",
+        "description": "Agrupa usuarios y asigna permisos por modelo.",
         "icon": "bx-group",
         "model": Group,
         "create_form": GrupoPermisosForm,
@@ -231,6 +266,7 @@ RECURSOS = (
     {
         "key": "impuestos",
         "title": "Impuestos",
+        "description": "Configura tasas y vigencia de impuestos aplicables.",
         "icon": "bx-receipt",
         "model": Impuesto,
         "create_form": ImpuestoForm,
@@ -246,6 +282,7 @@ RECURSOS = (
     {
         "key": "monedas",
         "title": "Monedas",
+        "description": "Administra monedas, tasas de cambio y moneda principal.",
         "icon": "bx-dollar-circle",
         "model": Moneda,
         "create_form": MonedaForm,
@@ -263,6 +300,7 @@ RECURSOS = (
     {
         "key": "idiomas",
         "title": "Idiomas",
+        "description": "Configura los idiomas disponibles y el idioma principal.",
         "icon": "bx-globe",
         "model": Idioma,
         "create_form": IdiomaForm,
@@ -279,6 +317,7 @@ RECURSOS = (
     {
         "key": "parametros",
         "title": "Parámetros generales",
+        "description": "Edita los datos de contacto y la información general de la tienda.",
         "icon": "bx-cog",
         "model": ParametroGeneral,
         "create_form": ParametroGeneralForm,
@@ -296,6 +335,7 @@ RECURSOS = (
     {
         "key": "politicas_comerciales",
         "title": "Políticas comerciales",
+        "description": "Define mínimos de compra, envío gratis y reglas comerciales.",
         "icon": "bx-badge-check",
         "grupo": "configuracion",
         "grupo_orden": "7",
@@ -347,12 +387,15 @@ def preparar_formulario(formulario, usuario):
         formulario.fields.pop("groups")
 
     for campo in formulario.fields.values():
-        clase = (
-            "dashboard-checkbox"
-            if getattr(campo.widget, "input_type", None) == "checkbox"
-            else "dashboard-input"
-        )
-        campo.widget.attrs.setdefault("class", clase)
+        if isinstance(campo.widget, forms.CheckboxSelectMultiple):
+            campo.widget.attrs.setdefault("class", "dashboard-permissions")
+        else:
+            clase = (
+                "dashboard-checkbox"
+                if getattr(campo.widget, "input_type", None) == "checkbox"
+                else "dashboard-input"
+            )
+            campo.widget.attrs.setdefault("class", clase)
     return formulario
 
 
