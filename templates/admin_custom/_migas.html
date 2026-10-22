@@ -1,0 +1,16 @@
+{% if migas %}
+<nav class="breadcrumb" aria-label="Migas de pan">
+    <ol class="breadcrumb__list">
+        {% for miga in migas %}
+            <li class="breadcrumb__item">
+                {% if miga.url %}
+                    <a href="{{ miga.url }}">{{ miga.title }}</a>
+                {% else %}
+                    <span{% if forloop.last %} aria-current="page"{% endif %}>{{ miga.title }}</span>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ol>
+    <!-- Se usa <ol> (lista ordenada) porque la ruta tiene un orden, y el <nav> con etiqueta permite a un lector de pantalla saltar directo a ella. -->
+</nav>
+{% endif %}

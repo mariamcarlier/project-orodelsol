@@ -24,4 +24,6 @@ urlpatterns = [
     path("metodos-pago/", redirigir_al_panel, {"seccion": "metodos_pago"}, name="metodo_pago_list"),
     path("metodos-pago/nuevo/", redirigir_al_panel, {"seccion": "metodos_pago"}, name="metodo_pago_create"),
     path("politicas-comerciales/", redirigir_al_panel, {"seccion": "politicas_comerciales"}, name="politica_comercial_detail"),
+    path("plantillas-documentos/", redirigir_al_panel, {"seccion": "plantillas_documentos"}, name="plantilla_documento_list"),
+    path("plantillas-documentos/nuevo/", redirigir_al_panel, {"seccion": "plantillas_documentos"}, name="plantilla_documento_create"),
 ]
