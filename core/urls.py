@@ -1,11 +1,11 @@
-<<<<<<< HEAD
-﻿from django.urls import path
-=======
+
+from django.urls import path
+
 from django.contrib.auth import views as auth_views
 from django.urls import path
 
 from usuarios.forms import RateLimitedAuthenticationForm
->>>>>>> 7105873bd9b50e0dc814377634d2193e02420856
+
 
 from . import views
 
