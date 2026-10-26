@@ -113,7 +113,7 @@ class Producto(models.Model):
         on_delete=models.PROTECT,
         related_name="productos",
     )
-    codigo = models.CharField(max_length=30, null=True, blank=True)
+    codigo = models.CharField(max_length=30, unique=True, blank=True)
     nombre = models.CharField(max_length=120)
     detalle = models.CharField(max_length=180, blank=True)
     descripcion = models.TextField(blank=True)
