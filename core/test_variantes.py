@@ -263,6 +263,18 @@ class SeedTallasMaterialesTests(TestCase):
         self.assertTrue(talla.diametro_verificado)
         self.assertEqual(talla.diametro_interno_mm, Decimal("17.30"))
 
+    # NUEVO TEST DE LA FASE B1
+    def test_carga_diametros_y_talla_nacional(self):
+        self.ejecutar()
+        talla_7 = Talla.objects.get(talla_us=Decimal("7.0"))
+        self.assertEqual(talla_7.diametro_interno_mm, Decimal("17.30"))
+        self.assertEqual(talla_7.talla_nacional, "12")
+        self.assertFalse(talla_7.diametro_verificado)
+
+        talla_13 = Talla.objects.get(talla_us=Decimal("13.0"))
+        self.assertEqual(talla_13.diametro_interno_mm, Decimal("22.30"))
+        self.assertEqual(talla_13.talla_nacional, "24")
+
 
 class PanelProductosVariantesTests(TestCase):
     def setUp(self):

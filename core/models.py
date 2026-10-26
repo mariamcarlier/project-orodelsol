@@ -44,6 +44,8 @@ class Talla(models.Model):
     diametro_interno_mm = models.DecimalField(
         max_digits=5, decimal_places=2, null=True, blank=True
     )
+    # NUEVO CAMPO FASE B1
+    talla_nacional = models.CharField(max_length=10, null=True, blank=True)
     diametro_verificado = models.BooleanField(default=False)
 
     class Meta:
