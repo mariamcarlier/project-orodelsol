@@ -1,10 +1,10 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import redirect, render
 from django.urls import reverse
 
-from .forms import EditarPerfilForm, RegistroClienteForm, RegistroUsuarioForm
+from .forms import EditarPerfilForm
 from .secciones import pagina_para, tarjetas_para
 
 
@@ -52,45 +52,6 @@ def migas_cuenta(ultima=None):
     else:
         migas.append(("Mi cuenta", None))
     return migas
-
-
-@login_required
-@user_passes_test(es_administrador)
-def registrar_usuario(request):
-    if request.method == "POST":
-        form = RegistroUsuarioForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Usuario registrado correctamente.")
-            return redirect("usuarios:registrar_usuario")
-        messages.error(
-            request,
-            "No se pudo registrar el usuario. Revisa los campos marcados.",
-        )
-    else:
-        form = RegistroUsuarioForm()
-
-    return render(request, "usuarios/registrar.html", {"form": form})
-
-
-def crear_cuenta(request):
-    if request.method == "POST":
-        form = RegistroClienteForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(
-                request,
-                "Tu cuenta se creó correctamente. Ya puedes iniciar sesión.",
-            )
-            return redirect("login")
-    else:
-        form = RegistroClienteForm()
-
-    return render(
-        request,
-        "usuarios/registrar.html",
-        {"form": form, "registro_publico": True},
-    )
 
 
 @login_required

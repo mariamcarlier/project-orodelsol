@@ -1,6 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
+from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import Permission
@@ -61,6 +62,64 @@ class PanelAdministracionTests(TestCase):
                 self.assertTemplateUsed(response, "admin_custom/section.html")
                 self.assertContains(response, recurso["title"])
                 self.assertContains(response, "Ir a la tienda")
+
+    def test_editar_usuario_se_abre_en_dialogo_accesible(self):
+        response = self.client.get(
+            reverse("core:admin_section", kwargs={"seccion": "usuarios"})
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "<dialog")
+        self.assertContains(response, 'aria-haspopup="dialog"')
+        self.assertContains(response, "data-dashboard-dialog-open=")
+
+    def test_asignacion_de_grupos_usa_opciones_visuales_en_usuarios(self):
+        response = self.client.get(
+            reverse("core:admin_section", kwargs={"seccion": "usuarios"})
+        )
+
+        self.assertEqual(response.status_code, 200)
+        recurso = response.context["recurso"]
+        self.assertIsInstance(
+            recurso["crear_formulario"].fields["groups"].widget,
+            forms.CheckboxSelectMultiple,
+        )
+        self.assertIsInstance(
+            recurso["filas"][0]["formulario"].fields["groups"].widget,
+            forms.CheckboxSelectMultiple,
+        )
+        self.assertContains(response, "dashboard-field--groups")
+        self.assertContains(response, "dashboard-permissions")
+        self.assertContains(response, "dashboard-section__heading--users")
+        self.assertContains(response, "Completa los datos de la cuenta")
+        self.assertContains(response, "Aún no hay grupos creados.")
+        self.assertContains(response, "Crear usuario")
+
+    def test_crear_usuario_desde_el_dashboard_asigna_rol(self):
+        url = reverse("core:admin_section", kwargs={"seccion": "usuarios"})
+        response = self.client.post(
+            url,
+            {
+                "recurso": "usuarios",
+                "accion": "create",
+                "usuarios-nuevo-username": "nuevo_mayorista",
+                "usuarios-nuevo-email": "mayorista@example.com",
+                "usuarios-nuevo-first_name": "Nuevo",
+                "usuarios-nuevo-last_name": "Mayorista",
+                "usuarios-nuevo-tipo_documento": "CC",
+                "usuarios-nuevo-documento": "5566778899",
+                "usuarios-nuevo-fecha_nacimiento": "2000-05-20",
+                "usuarios-nuevo-telefono": "3005556677",
+                "usuarios-nuevo-rol": "MAYORISTA",
+                "usuarios-nuevo-password1": "StrongPass123!",
+                "usuarios-nuevo-password2": "StrongPass123!",
+            },
+        )
+
+        self.assertRedirects(response, f"{url}#registros")
+        nuevo_usuario = get_user_model().objects.get(username="nuevo_mayorista")
+        self.assertEqual(nuevo_usuario.rol, "MAYORISTA")
+        self.assertTrue(nuevo_usuario.check_password("StrongPass123!"))
 
     def test_resumen_enlaza_a_las_paginas_de_recursos(self):
         response = self.client.get(reverse("core:admin_dashboard"))
@@ -780,10 +839,10 @@ class AuthenticationViewTests(TestCase):
             reverse("core:iniciar_sesion"),
             {"username": self.usuario.username, "password": "PruebaSegura123!"},
         )
-        self.assertRedirects(login_response, reverse("usuarios:perfil"))
+        self.assertRedirects(login_response, "/")
 
         logout_response = self.client.post(reverse("core:cerrar_sesion"))
-        self.assertRedirects(logout_response, reverse("core:iniciar_sesion"))
+        self.assertRedirects(logout_response, "/")
 
     def test_logout_rechaza_get(self):
         response = self.client.get(reverse("core:cerrar_sesion"))

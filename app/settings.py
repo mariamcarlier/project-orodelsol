@@ -58,11 +58,17 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "django.contrib.sites",
     "django.contrib.staticfiles",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
     "usuarios",
     "core",
     "configuracion",
 ]
+SITE_ID = 1
 AUTH_USER_MODEL = 'usuarios.Usuario'
 
 # Login attempt counters must use a shared cache in production.
@@ -89,7 +95,9 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = "app.urls"
@@ -104,6 +112,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "usuarios.context_processors.google_oauth",
             ],
         },
     },
@@ -140,6 +149,36 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
+
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*"]
+ACCOUNT_FORMS = {"signup": "usuarios.forms.AllauthCrearCuentaForm"}
+ACCOUNT_ADAPTER = "usuarios.adapters.UsuarioAccountAdapter"
+ACCOUNT_EMAIL_VERIFICATION = "none"
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+
+google_client_id = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "").strip()
+google_client_secret = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET", "").strip()
+if bool(google_client_id) != bool(google_client_secret):
+    raise ImproperlyConfigured(
+        "Configure both GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET."
+    )
+
+GOOGLE_OAUTH_ENABLED = bool(google_client_id and google_client_secret)
+SOCIALACCOUNT_PROVIDERS = {}
+if GOOGLE_OAUTH_ENABLED:
+    SOCIALACCOUNT_PROVIDERS["google"] = {
+        "APP": {
+            "client_id": google_client_id,
+            "secret": google_client_secret,
+            "key": "",
+        },
+        "EMAIL_AUTHENTICATION": True,
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"prompt": "select_account"},
+        "OAUTH_PKCE_ENABLED": True,
+    }
 
 
 # Internationalization
@@ -200,8 +239,6 @@ if (
     raise ImproperlyConfigured("Define EMAIL_HOST to send production email.")
 
 LOGIN_URL = "core:iniciar_sesion"
-LOGIN_REDIRECT_URL = "usuarios:perfil"
-LOGOUT_REDIRECT_URL = "core:iniciar_sesion"
 
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = not DEBUG
@@ -212,3 +249,12 @@ CSRF_COOKIE_SECURE = not DEBUG
 # MD5 es inseguro y guardaría así las contraseñas reales de tu base de datos.
 if "test" in sys.argv:
     PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
+SOCIALACCOUNT_LOGIN_ON_GET = True  # salta la pantalla intermedia de confirmación
