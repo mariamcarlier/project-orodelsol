@@ -79,6 +79,7 @@ class AdministrarUsuarioCreacionForm(RegistroUsuarioForm):
         queryset=Group.objects.all(),
         required=False,
         label="Grupos y permisos",
+        widget=forms.CheckboxSelectMultiple(),
     )
 
     class Meta(RegistroUsuarioForm.Meta):
@@ -107,6 +108,8 @@ class ProductoForm(forms.ModelForm):
             "es_borrador": "Borrador",
             "tallas": "Tallas permitidas",
             "materiales": "Materiales permitidos",
+        )
+        labels = {
             "nombre": "Nombre",
             "coleccion": "Colección",
             "detalle": "Detalle",
@@ -125,6 +128,7 @@ class ProductoForm(forms.ModelForm):
             "es_borrador": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "tallas": forms.CheckboxSelectMultiple,
             "materiales": forms.CheckboxSelectMultiple,
+        widgets = {
             "nombre": forms.TextInput(attrs={"class": "form-control"}),
             "coleccion": forms.Select(attrs={"class": "form-select select2"}),
             "detalle": forms.TextInput(attrs={"class": "form-control"}),
@@ -679,6 +683,9 @@ def procesar_accion(request, clave, configuracion):
             omitidos = objetivos.incompletos().count()
             objetivos = objetivos.completos()
         actualizados = objetivos.update(**{campo: estado == "1"})
+        actualizados = modelo.objects.filter(pk__in=ids).update(
+            **{campo: estado == "1"}
+        )
         messages.success(
             request,
             f"Se actualizaron {actualizados} registros seleccionados.",

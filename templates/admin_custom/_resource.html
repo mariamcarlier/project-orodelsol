@@ -1,11 +1,13 @@
 <section class="dashboard-section" id="registros">
     <header class="dashboard-section__heading{% if recurso.key == 'grupos' %} dashboard-section__heading--groups{% endif %}">
+    <header class="dashboard-section__heading{% if recurso.key == 'grupos' %} dashboard-section__heading--groups{% elif recurso.key == 'usuarios' %} dashboard-section__heading--users{% endif %}">
         <div>
             <h1>{{ recurso.title }}</h1>
             <p>{{ recurso.pagina.paginator.count }} registros</p>
         </div>
         {% if recurso.crear_formulario %}
             <details class="dashboard-create{% if recurso.key == 'grupos' %} dashboard-create--groups{% endif %}" {% if recurso.abrir_crear %}open{% endif %}>
+            <details class="dashboard-create{% if recurso.key == 'grupos' %} dashboard-create--groups{% elif recurso.key == 'usuarios' %} dashboard-create--users{% endif %}" {% if recurso.abrir_crear %}open{% endif %}>
                 <summary>Crear nuevo</summary>
                 <form method="post" enctype="multipart/form-data" class="dashboard-form{% if recurso.key == 'grupos' %} dashboard-form--groups{% endif %}">
                     {% csrf_token %}
@@ -16,6 +18,20 @@
                             <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                             {{ field }}
                             {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                    {% if recurso.key == 'usuarios' %}
+                        <p class="dashboard-create__intro">Completa los datos de la cuenta y selecciona el rol adecuado.</p>
+                    {% endif %}
+                    {% for field in recurso.crear_formulario %}
+                        <div class="dashboard-field{% if field.name == 'permissions' and recurso.key == 'grupos' %} dashboard-field--permissions{% elif field.name == 'groups' %} dashboard-field--groups{% endif %}">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                            {% if field.name == 'groups' and not field.field.queryset %}
+                                <small class="dashboard-empty-groups">
+                                    Aún no hay grupos creados.
+                                    <a href="{% url 'core:admin_section' 'grupos' %}">Crear un grupo</a> para asignarlo después.
+                                </small>
+                            {% endif %}
                             {% for error in field.errors %}
                                 <span class="dashboard-error">{{ error }}</span>
                             {% endfor %}
@@ -25,6 +41,7 @@
                         <span class="dashboard-error">{{ error }}</span>
                     {% endfor %}
                     <button type="submit" class="dashboard-button">Guardar</button>
+                    <button type="submit" class="dashboard-button">{% if recurso.key == 'usuarios' %}Crear usuario{% else %}Guardar{% endif %}</button>
                 </form>
             </details>
         {% endif %}
@@ -75,6 +92,24 @@
                                 {% if recurso.puede_cambiar %}
                                     <details {% if fila.abrir_edicion %}open{% endif %}>
                                         <summary>Editar</summary>
+                                    <button type="button" class="dashboard-button dashboard-button--secondary"
+                                            data-dashboard-dialog-open="{{ recurso.key }}-edit-{{ fila.objeto.pk }}"
+                                            aria-haspopup="dialog">
+                                        Editar
+                                    </button>
+                                    <dialog class="dashboard-dialog"
+                                            id="{{ recurso.key }}-edit-{{ fila.objeto.pk }}"
+                                            aria-labelledby="{{ recurso.key }}-edit-title-{{ fila.objeto.pk }}"
+                                            {% if fila.abrir_edicion %}data-dashboard-dialog-autoshow{% endif %}>
+                                        <header class="dashboard-dialog__header">
+                                            <div>
+                                                <h2 id="{{ recurso.key }}-edit-title-{{ fila.objeto.pk }}">Editar {{ fila.objeto }}</h2>
+                                                <p>Actualiza la información y guarda los cambios.</p>
+                                            </div>
+                                            <form method="dialog">
+                                                <button type="submit" class="dashboard-dialog__close" aria-label="Cerrar">×</button>
+                                            </form>
+                                        </header>
                                         <form method="post" enctype="multipart/form-data" class="dashboard-form{% if recurso.key == 'grupos' %} dashboard-form--groups{% endif %}">
                                             {% csrf_token %}
                                             <input type="hidden" name="recurso" value="{{ recurso.key }}">
@@ -82,6 +117,7 @@
                                             <input type="hidden" name="registro" value="{{ fila.objeto.pk }}">
                                             {% for field in fila.formulario %}
                                                 <div class="dashboard-field{% if field.name == 'permissions' and recurso.key == 'grupos' %} dashboard-field--permissions{% endif %}">
+                                                <div class="dashboard-field{% if field.name == 'permissions' and recurso.key == 'grupos' %} dashboard-field--permissions{% elif field.name == 'groups' %} dashboard-field--groups{% endif %}">
                                                     <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                                                     {{ field }}
                                                     {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
@@ -121,6 +157,7 @@
                                             </details>
                                         {% endif %}
                                     </details>
+                                    </dialog>
                                 {% endif %}
                                 {% if recurso.puede_borrar %}
                                     <form method="post" class="dashboard-delete"

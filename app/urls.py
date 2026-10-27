@@ -24,6 +24,10 @@ from django.urls import include, path
 
 from usuarios.forms import RateLimitedAuthenticationForm
 from usuarios.views import crear_cuenta, perfil
+from allauth.account.views import signup as allauth_signup
+
+from usuarios.forms import RateLimitedAuthenticationForm
+from usuarios.views import perfil
 
 admin.site.site_header = "Administración de Oro del Sol"
 admin.site.site_title = "Oro del Sol"
@@ -45,6 +49,10 @@ urlpatterns = [
     path("", include("core.urls")),
     path("usuario/", include("usuarios.urls")),
     path("register/", crear_cuenta, name="register"),
+    path("accounts/", include("allauth.urls")),
+    path("", include("core.urls")),
+    path("usuario/", include("usuarios.urls")),
+    path("register/", allauth_signup, name="register"),
     path("profile/", perfil, name="profile"),
 ]
 

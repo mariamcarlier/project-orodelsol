@@ -1,6 +1,9 @@
 from django.contrib import admin, messages
 
 from .models import Coleccion, Material, Producto, Talla, VarianteProducto
+from django.contrib import admin
+
+from .models import Coleccion, Producto
 
 
 @admin.register(Coleccion)
@@ -33,6 +36,11 @@ class ProductoAdmin(admin.ModelAdmin):
     search_fields = ("codigo", "nombre", "detalle", "descripcion")
     filter_horizontal = ("tallas", "materiales")
     inlines = (VarianteProductoInline,)
+@admin.register(Producto)
+class ProductoAdmin(admin.ModelAdmin):
+    list_display = ("nombre", "coleccion", "precio", "destacado", "activo")
+    list_filter = ("coleccion", "destacado", "activo")
+    search_fields = ("nombre", "detalle", "descripcion")
     actions = ("activar_productos", "desactivar_productos")
 
     @admin.action(description="Activar productos seleccionados")
@@ -47,6 +55,7 @@ class ProductoAdmin(admin.ModelAdmin):
                 "código, imagen o un precio mayor a cero.",
                 level=messages.WARNING,
             )
+        queryset.update(activo=True)
 
     @admin.action(description="Desactivar productos seleccionados")
     def desactivar_productos(self, request, queryset):

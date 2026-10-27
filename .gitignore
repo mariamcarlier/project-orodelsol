@@ -158,7 +158,6 @@ venv.bak/
 *.swp
 *.swo
 
-<<<<<<< HEAD
 !**/migrations/__init__.py
 
 # === Django & Base de datos ===

@@ -5,6 +5,7 @@ from django.db import models
 from django.db.models import Q
 
 PREFIJO_CODIGO = "AN-"
+from django.db import models
 
 
 class Coleccion(models.Model):
@@ -110,6 +111,7 @@ class Producto(models.Model):
     """Lo que el anillo ES. Lo que SE VENDE (talla, material, stock) vive en
     VarianteProducto."""
 
+class Producto(models.Model):
     coleccion = models.ForeignKey(
         Coleccion,
         on_delete=models.PROTECT,

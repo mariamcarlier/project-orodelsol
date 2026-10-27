@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Crear cuenta{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/registrar.css' %}?v=5">
+{% endblock %}
+
+{% block content %}
+<section class="register-page register-page--public" aria-labelledby="register-title">
+  <div class="register-page__intro">
+    <h1 id="register-title" class="heading">Crear cuenta</h1>
+    <p class="body-text">Únete a Oro del Sol</p>
+  </div>
+
+  {% if form.non_field_errors %}
+    <div class="register-alert register-alert--error" role="alert">
+      <span class="register-alert__icon" aria-hidden="true">!</span>
+      <span>{{ form.non_field_errors|striptags }}</span>
+    </div>
+  {% endif %}
+
+  <div class="register-form register-form--public">
+    <form method="post" action="{{ request.path }}" novalidate>
+      {% csrf_token %}
+      {% if redirect_field %}{{ redirect_field }}{% endif %}
+      <div class="register-form__grid register-form__grid--single">
+        {% for field in form.visible_fields %}
+          <div class="register-field{% if field.errors %} register-field--invalid{% endif %}">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<p class="register-field__help">{{ field.help_text|striptags }}</p>{% endif %}
+            {% for error in field.errors %}<p class="register-field__error" role="alert">{{ error }}</p>{% endfor %}
+          </div>
+        {% endfor %}
+        {% for field in form.hidden_fields %}{{ field }}{% endfor %}
+      </div>
+      <button class="btn btn--primary register-form__submit" type="submit">Crear cuenta</button>
+    </form>
+
+    <div class="register-divider" aria-hidden="true"><span>O</span></div>
+    {% if google_login_enabled %}
+      <form method="post" action="{% url 'google_login' %}" class="register-google-form">
+        {% csrf_token %}
+        <button class="register-google-button" type="submit">
+          <span class="register-google-button__mark" aria-hidden="true">G</span>
+          Continuar con Google
+        </button>
+      </form>
+    {% else %}
+      <button class="register-google-button" type="button" disabled>
+        <span class="register-google-button__mark" aria-hidden="true">G</span>
+        Continuar con Google
+      </button>
+      <p class="register-google-note">El acceso con Google estará disponible cuando se configure OAuth.</p>
+    {% endif %}
+    <p class="register-form__login">¿Ya tienes cuenta? <a href="{% url 'login' %}">Iniciar sesión</a></p>
+  </div>
+</section>
+{% endblock %}
