@@ -79,6 +79,7 @@ class AdministrarUsuarioCreacionForm(RegistroUsuarioForm):
         queryset=Group.objects.all(),
         required=False,
         label="Grupos y permisos",
+        widget=forms.CheckboxSelectMultiple(),
     )
 
     class Meta(RegistroUsuarioForm.Meta):
@@ -89,6 +90,7 @@ class ProductoForm(forms.ModelForm):
     class Meta:
         model = Producto
         fields = (
+            "codigo",
             "nombre",
             "coleccion",
             "detalle",
@@ -97,6 +99,15 @@ class ProductoForm(forms.ModelForm):
             "imagen_url",
             "destacado",
             "activo",
+            "es_borrador",
+            "tallas",
+            "materiales",
+        )
+        labels = {
+            "codigo": "Código",
+            "es_borrador": "Borrador",
+            "tallas": "Tallas permitidas",
+            "materiales": "Materiales permitidos",
         )
         labels = {
             "nombre": "Nombre",
@@ -108,6 +119,15 @@ class ProductoForm(forms.ModelForm):
             "destacado": "Destacado",
             "activo": "Activo",
         }
+        help_texts = {
+            "codigo": "Déjalo vacío para generarlo automáticamente. Una vez creado no se puede cambiar.",
+            "es_borrador": "Un borrador no se muestra en la tienda aunque esté activo.",
+        }
+        widgets = {
+            "codigo": forms.TextInput(attrs={"class": "form-control"}),
+            "es_borrador": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "tallas": forms.CheckboxSelectMultiple,
+            "materiales": forms.CheckboxSelectMultiple,
         widgets = {
             "nombre": forms.TextInput(attrs={"class": "form-control"}),
             "coleccion": forms.Select(attrs={"class": "form-select select2"}),
@@ -120,6 +140,13 @@ class ProductoForm(forms.ModelForm):
             "destacado": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "activo": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # El código es el identificador estable del producto (analítica,
+        # catálogo físico): una vez asignado, el formulario no lo modifica.
+        if self.instance.pk and self.instance.codigo:
+            self.fields["codigo"].disabled = True
 
     def clean_precio(self):
         precio = self.cleaned_data.get("precio")
@@ -648,6 +675,14 @@ def procesar_accion(request, clave, configuracion):
             raise PermissionDenied("Selecciona registros y una acción válida.")
         if not request.user.has_perm(permiso(modelo, "change")):
             raise PermissionDenied
+        objetivos = modelo.objects.filter(pk__in=ids)
+        omitidos = 0
+        if modelo is Producto and campo == "activo" and estado == "1":
+            # update() no pasa por clean(): se filtran aquí los productos que
+            # no cumplen los requisitos de publicación.
+            omitidos = objetivos.incompletos().count()
+            objetivos = objetivos.completos()
+        actualizados = objetivos.update(**{campo: estado == "1"})
         actualizados = modelo.objects.filter(pk__in=ids).update(
             **{campo: estado == "1"}
         )
@@ -655,6 +690,12 @@ def procesar_accion(request, clave, configuracion):
             request,
             f"Se actualizaron {actualizados} registros seleccionados.",
         )
+        if omitidos:
+            messages.warning(
+                request,
+                f"{omitidos} producto(s) no se activaron porque les falta "
+                "nombre, código, imagen o un precio mayor a cero.",
+            )
         return redirect(f"{request.path}#registros")
     elif accion == "delete":
         if not configuracion.get("deletable", True):

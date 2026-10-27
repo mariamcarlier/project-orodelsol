@@ -1,5 +1,11 @@
 from django import forms
+
 from django.contrib.auth import authenticate, get_user_model
+
+from allauth.account.forms import SignupForm
+from django import forms
+from django.contrib.auth import get_user_model
+
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
@@ -36,6 +42,11 @@ class RateLimitedAuthenticationForm(AuthenticationForm):
         password = self.cleaned_data.get("password")
         if not email or not password:
             return self.cleaned_data
+
+        user_model = get_user_model()
+        email_matches = user_model.objects.filter(email__iexact=username)
+        if email_matches.count() == 1:
+            self.cleaned_data["username"] = email_matches.get().get_username()
 
         remote_addr = self.request.META.get("REMOTE_ADDR", "")
         cache_key = "login-attempts:" + salted_hmac(
@@ -101,6 +112,18 @@ class RegistroUsuarioForm(UserCreationForm):
             "tipo_documento", "documento", "fecha_nacimiento", "telefono", "rol",
         ]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name in (
+            "first_name",
+            "last_name",
+            "tipo_documento",
+            "documento",
+            "fecha_nacimiento",
+            "telefono",
+        ):
+            self.fields[field_name].required = True
+
     def clean_email(self):
         email = self.cleaned_data.get("email")
         if email and Usuario.objects.filter(email__iexact=email).exclude(
@@ -131,6 +154,21 @@ class RegistroClienteForm(RegistroUsuarioForm):
         if commit:
             usuario.save()
         return usuario
+class AllauthCrearCuentaForm(SignupForm):
+    first_name = forms.CharField(
+        label="Nombre",
+        max_length=50,
+        widget=forms.TextInput(
+            attrs={
+                "autocomplete": "given-name",
+                "placeholder": "Tu nombre",
+            }
+        ),
+    )
+    field_order = ["first_name", "email", "password1"]
+
+    def clean_first_name(self):
+        return " ".join(self.cleaned_data["first_name"].split())
 
 
 class AdministrarUsuarioForm(forms.ModelForm):
@@ -153,6 +191,21 @@ class AdministrarUsuarioForm(forms.ModelForm):
         widgets = {  # noqa: RUF012
             "fecha_nacimiento": forms.DateInput(attrs={"type": "date"}),
         }
+
+            "groups": forms.CheckboxSelectMultiple(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name in (
+            "first_name",
+            "last_name",
+            "tipo_documento",
+            "documento",
+            "fecha_nacimiento",
+            "telefono",
+        ):
+            self.fields[field_name].required = True
 
 
 class EditarPerfilForm(forms.ModelForm):
@@ -203,5 +256,14 @@ class EditarPerfilForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        for field_name in (
+            "first_name",
+            "last_name",
+            "tipo_documento",
+            "documento",
+            "fecha_nacimiento",
+            "telefono",
+        ):
+            self.fields[field_name].required = True
         if self.instance and self.instance.fecha_nacimiento:
             self.initial["fecha_nacimiento"] = self.instance.fecha_nacimiento.isoformat()

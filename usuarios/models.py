@@ -1,7 +1,11 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+
 from django.db.models import Q
 from django.db.models.functions import Lower
+
+from django.utils.text import slugify
+
 
 
 # Create your models here.
@@ -43,6 +47,28 @@ class Usuario(AbstractUser):
     documento = models.CharField(max_length=20,unique=True,verbose_name="Documento")
     fecha_nacimiento = models.DateField(blank=False, verbose_name="Fecha de Nacimiento")
     telefono = models.CharField(max_length=15, blank=False, verbose_name="Teléfono")
+    first_name = models.CharField(max_length=50, blank=True, verbose_name="Nombre")
+    last_name = models.CharField(max_length=50, blank=True, verbose_name="Apellido")
+    tipo_documento = models.CharField(
+        max_length=3,
+        choices=TIPO_DOCUMENTO_CHOICES,
+        blank=True,
+        verbose_name="Tipo de Documento",
+    )
+    documento = models.CharField(
+        max_length=20,
+        unique=True,
+        blank=True,
+        null=True,
+        default=None,
+        verbose_name="Documento",
+    )
+    fecha_nacimiento = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Fecha de Nacimiento",
+    )
+    telefono = models.CharField(max_length=15, blank=True, verbose_name="Teléfono")
     foto = models.ImageField(upload_to="perfiles/", blank=True, null=True, verbose_name="Foto de perfil")
     REQUIRED_FIELDS = [  # noqa: RUF012
         "email",
@@ -105,3 +131,14 @@ class Usuario(AbstractUser):
     def saludo_bienvenida(self):
         """Frase completa en texto plano: «Te damos la bienvenida, Mariam»."""
         return f"{self.frase_bienvenida}, {self.nombre_visible}"
+
+
+def generar_username(nombre, email):
+    base = slugify(nombre or email.partition("@")[0])[:150] or "cliente"
+    username = base
+    sufijo = 2
+    while Usuario.objects.filter(username__iexact=username).exists():
+        marcador = f"-{sufijo}"
+        username = f"{base[:150 - len(marcador)]}{marcador}"
+        sufijo += 1
+    return username

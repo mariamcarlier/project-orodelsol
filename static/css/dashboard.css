@@ -368,6 +368,10 @@ body.dashboard-body {
 .dashboard-field {
     display: grid;
     gap: 0.35rem;
+    align-content: start;
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
 }
 
 .dashboard-field label {
@@ -376,6 +380,14 @@ body.dashboard-body {
 
 .dashboard-field small {
     color: var(--text-muted);
+    line-height: 1.45;
+}
+
+.dashboard-create__intro {
+    color: var(--text-muted);
+    grid-column: 1 / -1;
+    line-height: 1.5;
+    margin: 0;
 }
 
 .dashboard-input,
@@ -456,6 +468,153 @@ body.dashboard-body {
 
 .dashboard-actions {
     min-width: 140px;
+    min-width: 7rem;
+    white-space: nowrap;
+}
+
+.dashboard-dialog {
+    background: linear-gradient(155deg, #fff 0%, #fcf8f0 100%);
+    border: 1px solid rgba(197, 160, 89, 0.5);
+    border-radius: 14px;
+    box-shadow: 0 24px 70px rgba(48, 35, 27, 0.3);
+    box-sizing: border-box;
+    color: var(--text-dark);
+    max-height: min(90dvh, 900px);
+    max-width: min(760px, calc(100vw - 2rem));
+    overflow: auto;
+    padding: clamp(1.25rem, 3vw, 2rem);
+    width: 100%;
+}
+
+.dashboard-dialog::backdrop {
+    background: rgba(28, 25, 23, 0.62);
+    backdrop-filter: blur(3px);
+}
+
+.dashboard-dialog__header {
+    align-items: flex-start;
+    border-bottom: 1px solid rgba(197, 160, 89, 0.35);
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1.1rem;
+    position: relative;
+}
+
+.dashboard-dialog__header h2 {
+    color: var(--accent-brown);
+    font-size: 1.3rem;
+    margin: 0;
+}
+
+.dashboard-dialog__header p {
+    color: var(--text-muted);
+    margin: 0.35rem 0 0;
+}
+
+.dashboard-dialog__header::after {
+    background: linear-gradient(90deg, var(--accent-brown), var(--primary-gold), transparent);
+    bottom: -1px;
+    content: "";
+    height: 2px;
+    left: 0;
+    position: absolute;
+    width: 8rem;
+}
+
+.dashboard-dialog__header form {
+    margin: 0;
+}
+
+.dashboard-dialog__close {
+    align-items: center;
+    background: rgba(197, 160, 89, 0.1);
+    border: 1px solid rgba(197, 160, 89, 0.38);
+    border-radius: 50%;
+    color: var(--accent-brown);
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    font-size: 1.4rem;
+    height: 2.25rem;
+    justify-content: center;
+    line-height: 1;
+    width: 2.25rem;
+}
+
+.dashboard-dialog__close:hover {
+    background: rgba(197, 160, 89, 0.22);
+    border-color: var(--primary-gold);
+}
+
+.dashboard-dialog .dashboard-field > input,
+.dashboard-dialog .dashboard-field > select,
+.dashboard-dialog .dashboard-field > textarea {
+    background-color: rgba(255, 255, 255, 0.82);
+    border: 1px solid #d9c8a8;
+    border-radius: 6px;
+    color: var(--text-dark);
+    font: inherit;
+    min-height: 2.7rem;
+    padding: 0.65rem 0.75rem;
+    transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.dashboard-dialog .dashboard-field > input:focus,
+.dashboard-dialog .dashboard-field > select:focus,
+.dashboard-dialog .dashboard-field > textarea:focus {
+    background: #fff;
+    border-color: var(--primary-gold-hover);
+    box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.18);
+    outline: none;
+}
+
+.dashboard-dialog .dashboard-field > label {
+    color: var(--accent-brown);
+    font-size: 0.92rem;
+}
+
+.dashboard-dialog .dashboard-form > .dashboard-button,
+.dashboard-dialog .dashboard-password .dashboard-button {
+    background: var(--accent-brown);
+    border-radius: 6px;
+    justify-self: start;
+    min-height: 2.75rem;
+    padding-inline: 1.25rem;
+    transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.dashboard-dialog .dashboard-form > .dashboard-button:hover,
+.dashboard-dialog .dashboard-password .dashboard-button:hover {
+    background: #56372d;
+    transform: translateY(-1px);
+}
+
+.dashboard-dialog .dashboard-password {
+    border-color: rgba(197, 160, 89, 0.35);
+}
+
+.dashboard-dialog .dashboard-password summary {
+    color: var(--accent-brown);
+}
+
+.dashboard-dialog .dashboard-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dashboard-dialog .dashboard-form.dashboard-form--groups {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.dashboard-dialog .dashboard-form > button {
+    grid-column: 1 / -1;
+}
+
+.dashboard-dialog .dashboard-password {
+    border-top: 1px solid rgba(197, 160, 89, 0.35);
+    margin-top: 1.25rem;
+    padding-top: 1rem;
 }
 
 .dashboard-delete {
@@ -637,5 +796,13 @@ body.dashboard-body {
 
     .dashboard-section {
         padding: 1rem;
+    }
+
+    .dashboard-dialog .dashboard-form {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .dashboard-dialog .dashboard-form > button {
+        grid-column: auto;
     }
 }

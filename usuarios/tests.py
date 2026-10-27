@@ -8,6 +8,15 @@ from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.test import Client, TestCase
 from django.urls import reverse
+from allauth.socialaccount.models import SocialApp
+from django.contrib.auth import get_user_model
+from django.conf import settings
+from django.contrib.sites.models import Site
+from django.core import mail
+from django.core.cache import cache
+from django.test import Client, RequestFactory, TestCase, override_settings
+from django.urls import reverse
+from .adapters import UsuarioAccountAdapter
 from .models import Usuario
 
 
@@ -147,6 +156,7 @@ class ConsultarPerfilTests(TestCase):
         self.assertTrue(nuevo_usuario.check_password("StrongPass123!"))
         self.assertEqual(len(mail.outbox), 0)
 
+
     def test_registro_rechaza_correo_duplicado_sin_distinguir_mayusculas(self):
         response = self.client.post(
             "/register/",
@@ -172,6 +182,178 @@ class ConsultarPerfilTests(TestCase):
         self.assertFalse(
             get_user_model().objects.filter(username="cliente_duplicado").exists()
         )
+
+    def test_registro_publico_allauth_crea_cliente_sin_permisos_admin(self):
+        response = self.client.post(
+            "/register/",
+            {
+                "first_name": "  Nueva   Cliente ",
+                "email": "cliente.nuevo@example.com",
+                "password1": "StrongPass123!",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        nuevo_usuario = get_user_model().objects.get(
+            email="cliente.nuevo@example.com"
+        )
+        self.assertEqual(nuevo_usuario.first_name, "Nueva Cliente")
+        self.assertEqual(nuevo_usuario.username, "nueva-cliente")
+        self.assertEqual(nuevo_usuario.rol, "CLIENTE")
+        self.assertFalse(nuevo_usuario.is_staff)
+        self.assertFalse(nuevo_usuario.is_superuser)
+        self.assertIsNone(nuevo_usuario.documento)
+        self.assertIsNone(nuevo_usuario.fecha_nacimiento)
+        self.assertEqual(nuevo_usuario.telefono, "")
+        self.assertTrue(nuevo_usuario.check_password("StrongPass123!"))
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_registro_publico_usa_formulario_allauth_sin_username(self):
+        response = self.client.get("/register/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            list(response.context["form"].fields),
+            ["first_name", "email", "password1"],
+        )
+        self.assertNotContains(response, 'name="username"', html=False)
+
+    def test_registro_allauth_no_pide_nombre_de_usuario(self):
+        response = self.client.get("/accounts/signup/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'name="username"', html=False)
+
+    def test_username_generado_es_legible_y_unico(self):
+        Usuario.objects.create_user(
+            username="nueva-cliente",
+            password="StrongPass123!",
+            email="otra@example.com",
+        )
+
+        response = self.client.post(
+            "/register/",
+            {
+                "first_name": "Nueva Cliente",
+                "email": "cliente.dos@example.com",
+                "password1": "StrongPass123!",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        nuevo_usuario = Usuario.objects.get(email="cliente.dos@example.com")
+        self.assertEqual(nuevo_usuario.username, "nueva-cliente-2")
+
+    def test_google_username_se_genera_sin_pedirlo_al_usuario(self):
+        usuario = Usuario(
+            username="",
+            first_name="Julian",
+            email="julian@example.com",
+        )
+
+        UsuarioAccountAdapter().populate_username(
+            RequestFactory().get("/accounts/google/login/"),
+            usuario,
+        )
+
+        self.assertEqual(usuario.username, "julian")
+
+    def test_registro_allauth_no_crea_otro_usuario_con_correo_existente(self):
+        get_user_model().objects.create_user(
+            username="correo_existente",
+            password="SecureTestPassword123!",
+            email="cliente.existente@example.com",
+            first_name="Cliente",
+        )
+
+        response = self.client.post(
+            "/register/",
+            {
+                "first_name": "Nueva Cliente",
+                "email": "CLIENTE.EXISTENTE@example.com",
+                "password1": "StrongPass123!",
+            },
+        )
+
+        self.assertIn(response.status_code, (200, 302))
+        self.assertEqual(
+            get_user_model().objects.filter(
+                email__iexact="cliente.existente@example.com"
+            ).count(),
+            1,
+        )
+
+    def test_nuevo_cliente_puede_iniciar_sesion_con_su_correo(self):
+        self.client.post(
+            "/register/",
+            {
+                "first_name": "Nueva Cliente",
+                "email": "cliente.nuevo@example.com",
+                "password1": "StrongPass123!",
+            },
+        )
+
+        response = self.client.post(
+            "/accounts/login/",
+            {
+                "username": "cliente.nuevo@example.com",
+                "password": "StrongPass123!",
+            },
+        )
+
+        self.assertRedirects(response, "/")
+        self.assertTrue(
+            self.client.session.get("_auth_user_id")
+        )
+
+    @override_settings(GOOGLE_OAUTH_ENABLED=False)
+    def test_registro_muestra_google_desactivado_hasta_configurar_oauth(self):
+        response = self.client.get("/register/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Continuar con Google")
+        self.assertContains(response, "El acceso con Google estará disponible")
+        self.assertContains(response, "disabled", html=False)
+
+    @override_settings(GOOGLE_OAUTH_ENABLED=True)
+    def test_registro_allauth_muestra_google_dentro_de_la_tarjeta(self):
+        response = self.client.get("/register/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="register-form register-form--public"')
+        self.assertContains(
+            response,
+            'action="/accounts/google/login/"',
+            html=False,
+        )
+        self.assertContains(response, "Continuar con Google")
+
+    @override_settings(GOOGLE_OAUTH_ENABLED=False)
+    def test_registro_habilita_google_configurado_en_admin(self):
+        site, _ = Site.objects.update_or_create(
+            pk=settings.SITE_ID,
+            defaults={"domain": "127.0.0.1:8000", "name": "Oro del Sol"},
+        )
+        app = SocialApp.objects.create(
+            provider="google",
+            name="Google",
+            client_id="test-client-id",
+            secret="test-client-secret",
+        )
+        app.sites.add(site)
+
+        response = self.client.get("/register/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Continuar con Google")
+        self.assertNotContains(response, "El acceso con Google estará disponible")
+        self.assertNotContains(response, "disabled", html=False)
+
+        response = self.client.post(reverse("google_login"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response["Location"].startswith("https://accounts.google.com/"))
+
 
     def test_registro_publico_muestra_formulario_sin_selector_de_rol(self):
         response = self.client.get("/register/")
@@ -251,6 +433,7 @@ class ConsultarPerfilTests(TestCase):
         self.assertRedirects(
             response,
             "/usuario/perfil/",
+            "/",
             fetch_redirect_response=False,
         )
 
@@ -317,6 +500,7 @@ class ConsultarPerfilTests(TestCase):
         self.assertRedirects(
             response,
             "/usuario/perfil/",
+            "/",
             fetch_redirect_response=False,
         )
         self.assertTrue(response.wsgi_request.user.is_authenticated)
@@ -339,6 +523,7 @@ class ConsultarPerfilTests(TestCase):
         response = self.client.post("/accounts/logout/")
 
         self.assertRedirects(response, "/login/")
+        self.assertRedirects(response, "/")
         self.assertFalse(response.wsgi_request.user.is_authenticated)
 
     def test_menu_muestra_cierre_de_sesion_protegido_con_csrf(self):
@@ -421,6 +606,13 @@ class ConsultarPerfilTests(TestCase):
         self.assertTrue(nuevo_usuario.check_password("StrongPass123!"))
 
     def test_recuperacion_envia_enlace_funcional(self):
+    @override_settings(SITE_ID=None)
+    def test_recuperacion_envia_enlace_funcional(self):
+        Site.objects.update_or_create(
+            domain="testserver",
+            defaults={"name": "testserver"},
+        )
+        Site.objects.clear_cache()
         response = self.client.post(
             "/accounts/password_reset/",
             {"email": self.usuario.email},

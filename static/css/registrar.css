@@ -180,6 +180,147 @@
   text-underline-offset: 3px;
 }
 
+.register-page--public {
+  box-sizing: border-box;
+  display: grid;
+  justify-items: center;
+  max-width: none;
+  min-height: 70vh;
+  padding: clamp(40px, 7vw, 72px) var(--gutter);
+}
+
+.register-page--public .register-page__intro {
+  margin-bottom: 22px;
+  text-align: center;
+}
+
+.register-page--public .register-page__intro .heading {
+  color: var(--color-text-dark);
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 2.6rem);
+  margin: 0 0 0.35rem;
+}
+
+.register-page--public .register-page__intro .body-text {
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.register-form--public {
+  box-sizing: border-box;
+  margin: 0 auto;
+  max-width: 430px;
+  padding: clamp(22px, 5vw, 34px);
+  width: 100%;
+}
+
+.register-form__grid--single {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.register-form--public .register-field label {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+  text-transform: none;
+}
+
+.register-form--public .register-field input {
+  border-radius: 6px;
+  min-height: 46px;
+}
+
+.register-form--public .register-form__submit {
+  border-radius: 6px;
+  margin-top: 20px;
+  min-height: 46px;
+}
+
+.register-divider {
+  align-items: center;
+  color: var(--color-text-muted);
+  display: flex;
+  gap: 14px;
+  margin: 16px auto;
+  max-width: 430px;
+  width: 100%;
+}
+
+.register-divider::before,
+.register-divider::after {
+  background: var(--color-oro-borde);
+  content: "";
+  flex: 1;
+  height: 1px;
+  opacity: 0.65;
+}
+
+.register-google-form {
+  margin: 0 auto;
+  max-width: 430px;
+  width: 100%;
+}
+
+.register-google-button {
+  align-items: center;
+  background: var(--color-white);
+  border: 1px solid var(--color-oro-borde);
+  border-radius: 6px;
+  color: var(--color-text-dark);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 10px;
+  justify-content: center;
+  min-height: 46px;
+  padding: 10px 16px;
+  transition: background-color var(--ease-fast), border-color var(--ease-fast);
+  width: 100%;
+}
+
+.register-google-button:hover:not(:disabled) {
+  background: var(--color-ivory);
+  border-color: var(--color-caramel);
+}
+
+.register-google-button:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+.register-google-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.register-google-button__mark {
+  color: #4285f4;
+  font-family: Arial, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.register-google-note {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 8px auto 0;
+  max-width: 430px;
+  text-align: center;
+}
+
+.register-page--public .register-form__login {
+  margin: 20px auto 0;
+  max-width: 430px;
+}
+
+.register-page--public .register-alerts,
+.register-page--public > .register-alert {
+  max-width: 430px;
+  width: 100%;
+}
+
 @media (max-width: 680px) {
   .register-form {
     padding: 22px 18px;
