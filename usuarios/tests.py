@@ -5,6 +5,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.core.cache import cache
+from django.db import IntegrityError, transaction
 from django.test import Client, TestCase
 from django.urls import reverse
 from allauth.socialaccount.models import SocialApp
@@ -154,6 +155,33 @@ class ConsultarPerfilTests(TestCase):
         self.assertFalse(nuevo_usuario.is_superuser)
         self.assertTrue(nuevo_usuario.check_password("StrongPass123!"))
         self.assertEqual(len(mail.outbox), 0)
+
+
+    def test_registro_rechaza_correo_duplicado_sin_distinguir_mayusculas(self):
+        response = self.client.post(
+            "/register/",
+            {
+                "username": "cliente_duplicado",
+                "email": self.usuario.email.upper(),
+                "first_name": "Nuevo",
+                "last_name": "Cliente",
+                "tipo_documento": "CC",
+                "documento": "5566778890",
+                "fecha_nacimiento": "2000-05-20",
+                "telefono": "3005556677",
+                "password1": "StrongPass123!",
+                "password2": "StrongPass123!",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "Ya existe un usuario registrado con este correo electrónico.",
+        )
+        self.assertFalse(
+            get_user_model().objects.filter(username="cliente_duplicado").exists()
+        )
 
     def test_registro_publico_allauth_crea_cliente_sin_permisos_admin(self):
         response = self.client.post(
@@ -326,6 +354,7 @@ class ConsultarPerfilTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response["Location"].startswith("https://accounts.google.com/"))
 
+
     def test_registro_publico_muestra_formulario_sin_selector_de_rol(self):
         response = self.client.get("/register/")
 
@@ -345,7 +374,8 @@ class ConsultarPerfilTests(TestCase):
             '<input type="hidden" name="next" value="/usuario/perfil/">',
             html=False,
         )
-        self.assertEqual(response.content.count(b'name="username"'), 1)
+        self.assertEqual(response.content.count(b'name="email"'), 1)
+        self.assertEqual(response.content.count(b'name="username"'), 0)
         self.assertEqual(response.content.count(b'name="password"'), 1)
 
     def test_login_exitoso_redirige_al_destino_solicitado(self):
@@ -355,9 +385,28 @@ class ConsultarPerfilTests(TestCase):
         response = self.client.post(
             "/accounts/login/",
             {
-                "username": self.usuario.username,
+                "email": self.usuario.email,
                 "password": "SecureTestPassword123!",
                 "next": "/usuario/perfil/",
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            "/usuario/perfil/",
+            fetch_redirect_response=False,
+        )
+        self.assertTrue(response.wsgi_request.user.is_authenticated)
+
+    def test_login_acepta_correo_sin_distinguir_mayusculas(self):
+        self.usuario.set_password("SecureTestPassword123!")
+        self.usuario.save(update_fields=["password"])
+
+        response = self.client.post(
+            "/accounts/login/",
+            {
+                "email": self.usuario.email.upper(),
+                "password": "SecureTestPassword123!",
             },
         )
 
@@ -375,7 +424,7 @@ class ConsultarPerfilTests(TestCase):
         response = self.client.post(
             "/accounts/login/",
             {
-                "username": self.usuario.username,
+                "email": self.usuario.email,
                 "password": "SecureTestPassword123!",
                 "next": "https://atacante.example/",
             },
@@ -391,18 +440,24 @@ class ConsultarPerfilTests(TestCase):
     def test_login_fallido_muestra_error_generico(self):
         response = self.client.post(
             "/accounts/login/",
-            {"username": self.usuario.username, "password": "incorrecta"},
+            {"email": self.usuario.email, "password": "incorrecta"},
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Por favor, introduzca un nombre de usuario")
+        self.assertContains(response, "Correo electrónico o contraseña incorrectos.")
         self.assertFalse(response.wsgi_request.user.is_authenticated)
+
+    def test_base_de_datos_rechaza_correos_repetidos_sin_distinguir_mayusculas(self):
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                self.otro_usuario.email = self.usuario.email.upper()
+                self.otro_usuario.save(update_fields=["email"])
 
     def test_bloquea_el_sexto_intento_fallido_por_usuario_e_ip(self):
         self.usuario.set_password("SecureTestPassword123!")
         self.usuario.save(update_fields=["password"])
         datos_invalidos = {
-            "username": self.usuario.username,
+            "email": self.usuario.email,
             "password": "incorrecta",
         }
 
@@ -413,7 +468,7 @@ class ConsultarPerfilTests(TestCase):
         response = self.client.post(
             "/accounts/login/",
             {
-                "username": self.usuario.username,
+                "email": self.usuario.email,
                 "password": "SecureTestPassword123!",
             },
         )
@@ -426,7 +481,7 @@ class ConsultarPerfilTests(TestCase):
         self.usuario.set_password("SecureTestPassword123!")
         self.usuario.save(update_fields=["password"])
         datos_invalidos = {
-            "username": self.usuario.username,
+            "email": self.usuario.email,
             "password": "incorrecta",
         }
 
@@ -436,7 +491,7 @@ class ConsultarPerfilTests(TestCase):
         response = self.client.post(
             "/accounts/login/",
             {
-                "username": self.usuario.username,
+                "email": self.usuario.email,
                 "password": "SecureTestPassword123!",
             },
             REMOTE_ADDR="203.0.113.10",
@@ -580,6 +635,10 @@ class ConsultarPerfilTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context["form"].errors)
+        self.assertEqual(response.content.count(b"data-password-toggle"), 2)
+        self.assertContains(response, 'aria-controls="id_new_password1"', html=False)
+        self.assertContains(response, 'aria-controls="id_new_password2"', html=False)
+        self.assertContains(response, "Guardar nueva contraseña")
 
         response = self.client.post(
             set_password_url,
@@ -592,6 +651,19 @@ class ConsultarPerfilTests(TestCase):
         self.assertRedirects(response, "/accounts/reset/done/")
         self.usuario.refresh_from_db()
         self.assertTrue(self.usuario.check_password("NewStrongPass123!"))
+
+        login_response = self.client.post(
+            "/accounts/login/",
+            {
+                "email": self.usuario.email,
+                "password": "NewStrongPass123!",
+            },
+        )
+        self.assertRedirects(
+            login_response,
+            "/usuario/perfil/",
+            fetch_redirect_response=False,
+        )
 
         response = self.client.get(set_password_url)
         self.assertEqual(response.status_code, 200)

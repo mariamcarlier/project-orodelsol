@@ -814,6 +814,7 @@ class AuthenticationViewTests(TestCase):
     def setUp(self):
         self.usuario = get_user_model().objects.create_user(
             username="acceso",
+            email="acceso@example.com",
             password="PruebaSegura123!",
             first_name="Usuario",
             last_name="Autenticado",
@@ -837,7 +838,7 @@ class AuthenticationViewTests(TestCase):
     def test_login_y_logout(self):
         login_response = self.client.post(
             reverse("core:iniciar_sesion"),
-            {"username": self.usuario.username, "password": "PruebaSegura123!"},
+            {"email": self.usuario.email, "password": "PruebaSegura123!"},
         )
         self.assertRedirects(login_response, reverse("usuarios:perfil"))
 

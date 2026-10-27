@@ -1,7 +1,11 @@
 from django import forms
+
+from django.contrib.auth import authenticate, get_user_model
+
 from allauth.account.forms import SignupForm
 from django import forms
 from django.contrib.auth import get_user_model
+
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
@@ -15,11 +19,29 @@ LOGIN_ATTEMPT_WINDOW = 15 * 60
 
 
 class RateLimitedAuthenticationForm(AuthenticationForm):
+    error_messages = {
+        **AuthenticationForm.error_messages,
+        "invalid_login": "Correo electrónico o contraseña incorrectos.",
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        password_field = self.fields["password"]
+        self.fields = {
+            "email": forms.EmailField(
+                label="Correo electrónico",
+                widget=forms.EmailInput(
+                    attrs={"autofocus": True, "autocomplete": "email"}
+                ),
+            ),
+            "password": password_field,
+        }
+
     def clean(self):
-        username = self.cleaned_data.get("username")
+        email = self.cleaned_data.get("email")
         password = self.cleaned_data.get("password")
-        if not username or not password:
-            return super().clean()
+        if not email or not password:
+            return self.cleaned_data
 
         user_model = get_user_model()
         email_matches = user_model.objects.filter(email__iexact=username)
@@ -29,7 +51,7 @@ class RateLimitedAuthenticationForm(AuthenticationForm):
         remote_addr = self.request.META.get("REMOTE_ADDR", "")
         cache_key = "login-attempts:" + salted_hmac(
             "usuarios.login_attempts",
-            f"{username.casefold()}\0{remote_addr}",
+            f"{email.casefold()}\0{remote_addr}",
         ).hexdigest()
 
         if cache.get(cache_key, 0) >= LOGIN_MAX_ATTEMPTS:
@@ -39,7 +61,28 @@ class RateLimitedAuthenticationForm(AuthenticationForm):
             )
 
         try:
-            cleaned_data = super().clean()
+            UserModel = get_user_model()
+            try:
+                usuario = UserModel._default_manager.get(email__iexact=email)
+            except (UserModel.DoesNotExist, UserModel.MultipleObjectsReturned):
+                usuario = None
+
+            self.user_cache = (
+                authenticate(
+                    self.request,
+                    username=usuario.get_username(),
+                    password=password,
+                )
+                if usuario
+                else None
+            )
+            if self.user_cache is None:
+                raise ValidationError(
+                    self.error_messages["invalid_login"],
+                    code="invalid_login",
+                )
+            self.confirm_login_allowed(self.user_cache)
+            cleaned_data = self.cleaned_data
         except ValidationError:
             if not cache.add(
                 cache_key,
@@ -83,9 +126,11 @@ class RegistroUsuarioForm(UserCreationForm):
 
     def clean_email(self):
         email = self.cleaned_data.get("email")
-        if email and Usuario.objects.filter(email=email).exists():
+        if email and Usuario.objects.filter(email__iexact=email).exclude(
+            pk=self.instance.pk
+        ).exists():
             raise forms.ValidationError("Ya existe un usuario registrado con este correo electrónico.")
-        return email
+        return email.lower() if email else email
 
 
 class RegistroClienteForm(RegistroUsuarioForm):
