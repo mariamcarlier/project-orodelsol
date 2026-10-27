@@ -1,3 +1,4 @@
+from django import forms
 from allauth.account.forms import SignupForm
 from django import forms
 from django.contrib.auth import get_user_model
@@ -87,6 +88,27 @@ class RegistroUsuarioForm(UserCreationForm):
         return email
 
 
+class RegistroClienteForm(RegistroUsuarioForm):
+    class Meta(RegistroUsuarioForm.Meta):
+        fields = (
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "tipo_documento",
+            "documento",
+            "fecha_nacimiento",
+            "telefono",
+        )
+
+    def save(self, commit=True):
+        usuario = super().save(commit=False)
+        usuario.rol = "CLIENTE"
+        usuario.is_staff = False
+        usuario.is_superuser = False
+        if commit:
+            usuario.save()
+        return usuario
 class AllauthCrearCuentaForm(SignupForm):
     first_name = forms.CharField(
         label="Nombre",
@@ -123,6 +145,8 @@ class AdministrarUsuarioForm(forms.ModelForm):
         ]
         widgets = {  # noqa: RUF012
             "fecha_nacimiento": forms.DateInput(attrs={"type": "date"}),
+        }
+
             "groups": forms.CheckboxSelectMultiple(),
         }
 

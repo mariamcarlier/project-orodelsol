@@ -839,6 +839,10 @@ class AuthenticationViewTests(TestCase):
             reverse("core:iniciar_sesion"),
             {"username": self.usuario.username, "password": "PruebaSegura123!"},
         )
+        self.assertRedirects(login_response, reverse("usuarios:perfil"))
+
+        logout_response = self.client.post(reverse("core:cerrar_sesion"))
+        self.assertRedirects(logout_response, reverse("core:iniciar_sesion"))
         self.assertRedirects(login_response, "/")
 
         logout_response = self.client.post(reverse("core:cerrar_sesion"))

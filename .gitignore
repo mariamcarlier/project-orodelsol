@@ -163,6 +163,11 @@ venv.bak/
 # === Django & Base de datos ===
 db.sqlite3
 db.sqlite3-journal
+!**/migrations/__init__.py
+
+# === Django & Base de datos ===
+db.sqlite3
+db.sqlite3-journal
 
 
 # === Entornos Virtuales ===

@@ -21,6 +21,9 @@ from django.contrib import admin
 from django.contrib.auth import urls as auth_urls
 from django.contrib.auth.views import LoginView
 from django.urls import include, path
+
+from usuarios.forms import RateLimitedAuthenticationForm
+from usuarios.views import crear_cuenta, perfil
 from allauth.account.views import signup as allauth_signup
 
 from usuarios.forms import RateLimitedAuthenticationForm
@@ -43,6 +46,9 @@ urlpatterns = [
         name="login",
     ),
     path("accounts/", include(auth_urlpatterns)),
+    path("", include("core.urls")),
+    path("usuario/", include("usuarios.urls")),
+    path("register/", crear_cuenta, name="register"),
     path("accounts/", include("allauth.urls")),
     path("", include("core.urls")),
     path("usuario/", include("usuarios.urls")),

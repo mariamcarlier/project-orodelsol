@@ -88,6 +88,11 @@
   min-width: 0;
 }
 
+.register-field--highlight {
+  padding-top: 16px;
+  border-top: 1px solid rgba(196,174,136,.65);
+}
+
 .register-field label {
   display: block;
   margin-bottom: 8px;
@@ -321,6 +326,9 @@
     padding: 22px 18px;
   }
 
+  .register-field--highlight {
+    padding-top: 16px;
+  }
 }
 
 @media (max-width: 360px) {

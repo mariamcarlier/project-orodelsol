@@ -239,6 +239,8 @@ if (
     raise ImproperlyConfigured("Define EMAIL_HOST to send production email.")
 
 LOGIN_URL = "core:iniciar_sesion"
+LOGIN_REDIRECT_URL = "usuarios:perfil"
+LOGOUT_REDIRECT_URL = "core:iniciar_sesion"
 
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = not DEBUG
@@ -249,12 +251,3 @@ CSRF_COOKIE_SECURE = not DEBUG
 # MD5 es inseguro y guardaría así las contraseñas reales de tu base de datos.
 if "test" in sys.argv:
     PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
-
-AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
-]
-
-LOGIN_REDIRECT_URL = "/"
-LOGOUT_REDIRECT_URL = "/"
-SOCIALACCOUNT_LOGIN_ON_GET = True  # salta la pantalla intermedia de confirmación

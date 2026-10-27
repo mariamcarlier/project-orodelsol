@@ -22,6 +22,12 @@ class Usuario(AbstractUser):
         ('NU', 'Otro')
     )
     
+    first_name = models.CharField(max_length=50,blank=False,verbose_name="Nombre")
+    last_name = models.CharField(max_length=50,blank=False,verbose_name="Apellido")
+    tipo_documento = models.CharField(max_length=3,choices=TIPO_DOCUMENTO_CHOICES ,verbose_name="Tipo de Documento")
+    documento = models.CharField(max_length=20,unique=True,verbose_name="Documento")
+    fecha_nacimiento = models.DateField(blank=False, verbose_name="Fecha de Nacimiento")
+    telefono = models.CharField(max_length=15, blank=False, verbose_name="Teléfono")
     first_name = models.CharField(max_length=50, blank=True, verbose_name="Nombre")
     last_name = models.CharField(max_length=50, blank=True, verbose_name="Apellido")
     tipo_documento = models.CharField(

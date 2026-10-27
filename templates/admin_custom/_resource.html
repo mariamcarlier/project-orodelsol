@@ -1,16 +1,23 @@
 <section class="dashboard-section" id="registros">
+    <header class="dashboard-section__heading{% if recurso.key == 'grupos' %} dashboard-section__heading--groups{% endif %}">
     <header class="dashboard-section__heading{% if recurso.key == 'grupos' %} dashboard-section__heading--groups{% elif recurso.key == 'usuarios' %} dashboard-section__heading--users{% endif %}">
         <div>
             <h1>{{ recurso.title }}</h1>
             <p>{{ recurso.pagina.paginator.count }} registros</p>
         </div>
         {% if recurso.crear_formulario %}
+            <details class="dashboard-create{% if recurso.key == 'grupos' %} dashboard-create--groups{% endif %}" {% if recurso.abrir_crear %}open{% endif %}>
             <details class="dashboard-create{% if recurso.key == 'grupos' %} dashboard-create--groups{% elif recurso.key == 'usuarios' %} dashboard-create--users{% endif %}" {% if recurso.abrir_crear %}open{% endif %}>
                 <summary>Crear nuevo</summary>
                 <form method="post" enctype="multipart/form-data" class="dashboard-form{% if recurso.key == 'grupos' %} dashboard-form--groups{% endif %}">
                     {% csrf_token %}
                     <input type="hidden" name="recurso" value="{{ recurso.key }}">
                     <input type="hidden" name="accion" value="create">
+                    {% for field in recurso.crear_formulario %}
+                        <div class="dashboard-field{% if field.name == 'permissions' and recurso.key == 'grupos' %} dashboard-field--permissions{% endif %}">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
                     {% if recurso.key == 'usuarios' %}
                         <p class="dashboard-create__intro">Completa los datos de la cuenta y selecciona el rol adecuado.</p>
                     {% endif %}
@@ -33,6 +40,7 @@
                     {% for error in recurso.crear_formulario.non_field_errors %}
                         <span class="dashboard-error">{{ error }}</span>
                     {% endfor %}
+                    <button type="submit" class="dashboard-button">Guardar</button>
                     <button type="submit" class="dashboard-button">{% if recurso.key == 'usuarios' %}Crear usuario{% else %}Guardar{% endif %}</button>
                 </form>
             </details>
@@ -82,6 +90,8 @@
                         {% if recurso.puede_cambiar or recurso.puede_borrar %}
                             <td class="dashboard-actions">
                                 {% if recurso.puede_cambiar %}
+                                    <details {% if fila.abrir_edicion %}open{% endif %}>
+                                        <summary>Editar</summary>
                                     <button type="button" class="dashboard-button dashboard-button--secondary"
                                             data-dashboard-dialog-open="{{ recurso.key }}-edit-{{ fila.objeto.pk }}"
                                             aria-haspopup="dialog">
@@ -106,6 +116,7 @@
                                             <input type="hidden" name="accion" value="edit">
                                             <input type="hidden" name="registro" value="{{ fila.objeto.pk }}">
                                             {% for field in fila.formulario %}
+                                                <div class="dashboard-field{% if field.name == 'permissions' and recurso.key == 'grupos' %} dashboard-field--permissions{% endif %}">
                                                 <div class="dashboard-field{% if field.name == 'permissions' and recurso.key == 'grupos' %} dashboard-field--permissions{% elif field.name == 'groups' %} dashboard-field--groups{% endif %}">
                                                     <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                                                     {{ field }}
@@ -145,6 +156,7 @@
                                                 </form>
                                             </details>
                                         {% endif %}
+                                    </details>
                                     </dialog>
                                 {% endif %}
                                 {% if recurso.puede_borrar %}

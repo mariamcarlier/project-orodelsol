@@ -2,6 +2,11 @@ from datetime import date
 import re
 from unittest.mock import patch
 
+from django.contrib.auth import get_user_model
+from django.core import mail
+from django.core.cache import cache
+from django.test import Client, TestCase
+from django.urls import reverse
 from allauth.socialaccount.models import SocialApp
 from django.contrib.auth import get_user_model
 from django.conf import settings
@@ -119,6 +124,36 @@ class ConsultarPerfilTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'href="/register/"', html=False)
+
+    def test_registro_publico_crea_cliente_sin_permisos_admin(self):
+        response = self.client.post(
+            "/register/",
+            {
+                "username": "nuevo_cliente",
+                "email": "cliente.nuevo@example.com",
+                "first_name": "Nuevo",
+                "last_name": "Cliente",
+                "tipo_documento": "CC",
+                "documento": "5566778899",
+                "fecha_nacimiento": "2000-05-20",
+                "telefono": "3005556677",
+                "rol": "ADMIN",
+                "is_staff": "on",
+                "is_superuser": "on",
+                "password1": "StrongPass123!",
+                "password2": "StrongPass123!",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.redirect_chain, [("/accounts/login/", 302)])
+        self.assertContains(response, "Tu cuenta se creó correctamente")
+        nuevo_usuario = get_user_model().objects.get(username="nuevo_cliente")
+        self.assertEqual(nuevo_usuario.rol, "CLIENTE")
+        self.assertFalse(nuevo_usuario.is_staff)
+        self.assertFalse(nuevo_usuario.is_superuser)
+        self.assertTrue(nuevo_usuario.check_password("StrongPass123!"))
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_registro_publico_allauth_crea_cliente_sin_permisos_admin(self):
         response = self.client.post(
@@ -348,6 +383,7 @@ class ConsultarPerfilTests(TestCase):
 
         self.assertRedirects(
             response,
+            "/usuario/perfil/",
             "/",
             fetch_redirect_response=False,
         )
@@ -408,6 +444,7 @@ class ConsultarPerfilTests(TestCase):
 
         self.assertRedirects(
             response,
+            "/usuario/perfil/",
             "/",
             fetch_redirect_response=False,
         )
@@ -430,6 +467,7 @@ class ConsultarPerfilTests(TestCase):
 
         response = self.client.post("/accounts/logout/")
 
+        self.assertRedirects(response, "/login/")
         self.assertRedirects(response, "/")
         self.assertFalse(response.wsgi_request.user.is_authenticated)
 
@@ -469,6 +507,50 @@ class ConsultarPerfilTests(TestCase):
         self.assertTrue(response.context["form"].errors)
         self.assertNotContains(response, "No se encontró una cuenta")
 
+    def test_registro_administrativo_requiere_autenticacion(self):
+        response = self.client.get("/usuario/registrar/")
+
+        self.assertRedirects(
+            response,
+            "/login/?next=/usuario/registrar/",
+            fetch_redirect_response=False,
+        )
+
+    def test_administrador_puede_registrar_usuario(self):
+        administrador = get_user_model().objects.create_user(
+            username="administrador",
+            password="AdminPass123!",
+            rol="ADMIN",
+            tipo_documento="CC",
+            documento="1122334455",
+            fecha_nacimiento=date(1980, 1, 1),
+            telefono="3001112233",
+        )
+        self.client.force_login(administrador)
+
+        response = self.client.post(
+            "/usuario/registrar/",
+            {
+                "username": "nuevo",
+                "email": "nuevo@example.com",
+                "first_name": "Nuevo",
+                "last_name": "Usuario",
+                "tipo_documento": "CC",
+                "documento": "5566778899",
+                "fecha_nacimiento": "2000-05-20",
+                "telefono": "3005556677",
+                "rol": "CLIENTE",
+                "password1": "StrongPass123!",
+                "password2": "StrongPass123!",
+            },
+        )
+
+        self.assertRedirects(response, "/usuario/registrar/")
+        nuevo_usuario = get_user_model().objects.get(username="nuevo")
+        self.assertEqual(nuevo_usuario.telefono, "3005556677")
+        self.assertTrue(nuevo_usuario.check_password("StrongPass123!"))
+
+    def test_recuperacion_envia_enlace_funcional(self):
     @override_settings(SITE_ID=None)
     def test_recuperacion_envia_enlace_funcional(self):
         Site.objects.update_or_create(
