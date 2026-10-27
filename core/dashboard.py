@@ -79,6 +79,7 @@ class AdministrarUsuarioCreacionForm(RegistroUsuarioForm):
         queryset=Group.objects.all(),
         required=False,
         label="Grupos y permisos",
+        widget=forms.CheckboxSelectMultiple(),
     )
 
     class Meta(RegistroUsuarioForm.Meta):
