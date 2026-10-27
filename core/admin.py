@@ -1,9 +1,5 @@
 from django.contrib import admin, messages
-
 from .models import Coleccion, Material, Producto, Talla, VarianteProducto
-from django.contrib import admin
-
-from .models import Coleccion, Producto
 
 
 @admin.register(Coleccion)
@@ -25,8 +21,6 @@ class ColeccionAdmin(admin.ModelAdmin):
 class VarianteProductoInline(admin.TabularInline):
     model = VarianteProducto
     extra = 0
-    # Primero guarda el producto con sus tallas y materiales permitidos y
-    # después agrega variantes: la variante solo acepta lo permitido.
 
 
 @admin.register(Producto)
@@ -36,16 +30,10 @@ class ProductoAdmin(admin.ModelAdmin):
     search_fields = ("codigo", "nombre", "detalle", "descripcion")
     filter_horizontal = ("tallas", "materiales")
     inlines = (VarianteProductoInline,)
-@admin.register(Producto)
-class ProductoAdmin(admin.ModelAdmin):
-    list_display = ("nombre", "coleccion", "precio", "destacado", "activo")
-    list_filter = ("coleccion", "destacado", "activo")
-    search_fields = ("nombre", "detalle", "descripcion")
     actions = ("activar_productos", "desactivar_productos")
 
     @admin.action(description="Activar productos seleccionados")
     def activar_productos(self, request, queryset):
-        # update() no pasa por clean(): solo se activan los productos completos.
         omitidos = queryset.incompletos().count()
         queryset.completos().update(activo=True)
         if omitidos:
@@ -55,7 +43,6 @@ class ProductoAdmin(admin.ModelAdmin):
                 "código, imagen o un precio mayor a cero.",
                 level=messages.WARNING,
             )
-        queryset.update(activo=True)
 
     @admin.action(description="Desactivar productos seleccionados")
     def desactivar_productos(self, request, queryset):
@@ -64,7 +51,7 @@ class ProductoAdmin(admin.ModelAdmin):
 
 @admin.register(Talla)
 class TallaAdmin(admin.ModelAdmin):
-    list_display = ("talla_us", "diametro_interno_mm", "diametro_verificado")
+    list_display = ("talla_us", "talla_nacional", "diametro_interno_mm", "diametro_verificado")
     list_filter = ("diametro_verificado",)
 
 

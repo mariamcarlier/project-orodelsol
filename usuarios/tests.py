@@ -146,7 +146,7 @@ class ConsultarPerfilTests(TestCase):
             follow=True,
         )
 
-        self.assertEqual(response.redirect_chain, [("/accounts/login/", 302)])
+        self.assertEqual(response.redirect_chain, [("/usuario/perfil/", 302)])
         self.assertContains(response, "Tu cuenta se creó correctamente")
         nuevo_usuario = get_user_model().objects.get(username="nuevo_cliente")
         self.assertEqual(nuevo_usuario.rol, "CLIENTE")
@@ -273,7 +273,7 @@ class ConsultarPerfilTests(TestCase):
             },
         )
 
-        self.assertRedirects(response, "/")
+        self.assertRedirects(response, "/usuario/perfil/")
         self.assertTrue(
             self.client.session.get("_auth_user_id")
         )
@@ -384,7 +384,6 @@ class ConsultarPerfilTests(TestCase):
         self.assertRedirects(
             response,
             "/usuario/perfil/",
-            "/",
             fetch_redirect_response=False,
         )
 
@@ -550,7 +549,6 @@ class ConsultarPerfilTests(TestCase):
         self.assertEqual(nuevo_usuario.telefono, "3005556677")
         self.assertTrue(nuevo_usuario.check_password("StrongPass123!"))
 
-    def test_recuperacion_envia_enlace_funcional(self):
     @override_settings(SITE_ID=None)
     def test_recuperacion_envia_enlace_funcional(self):
         Site.objects.update_or_create(

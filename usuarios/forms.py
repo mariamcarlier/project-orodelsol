@@ -145,8 +145,6 @@ class AdministrarUsuarioForm(forms.ModelForm):
         ]
         widgets = {  # noqa: RUF012
             "fecha_nacimiento": forms.DateInput(attrs={"type": "date"}),
-        }
-
             "groups": forms.CheckboxSelectMultiple(),
         }
 

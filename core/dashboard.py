@@ -9,6 +9,7 @@ from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
+from django.forms import inlineformset_factory
 from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -36,7 +37,7 @@ from configuracion.models import (
 from usuarios.forms import AdministrarUsuarioForm, RegistroUsuarioForm
 from usuarios.models import Usuario
 
-from .models import Coleccion, Producto
+from .models import Coleccion, Material, Producto, Talla, VarianteProducto
 
 
 class GrupoPermisosForm(forms.ModelForm):
@@ -105,11 +106,6 @@ class ProductoForm(forms.ModelForm):
         )
         labels = {
             "codigo": "Código",
-            "es_borrador": "Borrador",
-            "tallas": "Tallas permitidas",
-            "materiales": "Materiales permitidos",
-        )
-        labels = {
             "nombre": "Nombre",
             "coleccion": "Colección",
             "detalle": "Detalle",
@@ -118,6 +114,9 @@ class ProductoForm(forms.ModelForm):
             "imagen_url": "URL de la imagen",
             "destacado": "Destacado",
             "activo": "Activo",
+            "es_borrador": "Borrador",
+            "tallas": "Tallas permitidas",
+            "materiales": "Materiales permitidos",
         }
         help_texts = {
             "codigo": "Déjalo vacío para generarlo automáticamente. Una vez creado no se puede cambiar.",
@@ -125,10 +124,6 @@ class ProductoForm(forms.ModelForm):
         }
         widgets = {
             "codigo": forms.TextInput(attrs={"class": "form-control"}),
-            "es_borrador": forms.CheckboxInput(attrs={"class": "form-check-input"}),
-            "tallas": forms.CheckboxSelectMultiple,
-            "materiales": forms.CheckboxSelectMultiple,
-        widgets = {
             "nombre": forms.TextInput(attrs={"class": "form-control"}),
             "coleccion": forms.Select(attrs={"class": "form-select select2"}),
             "detalle": forms.TextInput(attrs={"class": "form-control"}),
@@ -139,12 +134,13 @@ class ProductoForm(forms.ModelForm):
             "imagen_url": forms.URLInput(attrs={"class": "form-control"}),
             "destacado": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "activo": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "es_borrador": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "tallas": forms.CheckboxSelectMultiple,
+            "materiales": forms.CheckboxSelectMultiple,
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # El código es el identificador estable del producto (analítica,
-        # catálogo físico): una vez asignado, el formulario no lo modifica.
         if self.instance.pk and self.instance.codigo:
             self.fields["codigo"].disabled = True
 
@@ -153,6 +149,30 @@ class ProductoForm(forms.ModelForm):
         if precio is None or precio <= 0:
             raise forms.ValidationError("El precio debe ser mayor a cero.")
         return precio
+
+
+class VarianteForm(forms.ModelForm):
+    class Meta:
+        model = VarianteProducto
+        fields = ("talla", "material", "sku", "peso_gramos", "precio_adicional", "stock", "activa")
+        widgets = {
+            "talla": forms.Select(attrs={"class": "form-select"}),
+            "material": forms.Select(attrs={"class": "form-select"}),
+            "sku": forms.TextInput(attrs={"class": "form-control"}),
+            "peso_gramos": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "precio_adicional": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "stock": forms.NumberInput(attrs={"class": "form-control"}),
+            "activa": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+
+
+VarianteFormSet = inlineformset_factory(
+    Producto,
+    VarianteProducto,
+    form=VarianteForm,
+    extra=1,
+    can_delete=True
+)
 
 
 class ColeccionForm(forms.ModelForm):
@@ -173,6 +193,7 @@ class ColeccionForm(forms.ModelForm):
             "imagen_url": forms.URLInput(attrs={"class": "form-control"}),
             "activa": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
+
 
 GRUPOS_MENU = {
     "configuracion": {"title": "Configuración", "icon": "bx-cog"},
@@ -234,12 +255,14 @@ RECURSOS = (
         "create_form": ProductoForm,
         "edit_form": ProductoForm,
         "columns": (
+            ("Código", "codigo"),
             ("Nombre", "nombre"),
             ("Colección", "coleccion__nombre"),
             ("Precio", "precio"),
+            ("Borrador", "es_borrador"),
             ("Activo", "activo"),
         ),
-        "search_fields": ("nombre__icontains", "detalle__icontains"),
+        "search_fields": ("codigo__icontains", "nombre__icontains", "detalle__icontains"),
         "bulk_field": "activo",
     },
     {
@@ -291,7 +314,6 @@ RECURSOS = (
         "model": Group,
         "create_form": GrupoPermisosForm,
         "edit_form": GrupoPermisosForm,
-        # Los permisos del grupo permiten asignar capacidades por modelo.
         "columns": (
             ("Nombre del grupo", "name"),
             ("Permisos asignados", "permissions__count"),
@@ -305,7 +327,6 @@ RECURSOS = (
         "icon": "bx-receipt",
         "grupo": "configuracion",
         "grupo_orden": "2",
-
         "model": Impuesto,
         "create_form": ImpuestoForm,
         "edit_form": ImpuestoForm,
@@ -324,7 +345,6 @@ RECURSOS = (
         "icon": "bx-dollar-circle",
         "grupo": "configuracion",
         "grupo_orden": "3",
-        
         "model": Moneda,
         "create_form": MonedaForm,
         "edit_form": MonedaForm,
@@ -345,7 +365,6 @@ RECURSOS = (
         "icon": "bx-globe",
         "grupo": "configuracion",
         "grupo_orden": "4",
-
         "model": Idioma,
         "create_form": IdiomaForm,
         "edit_form": IdiomaForm,
@@ -365,7 +384,6 @@ RECURSOS = (
         "icon": "bx-cog",
         "grupo": "configuracion",
         "grupo_orden": "1",
-
         "model": ParametroGeneral,
         "create_form": ParametroGeneralForm,
         "edit_form": ParametroGeneralForm,
@@ -436,15 +454,8 @@ def recursos_visibles(usuario):
         if usuario.has_perm(permiso(item["model"], "view"))
     ]
 
-def construir_menu(recursos, clave_activa=None):
-    """Organiza los recursos visibles para pintar el menú lateral.
 
-    Devuelve un diccionario con dos listas:
-    - "sueltos": recursos que no pertenecen a ningún grupo.
-    - "grupos": grupos desplegables con sus recursos ordenados.
-    Cada recurso viaja como {"recurso": ..., "activo": bool}. Un grupo
-    se marca como "abierto" cuando contiene el recurso activo.
-    """
+def construir_menu(recursos, clave_activa=None):
     sueltos = []
     agrupados = {}
     for recurso in recursos:
@@ -473,13 +484,8 @@ def construir_menu(recursos, clave_activa=None):
             )
     return {"sueltos": sueltos, "grupos": grupos}
 
-def construir_migas(clave=None):
-    """Arma las migas de pan: Mi cuenta > Admin > [grupo] > [recurso].
 
-    Cada miga es {"title": str, "url": str | None}. La última nunca lleva
-    enlace porque es la página actual; el grupo tampoco, porque no tiene
-    página propia.
-    """
+def construir_migas(clave=None):
     migas = [{"title": "Mi cuenta", "url": reverse("usuarios:perfil")}]
     if clave is None:
         migas.append({"title": "Admin", "url": None})
@@ -494,6 +500,7 @@ def construir_migas(clave=None):
         migas.append({"title": grupo["title"], "url": None})
     migas.append({"title": recurso["title"], "url": None})
     return migas
+
 
 def obtener_celda(objeto, campo):
     valor = objeto
@@ -621,12 +628,24 @@ def crear_contexto(request, clave, formularios=None, formulario_abierto=None):
         "bulk_field": configuracion.get("bulk_field") if puede_cambiar else None,
         "abrir_crear": formulario_abierto == (clave, "create", ""),
     }
+    
+    if modelo is Producto and puede_cambiar:
+        for fila in filas:
+            formset_key = (clave, "formset", str(fila["objeto"].pk))
+            if formset_key in formularios:
+                fila["variante_formset"] = formularios[formset_key]
+            else:
+                fila["variante_formset"] = VarianteFormSet(
+                    instance=fila["objeto"], 
+                    prefix=f"variantes-{fila['objeto'].pk}"
+                )
+
     return {
-            "recursos": menu, 
-            "recurso": recurso,
-            "menu_lateral": construir_menu(menu, clave),
-            "migas": construir_migas(clave),
-        }
+        "recursos": menu, 
+        "recurso": recurso,
+        "menu_lateral": construir_menu(menu, clave),
+        "migas": construir_migas(clave),
+    }
 
 
 def procesar_accion(request, clave, configuracion):
@@ -672,20 +691,18 @@ def procesar_accion(request, clave, configuracion):
         estado = request.POST.get("estado")
         ids = request.POST.getlist("registros")
         if not campo or estado not in {"0", "1"} or not ids:
-            raise PermissionDenied("Selecciona registros y una acción válida.")
+            messages.warning(request, "No seleccionaste ningún registro para cambiar de estado.")
+            return redirect(f"{request.path}#registros")
         if not request.user.has_perm(permiso(modelo, "change")):
             raise PermissionDenied
+        
         objetivos = modelo.objects.filter(pk__in=ids)
         omitidos = 0
         if modelo is Producto and campo == "activo" and estado == "1":
-            # update() no pasa por clean(): se filtran aquí los productos que
-            # no cumplen los requisitos de publicación.
             omitidos = objetivos.incompletos().count()
             objetivos = objetivos.completos()
+            
         actualizados = objetivos.update(**{campo: estado == "1"})
-        actualizados = modelo.objects.filter(pk__in=ids).update(
-            **{campo: estado == "1"}
-        )
         messages.success(
             request,
             f"Se actualizaron {actualizados} registros seleccionados.",
@@ -727,7 +744,16 @@ def procesar_accion(request, clave, configuracion):
             ),
             request.user,
         )
-        if formulario.is_valid():
+
+        variante_formset = None
+        if modelo is Producto and accion == "edit":
+            variante_formset = VarianteFormSet(
+                request.POST,
+                instance=objeto,
+                prefix=f"variantes-{objeto.pk}"
+            )
+
+        if formulario.is_valid() and (variante_formset is None or variante_formset.is_valid()):
             guardado = formulario.save(commit=False)
             if hasattr(guardado, "actualizado_por"):
                 guardado.actualizado_por = request.user
@@ -735,11 +761,17 @@ def procesar_accion(request, clave, configuracion):
                 guardado.subido_por = request.user
             guardado.save()
             formulario.save_m2m()
+
+            if variante_formset:
+                variante_formset.save()
+
             messages.success(request, "Los cambios se guardaron correctamente.")
             return redirect(f"{request.path}#registros")
 
         registro = str(objeto.pk) if objeto else ""
         formularios[(clave, accion, registro)] = formulario
+        if variante_formset:
+            formularios[(clave, "formset", registro)] = variante_formset
         formulario_abierto = (clave, accion, registro)
 
     return formularios, formulario_abierto
