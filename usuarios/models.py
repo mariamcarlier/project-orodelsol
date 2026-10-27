@@ -1,9 +1,25 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models import Q
+from django.db.models.functions import Lower
 
 
 # Create your models here.
 class Usuario(AbstractUser):
+    email = models.EmailField(
+        blank=False,
+        max_length=254,
+        verbose_name="email address",
+    )
+
+    class Meta(AbstractUser.Meta):
+        constraints = [
+            models.UniqueConstraint(
+                Lower("email"),
+                condition=~Q(email=""),
+                name="unique_nonempty_email_ci",
+            )
+        ]
 
     ROL_CHOICES = (
         ('ADMIN', 'Administrador'),
@@ -29,6 +45,7 @@ class Usuario(AbstractUser):
     telefono = models.CharField(max_length=15, blank=False, verbose_name="Teléfono")
     foto = models.ImageField(upload_to="perfiles/", blank=True, null=True, verbose_name="Foto de perfil")
     REQUIRED_FIELDS = [  # noqa: RUF012
+        "email",
         "first_name",
         "last_name",
         "tipo_documento",

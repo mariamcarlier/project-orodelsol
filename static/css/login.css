@@ -132,12 +132,12 @@
   stroke-width: 1.6;
 }
 
-.login-password-toggle .password-eye--closed,
-.login-password-toggle[aria-pressed="true"] .password-eye--open {
+.login-password-toggle .password-eye--open,
+.login-password-toggle[aria-pressed="true"] .password-eye--closed {
   display: none;
 }
 
-.login-password-toggle[aria-pressed="true"] .password-eye--closed {
+.login-password-toggle[aria-pressed="true"] .password-eye--open {
   display: block;
 }
 
