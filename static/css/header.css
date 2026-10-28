@@ -138,6 +138,18 @@
   position: relative;
 }
 
+.header__icon.is-active {
+  background: rgba(197, 160, 89, .18);
+  color: var(--color-cacao);
+}
+
+.header__icon:focus-visible,
+.product-card__btn:focus-visible,
+.product-card__bar:focus-visible {
+  outline: 2px solid var(--color-cacao);
+  outline-offset: 3px;
+}
+
 .header__cart-badge {
   position: absolute;
   top: 4px;
@@ -154,6 +166,180 @@
   justify-content: center;
   font-family: var(--font-body);
   pointer-events: none;
+}
+
+.site-search {
+  align-items: center;
+  background: var(--color-marfil);
+  border-bottom: 1px solid var(--color-oro-borde);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px max(20px, calc((100% - 900px) / 2));
+}
+
+.site-search[hidden] {
+  display: none;
+}
+
+.site-search__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.site-search input {
+  background: var(--color-white);
+  border: 1px solid var(--color-oro-borde);
+  border-radius: 3px;
+  color: var(--color-text-dark);
+  flex: 1 1 220px;
+  font: inherit;
+  min-height: 42px;
+  padding: 8px 12px;
+}
+
+.site-search__clear {
+  color: var(--color-cacao);
+  font: inherit;
+  min-height: 42px;
+  padding: 8px 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.site-search__status {
+  flex-basis: 100%;
+  font-size: 13px;
+  margin: 0;
+}
+
+.store-dialog {
+  background: var(--color-white);
+  border: 1px solid var(--color-oro-borde);
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(44, 26, 16, .3);
+  color: var(--color-text-dark);
+  margin: auto;
+  max-height: min(85dvh, 700px);
+  max-width: min(520px, calc(100vw - 24px));
+  overflow: auto;
+  padding: clamp(18px, 4vw, 28px);
+  width: 100%;
+}
+
+.store-dialog::backdrop {
+  background: rgba(28, 25, 23, .62);
+  backdrop-filter: blur(2px);
+}
+
+.store-dialog__header {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--color-oro-borde);
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+}
+
+.store-dialog__header .eyebrow {
+  margin-bottom: 4px;
+}
+
+.store-dialog__title {
+  color: var(--color-cacao);
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 400;
+  margin: 0;
+}
+
+.store-dialog__close {
+  align-items: center;
+  border: 1px solid var(--color-oro-borde);
+  border-radius: 50%;
+  color: var(--color-cacao);
+  display: inline-flex;
+  font-size: 24px;
+  height: 38px;
+  justify-content: center;
+  line-height: 1;
+  width: 38px;
+}
+
+.cart-dialog__items {
+  display: grid;
+  gap: 10px;
+}
+
+.cart-dialog__empty,
+.cart-dialog__note {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cart-item {
+  align-items: center;
+  border-bottom: 1px solid var(--color-oro-borde);
+  display: grid;
+  gap: 8px 14px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 12px 0;
+}
+
+.cart-item__name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.cart-item__detail {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.cart-item__remove {
+  color: #8b2d2d;
+  font-size: 13px;
+  grid-column: 2;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.cart-dialog__footer {
+  border-top: 1px solid var(--color-oro-borde);
+  margin-top: 16px;
+  padding-top: 12px;
+}
+
+.cart-dialog__footer > p:first-child {
+  display: flex;
+  font-size: 16px;
+  justify-content: space-between;
+}
+
+.cart-dialog__note {
+  margin: 10px 0 0;
+}
+
+.store-notice {
+  background: var(--color-tierra);
+  border: 1px solid var(--color-oro);
+  border-radius: 4px;
+  bottom: 20px;
+  color: var(--color-text-on-dark);
+  left: 50%;
+  max-width: calc(100vw - 32px);
+  padding: 12px 18px;
+  position: fixed;
+  text-align: center;
+  transform: translateX(-50%);
+  z-index: 1200;
+}
+
+.store-notice[hidden] {
+  display: none;
 }
 
 
@@ -443,6 +629,14 @@
   text-transform: uppercase;
   color: rgba(246,237,210,.3);
   transition: color var(--ease-smooth);
+}
+
+.sidebar__social a[data-social-link] {
+  border: 1px solid rgba(217,199,163,.25);
+  border-radius: 16px;
+  min-width: 34px;
+  padding: 7px 9px;
+  text-align: center;
 }
 
 .sidebar__social a:hover {
