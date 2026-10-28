@@ -6,38 +6,35 @@
       <div class="footer__brand">
         <p class="footer__logo"> <em>Oro</em> del Sol</p>
         <p class="footer__tagline">Joyería fina en oro 18K · Colombia</p>
-        <div class="footer__social">
-          <a href="#" class="footer__social-btn" aria-label="Instagram">IG</a>
-          <a href="#" class="footer__social-btn" aria-label="Facebook">FB</a>
-          <a href="#" class="footer__social-btn" aria-label="TikTok">TK</a>
-          <a href="#" class="footer__social-btn" aria-label="WhatsApp">WA</a>
-        </div>
+        <nav class="footer__social" id="redes" aria-label="Redes sociales">
+          <a class="footer__social-btn" href="#redes" data-social-link data-social-name="Instagram" data-social-url=""
+             aria-label="Instagram, enlace oficial por configurar" title="Enlace oficial por configurar">Instagram</a>
+          <a class="footer__social-btn" href="#redes" data-social-link data-social-name="Facebook" data-social-url=""
+             aria-label="Facebook, enlace oficial por configurar" title="Enlace oficial por configurar">Facebook</a>
+          <a class="footer__social-btn" href="#redes" data-social-link data-social-name="TikTok" data-social-url=""
+             aria-label="TikTok, enlace oficial por configurar" title="Enlace oficial por configurar">TikTok</a>
+          <a class="footer__social-btn" href="#redes" data-social-link data-social-name="WhatsApp" data-social-url=""
+             aria-label="WhatsApp, enlace oficial por configurar" title="Enlace oficial por configurar">WhatsApp</a>
+        </nav>
       </div>
       <div class="footer__col">
         <h4 class="footer__col-title">Colecciones</h4>
         <ul>
-          <li><a href="#">Alma Dorada</a></li>
-          <li><a href="#">Luna de Miel</a></li>
-          <li><a href="#">Quince Soles</a></li>
-          <li><a href="#">Promesa Eterna</a></li>
+          <li><a href="{% url 'core:inicio' %}#colecciones">Ver colecciones</a></li>
+          <li><a href="{% url 'core:inicio' %}#productos">Ver productos</a></li>
         </ul>
       </div>
       <div class="footer__col">
         <h4 class="footer__col-title">Información</h4>
         <ul>
-          <li><a href="#">Quiénes somos</a></li>
-          <li><a href="#">Guía de tallas</a></li>
-          <li><a href="#">Cuidado del oro</a></li>
-          <li><a href="#">Certificaciones</a></li>
+          <li><a href="{% url 'core:inicio' %}#nosotros">Nuestra filosofía</a></li>
+          <li><a href="{% url 'core:inicio' %}#proceso">Nuestro proceso</a></li>
         </ul>
       </div>
       <div class="footer__col">
         <h4 class="footer__col-title">Empresa</h4>
         <ul>
-          <li><a href="#">Mayoristas</a></li>
-          <li><a href="#">Envíos</a></li>
-          <li><a href="#">Devoluciones</a></li>
-          <li><a href="#">Contacto</a></li>
+          <li><a href="{% url 'core:inicio' %}#mayoristas">Información para mayoristas</a></li>
         </ul>
       </div>
     </div>

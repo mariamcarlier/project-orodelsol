@@ -484,14 +484,18 @@ def construir_menu(recursos, clave_activa=None):
             )
     return {"sueltos": sueltos, "grupos": grupos}
 
-
 def construir_migas(clave=None):
-    migas = [{"title": "Mi cuenta", "url": reverse("usuarios:perfil")}]
+    """Arma las migas de pan: Panel > [grupo] > [recurso].
+
+    Cada miga es {"title": str, "url": str | None}. La última nunca lleva
+    enlace porque es la página actual; el grupo tampoco, porque no tiene
+    página propia.
+    """
+    migas = [{"title": "Panel", "url": reverse("core:admin_dashboard")}]
     if clave is None:
-        migas.append({"title": "Admin", "url": None})
+        migas[0]["url"] = None
         return migas
 
-    migas.append({"title": "Admin", "url": reverse("core:admin_dashboard")})
     recurso = next((r for r in RECURSOS if r["key"] == clave), None)
     if recurso is None:
         return migas

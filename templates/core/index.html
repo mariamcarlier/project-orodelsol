@@ -9,7 +9,7 @@
     <!-- HERO -->
     <section class="hero" aria-label="Banner principal">
       
-      <div class="hero__bg" role="img " aria-label="Anillo de compromiso en oro 18K"></div>
+      <div class="hero__bg" aria-hidden="true"></div>
       <div class="hero__gradient"></div>
 
       <div class="hero__stats" aria-label="Cifras clave">
@@ -40,7 +40,7 @@
           momentos más importantes de tu vida.
         </p>
         <div class="hero__ctas">
-          <a href="/catalogo" class="btn btn--primary-gold">Explorar Colección</a>
+          <a href="{% url 'core:inicio' %}#colecciones" class="btn btn--primary-gold">Explorar colección</a>
           <a href="#colecciones" class="btn btn--ghost-light">
             Ver colecciones
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="13" height="13">
@@ -71,16 +71,16 @@
           certificado y terminado a mano. El resultado es una pieza que llevarás toda
           la vida, y que algún día contará tu historia.
         </p>
-        <a href="/nosotros" class="btn btn--ghost-dark">
+        <a href="{% url 'core:inicio' %}#proceso" class="btn btn--ghost-dark">
           Conoce nuestro proceso
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="13" height="13">
             <path d="M5 12h14M12 5l7 7-7 7"/>
           </svg>
         </a>
       </div>
-      <div class="editorial__image reveal" style="transition-delay:.15s">
-        <img src="{% static 'img/bodafoto.webp' %}" 
-             alt="Detalle de anillo en oro 18K" loading="lazy">
+      <div class="editorial__image editorial__image--art reveal" style="transition-delay:.15s">
+        <img src="{% static 'img/coleccion-almadorada.webp' %}"
+             alt="Anillos de oro con piedras de colores" loading="lazy">
         <span class="editorial__tag">Oro 18K · Certificado</span>
       </div>
     </section>
@@ -92,7 +92,7 @@
         <h2 class="heading heading--light" id="h-colecciones">
           Nuestras <em>colecciones</em>
         </h2>
-        <a href="/catalogo" class="link-underline link-underline--light">Ver todo →</a>
+        <a href="{% url 'core:inicio' %}#productos" class="link-underline link-underline--light">Ver productos →</a>
       </div>
 
       <div class="collections-grid reveal" style="transition-delay:.1s">
@@ -100,24 +100,26 @@
         <article class="collection-card">
           <div class="collection-card__media">
             {% if coleccion.imagen_url %}
-              <img src="{{ coleccion.imagen_url }}" alt="{{ coleccion.nombre }}" loading="lazy">
+              <img src="{{ coleccion.imagen_url }}" data-image-fallback="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ coleccion.nombre }}" loading="lazy">
             {% elif coleccion.nombre|slugify == "alma-dorada" %}
               <img src="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ coleccion.nombre }}" loading="lazy">
             {% elif coleccion.nombre|slugify == "luna-de-miel" %}
               <img src="{% static 'img/coleccion-lunademiel.webp' %}" alt="{{ coleccion.nombre }}" loading="lazy">
             {% elif coleccion.nombre|slugify == "quince-soles" %}
               <img src="{% static 'img/coleccion-quincesoles.webp' %}" alt="{{ coleccion.nombre }}" loading="lazy">
+            {% else %}
+              <img src="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ coleccion.nombre }}" loading="lazy">
             {% endif %}
           </div>
           <div class="collection-card__info">
             <span class="collection-card__season">Colección{% if coleccion.temporada %} · {{ coleccion.temporada }}{% endif %}</span>
             <h3 class="collection-card__name">{{ coleccion.nombre }}</h3>
             <span class="collection-card__desc">{{ coleccion.producto_count }} productos{% if coleccion.descripcion %} · {{ coleccion.descripcion }}{% endif %}</span>
-            <a href="#productos" class="collection-card__cta">Explorar</a>
+            <a href="{% url 'core:inicio' %}#productos" class="collection-card__cta">Explorar productos</a>
           </div>
         </article>
         {% empty %}
-        <p>Aún no hay colecciones disponibles.</p>
+        <p class="home-empty-state">Pronto encontrarás aquí nuevas colecciones.</p>
         {% endfor %}
       </div>
     </section>
@@ -127,15 +129,28 @@
     <section class="section section--white" aria-labelledby="h-productos">
       <div class="section__header reveal">
         <h2 class="heading" id="h-productos">Más <em>deseados</em></h2>
-        <a href="/catalogo" class="link-underline">Ver todo →</a>
+        <a href="{% url 'core:inicio' %}#colecciones" class="link-underline">Ver colecciones →</a>
       </div>
 
       <div class="products-grid" id="productos">
         {% for producto in productos %}
-        <article class="product-card reveal">
+        <article class="product-card reveal" data-product-id="{{ producto.pk }}">
           <div class="product-card__media">
-            {% if producto.imagen_url %}<img src="{{ producto.imagen_url }}" alt="{{ producto.nombre }}" loading="lazy">{% endif %}
+            {% if producto.imagen_url %}
+              <img src="{{ producto.imagen_url }}" data-image-fallback="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ producto.nombre }}" loading="lazy">
+            {% else %}
+              <img src="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ producto.nombre }}" loading="lazy">
+            {% endif %}
             {% if producto.destacado %}<span class="product-card__badge product-card__badge--fav">Destacado</span>{% endif %}
+            <div class="product-card__actions">
+              <button class="product-card__btn" type="button" data-action="favorite"
+                      aria-label="Añadir {{ producto.nombre }} a favoritos" aria-pressed="false">♡</button>
+            </div>
+            <button class="product-card__bar" type="button" data-action="add-to-cart"
+                    data-product-name="{{ producto.nombre }}"
+                    data-product-price="{{ producto.precio|floatformat:0 }}">
+              Añadir al carrito
+            </button>
           </div>
           <div class="product-card__info">
             <span class="product-card__label">{{ producto.detalle }} · {{ producto.coleccion.nombre }}</span>
@@ -144,7 +159,7 @@
           </div>
         </article>
         {% empty %}
-        <p>Aún no hay productos disponibles.</p>
+        <p class="home-empty-state">Estamos preparando el catálogo. Vuelve pronto para descubrir nuestros diseños.</p>
         {% endfor %}
       </div>
     </section>
@@ -153,8 +168,8 @@
     <!-- B2B -->
     <section class="section section--split" id="mayoristas" aria-labelledby="h-b2b">
       <div class="b2b__visual">
-        <img src="https://images.unsplash.com/photo-1536502261069-17b0db5cc3ca?w=700&q=80"
-             alt="Taller de producción de joyería" loading="lazy">
+        <img src="{% static 'img/coleccion-almadorada.webp' %}"
+             alt="Anillos de oro con piedras de colores" loading="lazy">
         <div class="b2b__caption">Fundición<br>Moldes<br>Calidad</div>
       </div>
       <div class="b2b__panel reveal">
@@ -173,7 +188,6 @@
           <li>Precios escalonados por volumen</li>
           <li>Catálogo exclusivo B2B disponible</li>
         </ul>
-        <a href="/mayoristas" class="btn btn--outline-gold">Solicitar Acceso</a>
       </div>
     </section>
 
@@ -290,8 +304,4 @@
       </div>
     </div>
 
-  </main>
-
-
-  
 {% endblock %}

@@ -5,7 +5,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import Permission
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from configuracion.models import Idioma, Impuesto, Moneda, ParametroGeneral
@@ -32,6 +32,69 @@ class InicioCatalogoTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Anillo de prueba")
         self.assertContains(response, "Colección de prueba")
+
+    def test_inicio_no_muestra_enlaces_rotos_ni_tiene_landmarks_anidados(self):
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content.decode().count("<main"), 1)
+        self.assertNotContains(response, 'href="/catalogo')
+        self.assertNotContains(response, 'href="#"')
+
+    def test_banner_principal_no_usa_fotografia_con_marca_de_agua(self):
+        response = self.client.get("/")
+
+        self.assertContains(response, '<div class="hero__bg" aria-hidden="true"></div>')
+        self.assertNotContains(response, "bodafoto.webp")
+        self.assertContains(response, "editorial__image--art")
+        self.assertContains(response, 'alt="Anillos de oro con piedras de colores"')
+
+    def test_mayoristas_muestra_foto_de_anillos_sin_marca_de_agua(self):
+        response = self.client.get("/")
+
+        self.assertContains(response, "img/coleccion-almadorada.webp")
+        self.assertContains(response, "Anillos de oro con piedras de colores")
+        self.assertNotContains(response, "b2b__ornament-ring")
+
+    def test_inicio_explica_cuando_el_catalogo_esta_vacio(self):
+        response = self.client.get("/")
+
+        self.assertContains(response, "Pronto encontrarás aquí nuevas colecciones.")
+        self.assertContains(
+            response,
+            "Estamos preparando el catálogo. Vuelve pronto para descubrir nuestros diseños.",
+        )
+
+    def test_inicio_conserva_busqueda_favoritos_carrito_y_redes(self):
+        coleccion = Coleccion.objects.create(nombre="Alma dorada")
+        Producto.objects.create(
+            coleccion=coleccion,
+            nombre="Anillo de prueba",
+            precio="1250000.00",
+            activo=True,
+        )
+
+        response = self.client.get("/")
+
+        self.assertContains(response, 'id="searchToggle"')
+        self.assertContains(response, 'id="favoritesToggle"')
+        self.assertContains(response, 'id="cartToggle"')
+        self.assertContains(response, 'id="cartDialog"')
+        self.assertContains(response, 'data-action="favorite"')
+        self.assertContains(response, 'data-action="add-to-cart"')
+        self.assertContains(response, 'data-social-name="Instagram"')
+        self.assertContains(response, 'data-social-name="WhatsApp"')
+
+    def test_navegacion_mantiene_categorias_de_la_tienda(self):
+        response = self.client.get("/")
+
+        for category in ("Inicio", "XV años", "Bodas", "Solitario", "Hombre", "Mayoristas"):
+            with self.subTest(category=category):
+                self.assertContains(response, category)
+        self.assertContains(response, 'data-category-query="quince"')
+        self.assertContains(response, 'data-category-query="boda"')
+        self.assertContains(response, 'data-category-query="solitario"')
+        self.assertContains(response, 'data-category-query="hombre"')
 
 
 class PanelAdministracionTests(TestCase):
@@ -125,6 +188,8 @@ class PanelAdministracionTests(TestCase):
         response = self.client.get(reverse("core:admin_dashboard"))
 
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Saltar al contenido principal")
+        self.assertContains(response, "Ir al perfil de Admin")
         for recurso in RECURSOS:
             with self.subTest(recurso=recurso["key"]):
                 self.assertContains(
@@ -670,9 +735,8 @@ class MigasTests(TestCase):
         response = self.client.get(reverse("core:admin_dashboard"))
 
         migas = response.context["migas"]
-        self.assertEqual(self.titulos(migas), ["Mi cuenta", "Admin"])
-        self.assertEqual(migas[0]["url"], reverse("usuarios:perfil"))
-        self.assertIsNone(migas[1]["url"])
+        self.assertEqual(self.titulos(migas), ["Panel"])
+        self.assertIsNone(migas[0]["url"])
         self.assertContains(response, 'aria-label="Migas de pan"')
 
     def test_migas_de_un_submodulo_incluyen_el_grupo(self):
@@ -681,13 +745,13 @@ class MigasTests(TestCase):
 
         migas = response.context["migas"]
         self.assertEqual(
-            self.titulos(migas), ["Mi cuenta", "Admin", "Configuración", "Impuestos"]
+            self.titulos(migas), ["Panel", "Configuración", "Impuestos"]
         )
-        self.assertEqual(migas[1]["url"], reverse("core:admin_dashboard"))
+        self.assertEqual(migas[0]["url"], reverse("core:admin_dashboard"))
+        self.assertIsNone(migas[1]["url"])
         self.assertIsNone(migas[2]["url"])
-        self.assertIsNone(migas[3]["url"])
         self.assertContains(
-            response, f'<a href="{reverse("core:admin_dashboard")}">Admin</a>'
+            response, f'<a href="{reverse("core:admin_dashboard")}">Panel</a>'
         )
 
     def test_migas_de_un_recurso_sin_grupo(self):
@@ -696,13 +760,13 @@ class MigasTests(TestCase):
 
         self.assertEqual(
             self.titulos(response.context["migas"]),
-            ["Mi cuenta", "Admin", "Productos"],
+            ["Panel", "Productos"],
         )
 
     def test_construir_migas_con_clave_desconocida_no_falla(self):
         migas = construir_migas("no_existe")
 
-        self.assertEqual(self.titulos(migas), ["Mi cuenta", "Admin"])
+        self.assertEqual(self.titulos(migas), ["Panel"])
 
 
 class ResponsivePanelTests(TestCase):
@@ -833,6 +897,34 @@ class AuthenticationViewTests(TestCase):
         self.assertTemplateUsed(response, "registration/login.html")
         self.assertContains(response, 'name="csrfmiddlewaretoken"', html=False)
         self.assertContains(response, 'name="next"', html=False)
+
+    @override_settings(GOOGLE_OAUTH_ENABLED=True)
+    def test_login_muestra_acceso_google_y_conserva_next(self):
+        response = self.client.get(
+            reverse("core:iniciar_sesion"),
+            {"next": reverse("core:producto_listar")},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'action="/accounts/google/login/"',
+            html=False,
+        )
+        self.assertContains(response, "Iniciar sesión con Google")
+        self.assertContains(
+            response,
+            f'<input type="hidden" name="next" value="{reverse("core:producto_listar")}">',
+            html=False,
+        )
+
+    @override_settings(GOOGLE_OAUTH_ENABLED=False)
+    def test_login_indica_cuando_google_no_esta_configurado(self):
+        response = self.client.get(reverse("core:iniciar_sesion"))
+
+        self.assertContains(response, "Iniciar sesión con Google")
+        self.assertContains(response, "El acceso con Google estará disponible")
+        self.assertContains(response, "disabled", html=False)
 
     def test_login_y_logout(self):
         login_response = self.client.post(

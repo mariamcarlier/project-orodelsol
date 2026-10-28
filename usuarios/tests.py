@@ -125,7 +125,7 @@ class ConsultarPerfilTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'href="/register/"', html=False)
 
-    def test_registro_publico_crea_cliente_sin_permisos_admin(self):
+    def test_registro_publico_allauth_ignora_campos_privilegiados(self):
         response = self.client.post(
             "/register/",
             {
@@ -133,10 +133,6 @@ class ConsultarPerfilTests(TestCase):
                 "email": "cliente.nuevo@example.com",
                 "first_name": "Nuevo",
                 "last_name": "Cliente",
-                "tipo_documento": "CC",
-                "documento": "5566778899",
-                "fecha_nacimiento": "2000-05-20",
-                "telefono": "3005556677",
                 "rol": "ADMIN",
                 "is_staff": "on",
                 "is_superuser": "on",
@@ -147,8 +143,8 @@ class ConsultarPerfilTests(TestCase):
         )
 
         self.assertEqual(response.redirect_chain, [("/usuario/perfil/", 302)])
-        self.assertContains(response, "Tu cuenta se creó correctamente")
-        nuevo_usuario = get_user_model().objects.get(username="nuevo_cliente")
+        nuevo_usuario = get_user_model().objects.get(email="cliente.nuevo@example.com")
+        self.assertEqual(nuevo_usuario.first_name, "Nuevo")
         self.assertEqual(nuevo_usuario.rol, "CLIENTE")
         self.assertFalse(nuevo_usuario.is_staff)
         self.assertFalse(nuevo_usuario.is_superuser)
@@ -444,7 +440,6 @@ class ConsultarPerfilTests(TestCase):
         self.assertRedirects(
             response,
             "/usuario/perfil/",
-            "/",
             fetch_redirect_response=False,
         )
         self.assertTrue(response.wsgi_request.user.is_authenticated)
@@ -467,7 +462,6 @@ class ConsultarPerfilTests(TestCase):
         response = self.client.post("/accounts/logout/")
 
         self.assertRedirects(response, "/login/")
-        self.assertRedirects(response, "/")
         self.assertFalse(response.wsgi_request.user.is_authenticated)
 
     def test_menu_muestra_cierre_de_sesion_protegido_con_csrf(self):

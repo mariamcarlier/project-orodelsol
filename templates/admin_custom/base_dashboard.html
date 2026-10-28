@@ -6,23 +6,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Panel Administrador | Oro del Sol{% endblock %}</title>
+    <title>{% block title %}Panel de administración | Oro del Sol{% endblock %}</title>
     <!-- CSS del Proyecto -->
     <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
-    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
-    <link rel="stylesheet" href="{% static 'css/dashboard-enhancements.css' %}">
-    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=4">
     <link rel="stylesheet" href="{% static 'css/dashboard-enhancements.css' %}?v=3">
     <!-- Iconos Boxicons -->
     <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
 </head>
 <body class="dashboard-body">
 
+    <a class="dashboard-skip-link" href="#dashboardMain">Saltar al contenido principal</a>
+
     <!-- BARRA LATERAL (SIDEBAR) -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h2 class="brand-title">ORO DEL SOL</h2>
-            <span class="brand-subtitle">Panel Administrador</span>
+            <span class="brand-subtitle">Panel de administración</span>
         </div>
 
         <nav class="sidebar-menu" aria-label="Navegación del panel de administración">
@@ -87,16 +87,16 @@
                 <i class="bx bx-menu" aria-hidden="true"></i>
             </button>
             
-            <a href="{% url 'usuarios:perfil' %}" class="admin-profile-link" aria-label="Ir al perfil de administrador">
+            <a href="{% url 'usuarios:perfil' %}" class="admin-profile-link" aria-label="Ir al perfil de {{ request.user.get_short_name|default:request.user.username }}">
                 <span class="admin-profile-link__avatar">
                     <i class="bx bx-user" aria-hidden="true"></i>
                 </span>
-                <span>Admin</span>
+                <span>{{ request.user.get_short_name|default:request.user.username }}</span>
             </a>
         </header>
 
         <!-- AREA DE CONTENIDO -->
-        <main class="dashboard-content">
+        <main class="dashboard-content" id="dashboardMain" tabindex="-1">
             {% include 'admin_custom/_migas.html' %}
             {% if messages %}
                 <ul class="dashboard-messages" role="status">

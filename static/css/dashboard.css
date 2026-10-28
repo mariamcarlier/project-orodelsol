@@ -20,6 +20,23 @@ body.dashboard-body {
     min-height: 100vh;
 }
 
+.dashboard-skip-link {
+    background: var(--bg-card);
+    border: 2px solid var(--primary-gold);
+    border-radius: 4px;
+    color: var(--text-dark);
+    left: 1rem;
+    padding: 0.65rem 0.9rem;
+    position: fixed;
+    top: 1rem;
+    transform: translateY(-180%);
+    z-index: 1100;
+}
+
+.dashboard-skip-link:focus {
+    transform: translateY(0);
+}
+
 /* Sidebar */
 .sidebar {
     width: 260px;
@@ -198,7 +215,7 @@ body.dashboard-body {
     border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: space-between;
     padding: 0 2rem;
 }
 
@@ -466,6 +483,11 @@ body.dashboard-body {
     overflow-x: auto;
 }
 
+.dashboard-table-wrap:focus-visible {
+    outline: 3px solid var(--primary-gold);
+    outline-offset: 3px;
+}
+
 .dashboard-actions {
     min-width: 140px;
     min-width: 7rem;
@@ -697,7 +719,7 @@ body.dashboard-body {
     justify-content: center;
     width: 2.5rem;
     height: 2.5rem;
-    margin-right: 0.75rem;
+    margin-right: auto;
     border: 1px solid var(--border-color);
     border-radius: 50%;
     background: var(--bg-card);
