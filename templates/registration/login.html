@@ -64,6 +64,24 @@
       {% endfor %}
       <button type="submit">Iniciar sesión</button>
     </form>
+
+    <div class="login-divider" aria-hidden="true"><span>O</span></div>
+    {% if google_login_enabled %}
+      <form method="post" action="{% url 'google_login' %}" class="login-google-form">
+        {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+        <button class="login-google-button" type="submit">
+          <span class="login-google-button__mark" aria-hidden="true">G</span>
+          Iniciar sesión con Google
+        </button>
+      </form>
+    {% else %}
+      <button class="login-google-button" type="button" disabled>
+        <span class="login-google-button__mark" aria-hidden="true">G</span>
+        Iniciar sesión con Google
+      </button>
+      <p class="login-google-note">El acceso con Google estará disponible cuando se configure OAuth.</p>
+    {% endif %}
   </div>
 
   <div class="options">

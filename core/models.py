@@ -5,7 +5,6 @@ from django.db import models
 from django.db.models import Q
 
 PREFIJO_CODIGO = "AN-"
-from django.db import models
 
 
 class Coleccion(models.Model):
@@ -45,7 +44,6 @@ class Talla(models.Model):
     diametro_interno_mm = models.DecimalField(
         max_digits=5, decimal_places=2, null=True, blank=True
     )
-    # NUEVO CAMPO FASE B1
     talla_nacional = models.CharField(max_length=10, null=True, blank=True)
     diametro_verificado = models.BooleanField(default=False)
 
@@ -111,7 +109,6 @@ class Producto(models.Model):
     """Lo que el anillo ES. Lo que SE VENDE (talla, material, stock) vive en
     VarianteProducto."""
 
-class Producto(models.Model):
     coleccion = models.ForeignKey(
         Coleccion,
         on_delete=models.PROTECT,

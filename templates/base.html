@@ -14,9 +14,9 @@
 
   <!-- CSS -->
   <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
-  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-  <link rel="stylesheet" href="{% static 'css/header.css' %}">
-  <link rel="stylesheet" href="{% static 'css/components.css' %}">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=11">
+  <link rel="stylesheet" href="{% static 'css/header.css' %}?v=5">
+  <link rel="stylesheet" href="{% static 'css/components.css' %}?v=5">
   {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -31,7 +31,11 @@
   {% include 'partials/footer.html' %}
 
   <!-- JS -->
+<<<<<<< HEAD
   <script src="{% static 'js/main.js' %}?v=2"></script>
+=======
+  <script src="{% static 'js/main.js' %}?v=5"></script>
+>>>>>>> c6e26485e530a3014cc093bcf555ad8cc823c6cd
   {% block extra_js %}{% endblock %}
   {% block scripts %}{% endblock %}
 </body>

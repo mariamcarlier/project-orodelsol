@@ -146,7 +146,7 @@
   outline-offset: 3px;
 }
 
-.login-card form > button[type="submit"],
+.login-card form:not(.login-google-form) > button[type="submit"],
 .password-reset-container .btn-primary {
   width: 100%;
   min-height: 48px;
@@ -163,7 +163,75 @@
   transition: background var(--ease-smooth);
 }
 
-.login-card form > button[type="submit"]:hover,
+.login-divider {
+  align-items: center;
+  color: var(--color-text-muted);
+  display: flex;
+  gap: 14px;
+  margin: 16px 0;
+}
+
+.login-divider::before,
+.login-divider::after {
+  background: var(--color-oro-borde);
+  content: "";
+  flex: 1;
+  height: 1px;
+  opacity: .65;
+}
+
+.login-card form.login-google-form {
+  gap: 0;
+}
+
+.login-google-button {
+  align-items: center;
+  background: var(--color-white);
+  border: 1px solid var(--color-oro-borde);
+  border-radius: var(--radius);
+  color: var(--color-text-dark);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 10px;
+  justify-content: center;
+  min-height: 48px;
+  padding: 10px 16px;
+  transition: background-color var(--ease-fast), border-color var(--ease-fast);
+  width: 100%;
+}
+
+.login-google-button:hover:not(:disabled) {
+  background: var(--color-ivory);
+  border-color: var(--color-caramel);
+}
+
+.login-google-button:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+.login-google-button:disabled {
+  cursor: not-allowed;
+  opacity: .72;
+}
+
+.login-google-button__mark {
+  color: #4285f4;
+  font-family: Arial, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.login-google-note {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 8px 0 0;
+  text-align: center;
+}
+
+.login-card form:not(.login-google-form) > button[type="submit"]:hover,
 .password-reset-container .btn-primary:hover {
   background: var(--color-cacao-hover);
   box-shadow: 0 6px 16px rgba(90, 58, 47, .2);
@@ -248,7 +316,7 @@
     font-size: clamp(27px, 8vw, 36px);
   }
 
-  .login-card form > button[type="submit"],
+  .login-card form:not(.login-google-form) > button[type="submit"],
   .password-reset-container .btn-primary {
     letter-spacing: 1.5px;
   }
