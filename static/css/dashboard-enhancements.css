@@ -1,3 +1,21 @@
+
+/* ==========================================================
+   ORO DEL SOL — MEJORAS DEL PANEL ADMINISTRATIVO
+   Archivo: static/css/dashboard-enhancements.css
+
+   Contiene:
+   - Tarjetas del resumen.
+   - Formularios de usuarios y grupos.
+   - Selección de permisos y grupos.
+   - Estados activos de navegación.
+   - Accesibilidad y adaptación a móviles.
+   ========================================================== */
+
+
+/* ==========================================================
+   1. TARJETAS DEL RESUMEN
+   ========================================================== */
+
 .dashboard-home-card {
     min-height: 96px;
 }
@@ -17,6 +35,11 @@
     line-height: 1.4;
 }
 
+
+/* ==========================================================
+   2. FORMULARIOS DE GRUPOS
+   ========================================================== */
+
 .dashboard-form--groups {
     grid-template-columns: minmax(0, 1fr);
 }
@@ -34,18 +57,11 @@
     width: 100%;
 }
 
-.dashboard-field--permissions .dashboard-permissions {
-    box-sizing: border-box;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    display: grid;
-    gap: 0.5rem;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
-    max-height: 320px;
-    overflow-x: hidden;
-    overflow-y: auto;
-    padding: 0.75rem;
+
+/* ==========================================================
+   3. FORMULARIOS DE USUARIOS
+   ========================================================== */
+
 .dashboard-section__heading--users {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -65,6 +81,11 @@
     grid-column: 1 / -1;
 }
 
+
+/* ==========================================================
+   4. ESTADO VACÍO DE GRUPOS
+   ========================================================== */
+
 .dashboard-empty-groups {
     background: rgba(197, 160, 89, 0.1);
     border-left: 3px solid var(--primary-gold);
@@ -82,15 +103,27 @@
     color: var(--primary-gold-hover);
 }
 
+
+/* ==========================================================
+   5. CONTENEDORES DE PERMISOS Y GRUPOS
+   ========================================================== */
+
 .dashboard-field--permissions .dashboard-permissions,
 .dashboard-field--groups .dashboard-permissions {
     box-sizing: border-box;
-    background: linear-gradient(145deg, #fff 0%, #fcf8f0 100%);
+    background: linear-gradient(
+        145deg,
+        #fff 0%,
+        #fcf8f0 100%
+    );
     border: 1px solid rgba(197, 160, 89, 0.38);
     border-radius: 8px;
     display: grid;
     gap: 0.5rem;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+    grid-template-columns: repeat(
+        auto-fill,
+        minmax(min(100%, 220px), 1fr)
+    );
     max-height: 260px;
     overflow-x: hidden;
     overflow-y: auto;
@@ -99,17 +132,11 @@
     width: 100%;
 }
 
-.dashboard-permissions > div {
-    box-sizing: border-box;
-    background: var(--bg-main);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    min-width: 0;
-    padding: 0.55rem 0.65rem;
-    position: static;
-}
 
-.dashboard-permissions > div > label {
+/* ==========================================================
+   6. OPCIONES INDIVIDUALES DE PERMISOS Y GRUPOS
+   ========================================================== */
+
 .dashboard-field--permissions .dashboard-permissions > div,
 .dashboard-field--groups .dashboard-permissions > div {
     box-sizing: border-box;
@@ -119,8 +146,14 @@
     min-width: 0;
     padding: 0.6rem 0.7rem;
     position: static;
-    transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+    transition:
+        background-color 140ms ease,
+        border-color 140ms ease,
+        box-shadow 140ms ease;
 }
+
+
+/* Estado al pasar el cursor */
 
 .dashboard-field--permissions .dashboard-permissions > div:hover,
 .dashboard-field--groups .dashboard-permissions > div:hover {
@@ -128,12 +161,20 @@
     border-color: var(--primary-gold);
 }
 
-.dashboard-field--permissions .dashboard-permissions > div:has(input:checked),
-.dashboard-field--groups .dashboard-permissions > div:has(input:checked) {
+
+/* Estado de la opción seleccionada */
+
+.dashboard-field--permissions
+.dashboard-permissions > div:has(input:checked),
+.dashboard-field--groups
+.dashboard-permissions > div:has(input:checked) {
     background: rgba(197, 160, 89, 0.12);
     border-color: var(--primary-gold);
     box-shadow: inset 3px 0 0 var(--primary-gold);
 }
+
+
+/* Etiquetas de las opciones */
 
 .dashboard-field--permissions .dashboard-permissions > div > label,
 .dashboard-field--groups .dashboard-permissions > div > label {
@@ -145,16 +186,9 @@
     overflow-wrap: anywhere;
 }
 
-.dashboard-permissions input[type="checkbox"] {
-    accent-color: var(--accent-brown);
-    flex: 0 0 auto;
-    height: 1rem;
-    margin: 0;
-    width: 1rem;
-}
 
-@media (max-width: 640px) {
-    .dashboard-field--permissions .dashboard-permissions {
+/* Casillas de verificación */
+
 .dashboard-field--permissions .dashboard-permissions input[type="checkbox"],
 .dashboard-field--groups .dashboard-permissions input[type="checkbox"] {
     accent-color: var(--primary-gold-hover);
@@ -164,26 +198,21 @@
     width: 1.05rem;
 }
 
-@media (max-width: 640px) {
-    .dashboard-create--users .dashboard-form {
-        grid-template-columns: minmax(0, 1fr);
-    }
 
-    .dashboard-create--users .dashboard-field--groups {
-        grid-column: auto;
-    }
-
-    .dashboard-field--permissions .dashboard-permissions,
-    .dashboard-field--groups .dashboard-permissions {
-        grid-template-columns: minmax(0, 1fr);
-    }
-}
+/* ==========================================================
+   7. NAVEGACIÓN ACTIVA
+   ========================================================== */
 
 .menu-item a[aria-current="page"] {
     background-color: rgba(197, 160, 89, 0.15);
     border-left: 4px solid var(--primary-gold);
     color: var(--primary-gold);
 }
+
+
+/* ==========================================================
+   8. ACCESIBILIDAD: FOCO VISIBLE
+   ========================================================== */
 
 .dashboard-home-card:focus-visible,
 .sidebar-menu a:focus-visible,
@@ -199,4 +228,531 @@
     outline-offset: 3px;
     position: relative;
     z-index: 1;
+}
+
+
+/* ==========================================================
+   9. DISEÑO ADAPTABLE A MÓVILES
+   ========================================================== */
+
+@media (max-width: 640px) {
+    /* Formulario de usuarios a una columna */
+
+    .dashboard-create--users .dashboard-form {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .dashboard-create--users .dashboard-field--groups {
+        grid-column: auto;
+    }
+
+    /* Permisos y grupos a una columna */
+
+    .dashboard-field--permissions .dashboard-permissions,
+    .dashboard-field--groups .dashboard-permissions {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+
+/* ==========================================================
+   10. PREFERENCIAS DE MOVIMIENTO DEL USUARIO
+   ========================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    .dashboard-field--permissions .dashboard-permissions > div,
+    .dashboard-field--groups .dashboard-permissions > div {
+        transition: none;
+    }
+}
+
+
+/* =========================================================
+   ORO DEL SOL — REFINAMIENTO VISUAL DEL PANEL
+   Capa de presentación: no modifica la lógica de Django.
+   ========================================================= */
+
+:root {
+    --bg-main: #F5F1EA;
+    --bg-card: #FFFEFC;
+    --sidebar-bg: #211B18;
+    --sidebar-text: #E7DFD6;
+    --primary-gold: #C5A059;
+    --primary-gold-hover: #A9823D;
+    --accent-brown: #684333;
+    --text-dark: #29221E;
+    --text-muted: #82766C;
+    --border-color: #E9E0D5;
+
+    --ods-radius-sm: 8px;
+    --ods-radius-md: 14px;
+    --ods-shadow-card: 0 4px 18px rgba(54, 39, 28, 0.045);
+    --ods-shadow-hover: 0 12px 28px rgba(54, 39, 28, 0.09);
+}
+
+/* Fondo y tipografía general */
+
+body.dashboard-body {
+    background:
+        radial-gradient(
+            ellipse at top right,
+            rgba(197, 160, 89, 0.075),
+            transparent 38%
+        ),
+        var(--bg-main);
+    color: var(--text-dark);
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Identidad de marca en la navegación */
+
+.sidebar {
+    background: linear-gradient(180deg, #211B18 0%, #191513 100%);
+    border-right: 1px solid rgba(197, 160, 89, 0.16);
+}
+
+.sidebar-header {
+    padding-top: 2.2rem;
+    padding-bottom: 1.5rem;
+    border-bottom-color: rgba(255, 255, 255, 0.09);
+}
+
+.brand-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+}
+
+.brand-subtitle {
+    display: block;
+    margin-top: 0.4rem;
+    color: #B6A89A;
+    letter-spacing: 0.07em;
+}
+
+/* Navegación: estados más claros */
+
+.menu-item a,
+.menu-group summary {
+    min-height: 46px;
+    box-sizing: border-box;
+    border-left: 3px solid transparent;
+    transition:
+        background-color 180ms ease,
+        color 180ms ease,
+        border-color 180ms ease;
+}
+
+.menu-item a i,
+.menu-group summary > i:first-child {
+    color: #C7B6A2;
+}
+
+.menu-item:hover a,
+.menu-item.active a {
+    background: linear-gradient(
+        90deg,
+        rgba(197, 160, 89, 0.19),
+        rgba(197, 160, 89, 0.045)
+    );
+    border-left-color: var(--primary-gold);
+    color: #E7C98D;
+}
+
+.menu-item.active a {
+    font-weight: 650;
+}
+
+.menu-item:hover a i,
+.menu-item.active a i,
+.menu-group summary:hover > i:first-child,
+.menu-group.has-active summary > i:first-child {
+    color: var(--primary-gold);
+}
+
+.menu-group.has-active summary {
+    background: rgba(197, 160, 89, 0.075);
+}
+
+.submenu .menu-item a {
+    min-height: 40px;
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+    color: #CFC4B8;
+}
+
+.sidebar-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.sidebar-footer a,
+.sidebar-footer .btn-logout {
+    transition: color 180ms ease;
+}
+
+.sidebar-footer a:hover,
+.sidebar-footer .btn-logout:hover {
+    color: #E7C98D;
+}
+
+/* Barra superior */
+
+.topbar {
+    min-height: 68px;
+    height: auto;
+    box-sizing: border-box;
+    background: rgba(255, 254, 252, 0.96);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 2px 10px rgba(54, 39, 28, 0.025);
+}
+
+.topbar .admin-profile-link {
+    transition:
+        background-color 180ms ease,
+        border-color 180ms ease,
+        box-shadow 180ms ease;
+}
+
+.topbar .admin-profile-link:hover {
+    background: #FBF5E9;
+    border-color: rgba(197, 160, 89, 0.65);
+    box-shadow: 0 3px 10px rgba(54, 39, 28, 0.06);
+}
+
+.admin-profile-link__avatar {
+    background: #F2E6D1;
+    color: var(--accent-brown);
+}
+
+/* Área de trabajo */
+
+.dashboard-content {
+    padding: clamp(1.25rem, 2.5vw, 2.25rem);
+}
+
+.dashboard-header h1,
+.dashboard-section__heading h1 {
+    color: var(--text-dark);
+    font-size: clamp(1.45rem, 2.2vw, 1.9rem);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1.25;
+}
+
+.dashboard-header p,
+.dashboard-section__heading p {
+    color: var(--text-muted);
+    line-height: 1.65;
+}
+
+/* Migas de pan */
+
+.breadcrumb {
+    margin-bottom: 1.25rem;
+}
+
+.breadcrumb__list {
+    gap: 0.5rem;
+    font-size: 0.82rem;
+}
+
+.breadcrumb__item [aria-current="page"] {
+    color: var(--accent-brown);
+}
+
+/* Tarjetas del resumen */
+
+.dashboard-home-grid {
+    gap: 1.15rem;
+    margin-top: 1.75rem;
+}
+
+.dashboard-home-card {
+    position: relative;
+    min-height: 90px;
+    box-sizing: border-box;
+    padding: 1.25rem;
+    gap: 1rem;
+    background: linear-gradient(145deg, #FFFEFC 0%, #FBF8F2 100%);
+    border: 1px solid var(--border-color);
+    border-radius: var(--ods-radius-md);
+    box-shadow: var(--ods-shadow-card);
+    transition:
+        transform 180ms ease,
+        border-color 180ms ease,
+        box-shadow 180ms ease;
+}
+
+.dashboard-home-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(197, 160, 89, 0.65);
+    box-shadow: var(--ods-shadow-hover);
+}
+
+.dashboard-home-card__icon {
+    flex-basis: 46px;
+    width: 46px;
+    height: 46px;
+    background: linear-gradient(145deg, #F5E9D4, #EBD8B5);
+    color: var(--accent-brown);
+}
+
+.dashboard-home-card__icon i {
+    font-size: 1.45rem;
+}
+
+.dashboard-home-card__arrow {
+    color: var(--primary-gold-hover);
+}
+
+/* Paneles de contenido */
+
+.dashboard-section {
+    margin-top: 1.75rem;
+    padding: clamp(1rem, 2vw, 1.75rem);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--ods-radius-md);
+    box-shadow: var(--ods-shadow-card);
+}
+
+.dashboard-section__heading {
+    margin-bottom: 1.25rem;
+}
+
+.dashboard-create,
+.dashboard-actions details,
+.dashboard-password {
+    border-color: var(--border-color);
+    border-radius: var(--ods-radius-sm);
+}
+
+.dashboard-create,
+.dashboard-actions details {
+    background: #FFFEFC;
+}
+
+/* Tablas */
+
+.dashboard-table-wrap {
+    border: 1px solid var(--border-color);
+    border-radius: var(--ods-radius-sm);
+    background: var(--bg-card);
+}
+
+.data-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 0;
+}
+
+.data-table th,
+.data-table td {
+    padding: 0.95rem 1rem;
+    border-bottom: 1px solid #EEE7DE;
+    vertical-align: middle;
+}
+
+.data-table th {
+    background: #F7F2E9;
+    color: #5D4636;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.025em;
+}
+
+.data-table tbody tr {
+    transition: background-color 150ms ease;
+}
+
+.data-table tbody tr:hover {
+    background: #FCF8F0;
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+/* Formularios y campos */
+
+.dashboard-field {
+    gap: 0.45rem;
+}
+
+.dashboard-field label {
+    color: #5D4636;
+    font-size: 0.9rem;
+    font-weight: 650;
+}
+
+.dashboard-field input:not([type="checkbox"]):not([type="radio"]),
+.dashboard-field select,
+.dashboard-field textarea,
+.dashboard-search input,
+.dashboard-bulk select {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-height: 42px;
+    padding: 0.65rem 0.8rem;
+    background: #FFFEFC;
+    border: 1px solid #DCD0C0;
+    border-radius: var(--ods-radius-sm);
+    color: var(--text-dark);
+    font: inherit;
+    transition:
+        border-color 160ms ease,
+        box-shadow 160ms ease;
+}
+
+.dashboard-field textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.dashboard-field input:not([type="checkbox"]):not([type="radio"]):focus,
+.dashboard-field select:focus,
+.dashboard-field textarea:focus,
+.dashboard-search input:focus,
+.dashboard-bulk select:focus {
+    border-color: var(--primary-gold-hover);
+    box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.17);
+    outline: none;
+}
+
+.dashboard-field input::placeholder,
+.dashboard-search input::placeholder {
+    color: #A0968C;
+}
+
+/* Botones */
+
+.dashboard-button {
+    min-height: 42px;
+    padding: 0.7rem 1.1rem;
+    border-radius: var(--ods-radius-sm);
+    background: var(--accent-brown);
+    box-shadow: 0 2px 5px rgba(65, 42, 30, 0.1);
+    transition:
+        background-color 160ms ease,
+        box-shadow 160ms ease,
+        transform 160ms ease;
+}
+
+.dashboard-button:hover {
+    background: #533629;
+    box-shadow: 0 5px 12px rgba(65, 42, 30, 0.15);
+    transform: translateY(-1px);
+}
+
+.dashboard-button--secondary {
+    background: var(--primary-gold-hover);
+}
+
+.dashboard-button--secondary:hover {
+    background: #8F6D31;
+}
+
+.dashboard-button--danger:hover {
+    background: #702323;
+}
+
+.dashboard-button:focus-visible,
+.dashboard-dialog__close:focus-visible,
+.dashboard-pagination a:focus-visible {
+    outline: 3px solid rgba(197, 160, 89, 0.7);
+    outline-offset: 3px;
+}
+
+/* Búsqueda, paginación y mensajes */
+
+.dashboard-search,
+.dashboard-bulk {
+    gap: 0.8rem;
+}
+
+.dashboard-pagination {
+    flex-wrap: wrap;
+}
+
+.dashboard-pagination a {
+    padding: 0.45rem 0.7rem;
+    border: 1px solid var(--border-color);
+    border-radius: 7px;
+    text-decoration: none;
+}
+
+.dashboard-pagination a:hover {
+    background: #F7F0E4;
+    border-color: var(--primary-gold);
+}
+
+.dashboard-messages {
+    margin-bottom: 1.25rem;
+    border-radius: var(--ods-radius-sm);
+    box-shadow: var(--ods-shadow-card);
+}
+
+/* Adaptación a pantallas pequeñas */
+
+@media (max-width: 768px) {
+    .dashboard-content {
+        padding: 1.15rem;
+    }
+
+    .dashboard-home-grid {
+        gap: 0.85rem;
+        margin-top: 1.25rem;
+    }
+
+    .dashboard-home-card {
+        min-height: 78px;
+        padding: 1rem;
+    }
+
+    .dashboard-section {
+        margin-top: 1.25rem;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-content {
+        padding: 0.85rem;
+    }
+
+    .dashboard-header h1,
+    .dashboard-section__heading h1 {
+        font-size: 1.4rem;
+    }
+
+    .dashboard-home-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .topbar .admin-profile-link {
+        max-width: 70%;
+    }
+}
+
+/* Accesibilidad: respetar la preferencia de movimiento reducido */
+
+@media (prefers-reduced-motion: reduce) {
+    .dashboard-home-card,
+    .dashboard-button,
+    .menu-item a,
+    .menu-group summary,
+    .topbar .admin-profile-link {
+        transition: none;
+    }
+
+    .dashboard-home-card:hover,
+    .dashboard-button:hover {
+        transform: none;
+    }
 }
