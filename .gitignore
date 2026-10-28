@@ -201,3 +201,6 @@ media/
 
 # DB Browser for SQLite (archivo de proyecto local)
 *.sqbpro
+
+# variables de entorno
+.env

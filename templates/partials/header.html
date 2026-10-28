@@ -163,6 +163,15 @@
        BARRA DE CATEGORÍAS
        Independiente del header — desaparece al scroll
        ════════════════════════════════════════ -->
+<<<<<<< HEAD
+  <nav class="category-bar" id="categoryBar" aria-label="Categorías">
+    <a class="category-bar__link category-bar__link--active" href="{% url 'core:inicio' %}">Inicio</a>
+    <a class="category-bar__link" href="/compromiso">Compromiso</a>
+    <a class="category-bar__link" href="/bodas">Bodas</a>
+    <a class="category-bar__link" href="/xv-anios">XV años</a>
+    <a class="category-bar__link" href="/personalizados">Personalizados</a>
+    <a class="category-bar__link category-bar__link--cta" href="/mayoristas">Mayoristas</a>
+=======
   <nav class="category-bar" id="categoryBar" aria-label="Navegación secundaria">
     <a class="category-bar__link" href="{% url 'core:inicio' %}">Inicio</a>
     <a class="category-bar__link" href="{% url 'core:inicio' %}#productos" data-category-query="quince" data-home-url="{% url 'core:inicio' %}">XV años</a>
@@ -170,6 +179,7 @@
     <a class="category-bar__link" href="{% url 'core:inicio' %}#productos" data-category-query="solitario" data-home-url="{% url 'core:inicio' %}">Solitario</a>
     <a class="category-bar__link" href="{% url 'core:inicio' %}#productos" data-category-query="hombre" data-home-url="{% url 'core:inicio' %}">Hombre</a>
     <a class="category-bar__link category-bar__link--cta" href="{% url 'core:inicio' %}#mayoristas">Mayoristas</a>
+>>>>>>> c6e26485e530a3014cc093bcf555ad8cc823c6cd
   </nav>
   <div class="store-notice" id="storeNotice" role="status" aria-live="polite" hidden></div>
 

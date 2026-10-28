@@ -495,17 +495,16 @@ function initStoreControls() {
 }
 
 function initPasswordVisibility() {
-  const toggle = document.querySelector('[data-password-toggle]');
-  if (!toggle) return;
+  document.querySelectorAll('[data-password-toggle]').forEach((toggle) => {
+    const password = document.getElementById(toggle.getAttribute('aria-controls'));
+    if (!password) return;
 
-  const password = document.getElementById(toggle.getAttribute('aria-controls'));
-  if (!password) return;
-
-  toggle.addEventListener('click', () => {
-    const isVisible = password.type === 'text';
-    password.type = isVisible ? 'password' : 'text';
-    toggle.setAttribute('aria-label', isVisible ? 'Mostrar contraseña' : 'Ocultar contraseña');
-    toggle.setAttribute('aria-pressed', String(!isVisible));
+    toggle.addEventListener('click', () => {
+      const isVisible = password.type === 'text';
+      password.type = isVisible ? 'password' : 'text';
+      toggle.setAttribute('aria-label', isVisible ? 'Mostrar contraseña' : 'Ocultar contraseña');
+      toggle.setAttribute('aria-pressed', String(!isVisible));
+    });
   });
 }
 
