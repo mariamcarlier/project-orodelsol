@@ -173,7 +173,7 @@ class ConsultarPerfilTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            "Ya existe un usuario registrado con este correo electrónico.",
+            "Ya hay registrado un usuario con esta dirección de correo electrónico.",
         )
         self.assertFalse(
             get_user_model().objects.filter(username="cliente_duplicado").exists()
@@ -292,7 +292,7 @@ class ConsultarPerfilTests(TestCase):
         response = self.client.post(
             "/accounts/login/",
             {
-                "username": "cliente.nuevo@example.com",
+                "email": "cliente.nuevo@example.com",
                 "password": "StrongPass123!",
             },
         )
