@@ -44,7 +44,7 @@ class RateLimitedAuthenticationForm(AuthenticationForm):
             return self.cleaned_data
 
         user_model = get_user_model()
-        email_matches = user_model.objects.filter(email__iexact=username)
+        email_matches = user_model.objects.filter(email__iexact=email)
         if email_matches.count() == 1:
             self.cleaned_data["username"] = email_matches.get().get_username()
 
@@ -129,7 +129,7 @@ class RegistroUsuarioForm(UserCreationForm):
         if email and Usuario.objects.filter(email__iexact=email).exclude(
             pk=self.instance.pk
         ).exists():
-            raise forms.ValidationError("Ya existe un usuario registrado con este correo electrónico.")
+            raise forms.ValidationError("Ya hay registrado un usuario con esta dirección de correo electrónico.")
         return email.lower() if email else email
 
 
