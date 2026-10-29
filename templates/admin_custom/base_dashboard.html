@@ -7,6 +7,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Panel de administración | Oro del Sol{% endblock %}</title>
+
+     <!-- Tipografía de la identidad visual de Oro del Sol -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Questrial&display=swap" rel="stylesheet">
+
     <!-- CSS del Proyecto -->
     <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=4">
@@ -61,9 +67,6 @@
             </ul>
         </nav>
 
-            <!-- Fondo oscuro del menú en móvil -->
-    <div class="dashboard-overlay" id="dashboardOverlay"></div>
-
         <div class="sidebar-footer">
             <a href="{% url 'core:inicio' %}" class="btn-site">
                 <i class='bx bx-store-alt'></i> <span>Ir a la tienda</span>
@@ -76,6 +79,9 @@
             </form>
         </div>
     </aside>
+
+    <!-- Fondo oscuro del menú en móvil -->
+    <div class="dashboard-overlay" id="dashboardOverlay"></div>
 
     <!-- CONTENIDO PRINCIPAL -->
     <div class="main-wrapper">
