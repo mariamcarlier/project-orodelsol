@@ -6,7 +6,11 @@ from allauth.account.forms import SignupForm
 from django import forms
 from django.contrib.auth import get_user_model
 
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.forms import (
+    AuthenticationForm,
+    PasswordResetForm,
+    UserCreationForm,
+)
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.utils.crypto import salted_hmac
@@ -16,6 +20,12 @@ from .models import Usuario
 
 LOGIN_MAX_ATTEMPTS = 5
 LOGIN_ATTEMPT_WINDOW = 15 * 60
+
+
+class HostAwarePasswordResetForm(PasswordResetForm):
+    def save(self, request, **kwargs):
+        kwargs["domain_override"] = request.get_host()
+        return super().save(request=request, **kwargs)
 
 
 class RateLimitedAuthenticationForm(AuthenticationForm):
