@@ -5,10 +5,10 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth import urls as auth_urls
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, PasswordResetView
 from django.urls import include, path
 
-from usuarios.forms import RateLimitedAuthenticationForm
+from usuarios.forms import HostAwarePasswordResetForm, RateLimitedAuthenticationForm
 from usuarios.views import crear_cuenta, perfil
 from allauth.account.views import signup as allauth_signup
 
@@ -17,7 +17,9 @@ admin.site.site_title = "Oro del Sol"
 admin.site.index_title = "Gestión de la tienda"
 
 auth_urlpatterns = [
-    pattern for pattern in auth_urls.urlpatterns if pattern.name != "login"
+    pattern
+    for pattern in auth_urls.urlpatterns
+    if pattern.name not in {"login", "password_reset"}
 ]
 
 urlpatterns = [
@@ -27,6 +29,11 @@ urlpatterns = [
         "accounts/login/",
         LoginView.as_view(form_class=RateLimitedAuthenticationForm),
         name="login",
+    ),
+    path(
+        "accounts/password_reset/",
+        PasswordResetView.as_view(form_class=HostAwarePasswordResetForm),
+        name="password_reset",
     ),
     path("accounts/", include(auth_urlpatterns)),
     path("", include("core.urls")),
