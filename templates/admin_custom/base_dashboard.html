@@ -15,8 +15,8 @@
 
     <!-- CSS del Proyecto -->
     <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
-    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=4">
-    <link rel="stylesheet" href="{% static 'css/dashboard-enhancements.css' %}?v=4">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=5">
+    <link rel="stylesheet" href="{% static 'css/dashboard-enhancements.css' %}?v=5">
     <!-- Iconos Boxicons -->
     <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
 </head>
@@ -67,16 +67,41 @@
             </ul>
         </nav>
 
+        <!-- Menú de la cuenta. Solo lo renderizan las vistas del panel, que ya exigen is_staff:
+             no se repite aquí «Panel de administración» (sería el «Resumen» del menú). -->
         <div class="sidebar-footer">
-            <a href="{% url 'core:inicio' %}" class="btn-site">
-                <i class='bx bx-store-alt'></i> <span>Ir a la tienda</span>
-            </a>
-            <form method="post" action="{% url 'admin:logout' %}" class="logout-form">
-                {% csrf_token %}
-                <button type="submit" class="btn-logout">
-                    <i class='bx bx-log-out'></i><span>Cerrar sesión</span>
-                </button>
-            </form>
+            <details class="sidebar-user">
+                <summary class="sidebar-user__summary">
+                    <span class="sidebar-user__avatar" aria-hidden="true">
+                        {% if request.user.foto %}<img class="sidebar-user__photo" src="{{ request.user.foto.url }}" alt="" width="40" height="40">{% else %}{{ request.user.iniciales }}{% endif %}
+                    </span>
+                    <span class="sidebar-user__identity">
+                        <span class="sidebar-user__name">{{ request.user.nombre_visible }}</span>
+                        <span class="sidebar-user__role">{{ request.user.tipo_cuenta }}</span>
+                    </span>
+                    <i class="bx bx-chevron-down sidebar-user__chevron" aria-hidden="true"></i>
+                </summary>
+                <ul class="sidebar-user__menu">
+                    <li>
+                        <a href="{% url 'core:inicio' %}">
+                            <i class="bx bx-store-alt" aria-hidden="true"></i><span>Ver tienda</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'usuarios:perfil' %}">
+                            <i class="bx bx-user" aria-hidden="true"></i><span>Mi perfil</span>
+                        </a>
+                    </li>
+                    <li>
+                        <form method="post" action="{% url 'core:cerrar_sesion' %}">
+                            {% csrf_token %}
+                            <button type="submit">
+                                <i class="bx bx-log-out" aria-hidden="true"></i><span>Cerrar sesión</span>
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </details>
         </div>
     </aside>
 
@@ -92,13 +117,8 @@
                     aria-controls="sidebar" aria-expanded="false" aria-label="Abrir menú">
                 <i class="bx bx-menu" aria-hidden="true"></i>
             </button>
-            
-            <a href="{% url 'usuarios:perfil' %}" class="admin-profile-link" aria-label="Ir al perfil de {{ request.user.get_short_name|default:request.user.username }}">
-                <span class="admin-profile-link__avatar">
-                    <i class="bx bx-user" aria-hidden="true"></i>
-                </span>
-                <span>{{ request.user.get_short_name|default:request.user.username }}</span>
-            </a>
+            <!-- Aquí se añadirán, cuando existan de verdad, búsqueda y notificaciones.
+                 Mientras solo haya el botón del menú, el CSS muestra esta barra solo en móvil. -->
         </header>
 
         <!-- AREA DE CONTENIDO -->

@@ -384,17 +384,147 @@ body.dashboard-body {
 }
 
 .sidebar-footer {
+    padding: 0.75rem;
     border-top: 1px solid rgba(255, 255, 255, 0.09);
 }
 
-.sidebar-footer a,
-.sidebar-footer .btn-logout {
-    transition: color 180ms ease;
+/* Menú de la cuenta (pie de la barra lateral) */
+
+.sidebar-user__summary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 56px;
+    padding: 0.6rem 0.75rem;
+    box-sizing: border-box;
+    border-radius: 10px;
+    color: var(--sidebar-text);
+    cursor: pointer;
+    list-style: none;
+    transition: background-color 180ms ease;
 }
 
-.sidebar-footer a:hover,
-.sidebar-footer .btn-logout:hover {
+.sidebar-user__summary::-webkit-details-marker {
+    display: none;
+}
+
+.sidebar-user__summary:hover,
+.sidebar-user[open] > .sidebar-user__summary {
+    background: rgba(197, 160, 89, 0.1);
+}
+
+.sidebar-user__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    overflow: hidden;
+    border: 1px solid rgba(197, 160, 89, 0.4);
+    border-radius: 50%;
+    background: rgba(197, 160, 89, 0.18);
     color: #E7C98D;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.sidebar-user__photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sidebar-user__identity {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.3;
+}
+
+.sidebar-user__name {
+    overflow: hidden;
+    color: #F3EDE4;
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sidebar-user__role {
+    color: #B6A89A;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+}
+
+.sidebar-user__chevron {
+    margin-left: auto;
+    color: #C7B6A2;
+    font-size: 1.2rem;
+    transition: transform 0.2s;
+}
+
+.sidebar-user[open] .sidebar-user__chevron {
+    transform: rotate(180deg);
+}
+
+.sidebar-user__menu {
+    margin: 0.35rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.sidebar-user__menu form {
+    margin: 0;
+}
+
+.sidebar-user__menu a,
+.sidebar-user__menu button {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 0.55rem 0.75rem;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: #CFC4B8;
+    font: inherit;
+    font-size: 0.88rem;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+        background-color 180ms ease,
+        color 180ms ease;
+}
+
+.sidebar-user__menu i {
+    color: #C7B6A2;
+    font-size: 1.15rem;
+}
+
+.sidebar-user__menu a:hover,
+.sidebar-user__menu button:hover {
+    background: rgba(197, 160, 89, 0.12);
+    color: #E7C98D;
+}
+
+.sidebar-user__menu a:hover i,
+.sidebar-user__menu button:hover i {
+    color: var(--primary-gold);
+}
+
+/* Foco hacia dentro: el pie está dentro de un contenedor con scroll y un
+   contorno externo quedaría recortado. */
+.sidebar-user__summary:focus-visible,
+.sidebar-user__menu a:focus-visible,
+.sidebar-user__menu button:focus-visible {
+    outline: 3px solid var(--primary-gold);
+    outline-offset: -3px;
 }
 
 /* Barra superior */
@@ -408,22 +538,13 @@ body.dashboard-body {
     box-shadow: 0 2px 10px rgba(54, 39, 28, 0.025);
 }
 
-.topbar .admin-profile-link {
-    transition:
-        background-color 180ms ease,
-        border-color 180ms ease,
-        box-shadow 180ms ease;
-}
-
-.topbar .admin-profile-link:hover {
-    background: #FBF5E9;
-    border-color: rgba(197, 160, 89, 0.65);
-    box-shadow: 0 3px 10px rgba(54, 39, 28, 0.06);
-}
-
-.admin-profile-link__avatar {
-    background: #F2E6D1;
-    color: var(--accent-brown);
+/* Hoy la barra solo contiene el botón del menú móvil. En escritorio se oculta
+   para no dejar una franja vacía. Cuando se añadan búsqueda o notificaciones
+   reales, basta con eliminar esta regla. */
+@media (min-width: 769px) {
+    .topbar {
+        display: none;
+    }
 }
 
 /* Área de trabajo */
@@ -813,10 +934,6 @@ body.dashboard-body {
     .dashboard-home-grid {
         grid-template-columns: minmax(0, 1fr);
     }
-
-    .topbar .admin-profile-link {
-        max-width: 70%;
-    }
 }
 
 /* Accesibilidad: respetar la preferencia de movimiento reducido */
@@ -826,7 +943,10 @@ body.dashboard-body {
     .dashboard-button,
     .menu-item a,
     .menu-group summary,
-    .topbar .admin-profile-link {
+    .sidebar-user__summary,
+    .sidebar-user__chevron,
+    .sidebar-user__menu a,
+    .sidebar-user__menu button {
         transition: none;
     }
 

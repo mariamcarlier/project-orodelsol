@@ -124,7 +124,9 @@ class PanelAdministracionTests(TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertTemplateUsed(response, "admin_custom/section.html")
                 self.assertContains(response, recurso["title"])
-                self.assertContains(response, "Ir a la tienda")
+                # El menú de la cuenta aparece una sola vez y lleva a la tienda.
+                self.assertContains(response, "Ver tienda", count=1)
+                self.assertContains(response, f'href="{reverse("core:inicio")}"')
 
     def test_editar_usuario_se_abre_en_dialogo_accesible(self):
         response = self.client.get(
@@ -189,7 +191,13 @@ class PanelAdministracionTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Saltar al contenido principal")
-        self.assertContains(response, "Ir al perfil de Admin")
+        # El acceso al perfil vive ahora en el menú de la cuenta, con el nombre real.
+        self.assertContains(
+            response,
+            '<span class="sidebar-user__name">Admin</span>',
+            html=True,
+        )
+        self.assertContains(response, f'href="{reverse("usuarios:perfil")}"')
         for recurso in RECURSOS:
             with self.subTest(recurso=recurso["key"]):
                 self.assertContains(
@@ -700,7 +708,7 @@ class MenuLateralTests(TestCase):
                     self.client.get(self.url_seccion(clave)).status_code, 200
                 )
         self.assertContains(response, "Resumen")
-        self.assertContains(response, "Ir a la tienda")
+        self.assertContains(response, "Ver tienda", count=1)
 
     def test_construir_menu_ignora_recursos_sin_grupo_conocido(self):
         recursos = [

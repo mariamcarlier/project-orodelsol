@@ -117,6 +117,19 @@ class Usuario(AbstractUser):
         return nombre or self.username
 
     @property
+    def iniciales(self):
+        """Letras del avatar cuando la persona no tiene foto: «AL» para Ana López.
+
+        Usa la inicial del nombre y la del apellido; si falta alguno usa solo el
+        que exista, y si faltan ambos, la primera letra del nombre de usuario.
+        Nunca devuelve una cadena vacía. Es solo presentación.
+        """
+        letras = "".join(
+            (valor or "").strip()[:1] for valor in (self.first_name, self.last_name)
+        )
+        return (letras or (self.username or "?").strip()[:1]).upper()
+
+    @property
     def frase_bienvenida(self):
         """Frase de la cabecera de la cuenta, SIN el nombre: «Te damos la bienvenida».
 
