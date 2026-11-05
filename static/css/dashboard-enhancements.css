@@ -319,7 +319,10 @@ body.dashboard-body {
     border-bottom-color: rgba(255, 255, 255, 0.09);
 }
 
+/* Identidad de marca: serif de la tienda (--font-display, ya cargada). Solo cambia
+   la familia; tamaños y espaciados siguen siendo los aprobados. */
 .brand-title {
+    font-family: var(--font-display);
     font-size: 1.25rem;
     font-weight: 700;
     letter-spacing: 0.16em;
@@ -329,6 +332,8 @@ body.dashboard-body {
     display: block;
     margin-top: 0.4rem;
     color: #B6A89A;
+    font-family: var(--font-display);
+    font-weight: 600;
     letter-spacing: 0.07em;
 }
 
