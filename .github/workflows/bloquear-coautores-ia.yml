@@ -1,0 +1,48 @@
+name: Bloquear coautores IA
+
+# Fallo si algún commit del PR (o del push a main) trae un trailer
+# "Co-authored-by" de una identidad IA. Cubre los flujos que NO pasan por
+# hooks locales: commits desde la web de GitHub, Copilot en el navegador, etc.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  sin-coautores-ia:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Buscar trailers Co-authored-by de IA
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -eu
+          AI='copilot|claude|anthropic|openai|codex|arena-agent|antigravity|gemini|cursor|tabnine|codeium|codium|qwen|deepseek|aider|chatgpt'
+
+          # Rango a revisar: solo los commits nuevos de este PR/push.
+          if [ -n "${BASE_SHA:-}" ] && \
+             [ "$BASE_SHA" != "0000000000000000000000000000000000000000" ] && \
+             git cat-file -e "$BASE_SHA" 2>/dev/null; then
+            RANGE="$BASE_SHA..HEAD"
+          else
+            RANGE="HEAD"
+          fi
+
+          echo "Revisando: $RANGE"
+          BAD=$(git log --format=%B "$RANGE" | grep -Ei "^co-authored-by:[[:space:]]*($AI)" || true)
+
+          if [ -n "$BAD" ]; then
+            echo "::error::Se encontraron coautores IA en los commits de este cambio:"
+            echo "$BAD"
+            echo
+            echo "Quítalos con:  git rebase -i <base>  y editar los mensajes,"
+            echo "o deja que el hook .githooks/commit-msg los elimine en commits locales."
+            exit 1
+          fi
+
+          echo "OK: sin coautores IA en $RANGE"
