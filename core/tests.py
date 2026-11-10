@@ -5,6 +5,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -812,7 +813,12 @@ class ColeccionCBVTests(TestCase):
             documento="987654321",
             fecha_nacimiento=date(1995, 5, 10),
             telefono="3007654321",
+            is_staff=True,
         )
+        # Permisos de colección necesarios para las operaciones CRUD.
+        ct = ContentType.objects.get_for_model(Coleccion)
+        for codename in ("view_coleccion", "add_coleccion", "change_coleccion", "delete_coleccion"):
+            usuario.user_permissions.add(Permission.objects.get(codename=codename, content_type=ct))
         self.client.force_login(usuario)
 
     def test_listado_muestra_titulo_y_colecciones(self):
