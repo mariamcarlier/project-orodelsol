@@ -6,7 +6,7 @@ from django.db.models import Count, Q
 from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
 from .dashboard import ColeccionForm, ProductoForm, admin_dashboard, admin_section
@@ -64,9 +64,17 @@ def producto_listar(request):
     return render(request, "core/productos/listar.html", {"productos": productos})
 
 
+# El orden importa: staff_member_required (autenticación/autorización)
+# envuelve a require_http_methods, de modo que un usuario sin acceso
+# recibe la respuesta de autenticación/autorización que le corresponde y
+# solo se evalúa el método HTTP cuando la identidad ya fue aceptada.
 @staff_member_required
+@require_http_methods(["GET", "POST"])
 def producto_guardar(request, pk=None):
-    if pk:
+    # `pk is not None` (y no `if pk:`) para que pk=0 —inválido, nunca
+    # existe en la BD— caiga en get_object_or_404 y devuelva 404 en vez
+    # de entrar en la rama de creación.
+    if pk is not None:
         if not request.user.has_perm("core.change_producto"):
             raise PermissionDenied
         instancia = get_object_or_404(Producto, pk=pk)
@@ -106,6 +114,7 @@ def producto_eliminar(request, pk):
 # ---------------------------------------------------------------------------
 
 class ColeccionListView(StaffPermissionMixin, ListView):
+    http_method_names = ["get", "head", "options"]
     model = Coleccion
     template_name = "core/colecciones/listar.html"
     context_object_name = "colecciones"
@@ -118,6 +127,7 @@ class ColeccionListView(StaffPermissionMixin, ListView):
 
 
 class ColeccionCreateView(StaffPermissionMixin, CreateView):
+    http_method_names = ["get", "post", "head", "options"]
     model = Coleccion
     form_class = ColeccionForm
     template_name = "core/colecciones/form.html"
@@ -135,6 +145,7 @@ class ColeccionCreateView(StaffPermissionMixin, CreateView):
 
 
 class ColeccionUpdateView(StaffPermissionMixin, UpdateView):
+    http_method_names = ["get", "post", "head", "options"]
     model = Coleccion
     form_class = ColeccionForm
     template_name = "core/colecciones/form.html"
@@ -152,6 +163,9 @@ class ColeccionUpdateView(StaffPermissionMixin, UpdateView):
 
 
 class ColeccionDeleteView(StaffPermissionMixin, DeleteView):
+    # GET muestra la confirmación, POST confirma; DELETE queda excluido
+    # para que ninguna petición pueda eliminar directamente.
+    http_method_names = ["get", "post", "head", "options"]
     model = Coleccion
     template_name = "core/colecciones/confirmar_eliminar.html"
     success_url = reverse_lazy("core:coleccion_listar")
