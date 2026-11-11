@@ -573,6 +573,25 @@ class NormalizarYConsultaTests(_Base):
 
         self.assertEqual([i.pk for i in galeria.listar(self.producto)], [c.pk, a.pk, b.pk])
 
+    def test_listar_por_producto_agrupa_varias_galerias_con_una_consulta(self):
+        otro = crear_producto("Anillo Brisa")
+        sin_galeria = crear_producto("Anillo Cielo")
+        galeria.agregar_archivos(self.producto, fotos(3))
+        a, b, c = self.filas()
+        galeria.reordenar(self.producto, {c.pk: 0})
+        de_otro = galeria.agregar_url(otro, url(1))
+
+        with self.assertNumQueries(1):
+            galerias = galeria.listar_por_producto([self.producto, otro, sin_galeria])
+
+        self.assertEqual(
+            {pk: [imagen.pk for imagen in imagenes] for pk, imagenes in galerias.items()},
+            {self.producto.pk: [c.pk, a.pk, b.pk], otro.pk: [de_otro.pk], sin_galeria.pk: []},
+        )
+
+    def test_listar_por_producto_sin_productos_no_falla(self):
+        self.assertEqual(galeria.listar_por_producto([]), {})
+
     def test_principal_de_un_producto_sin_galeria_es_none(self):
         self.assertIsNone(galeria.principal(self.producto))
 

@@ -14,6 +14,8 @@
                     
                     {% if recurso.key == 'usuarios' %}
                         <p class="dashboard-create__intro">Completa los datos de la cuenta y selecciona el rol adecuado.</p>
+                    {% elif recurso.key == 'productos' %}
+                        <p class="dashboard-create__intro">Las fotografías se añaden después de guardar: abre «Editar» en el producto y despliega «Fotografías».</p>
                     {% endif %}
                     
                     {% for field in recurso.crear_formulario %}
@@ -104,6 +106,13 @@
                                                 <button type="submit" class="dashboard-dialog__close" aria-label="Cerrar">×</button>
                                             </form>
                                         </header>
+                                        {% if fila.galeria %}
+                                            {# La galería tiene sus propios formularios: va fuera del formulario de edición. #}
+                                            <details class="dashboard-galeria" {% if fila.abrir_galeria %}open{% endif %}>
+                                                <summary>Fotografías ({{ fila.galeria.total }} de {{ fila.galeria.maximo }})</summary>
+                                                {% include "core/productos/_galeria.html" with galeria=fila.galeria %}
+                                            </details>
+                                        {% endif %}
                                         <form method="post" enctype="multipart/form-data" class="dashboard-form{% if recurso.key == 'grupos' %} dashboard-form--groups{% endif %}">
                                             {% csrf_token %}
                                             <input type="hidden" name="recurso" value="{{ recurso.key }}">

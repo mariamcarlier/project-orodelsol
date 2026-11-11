@@ -1,0 +1,106 @@
+{% comment %}
+  Bloque de galería de un producto (Paso 03c).
+
+  Recibe `galeria`, que arma `core.vistas_galeria.contexto_galeria`. Se usa en
+  la ficha del producto en el panel (templates/admin_custom/_resource.html) y
+  en el formulario de edición (templates/core/productos/form.html).
+
+  Cada acción es un formulario propio que se envía a `galeria.url_accion`; por
+  eso este bloque NUNCA puede ir dentro de otro <form>. Los botones «Eliminar»
+  usan el atributo `form` para apuntar a su formulario, que va fuera de la lista.
+  Estilos: static/css/galeria-admin.css.
+{% endcomment %}
+<div class="galeria-admin" id="galeria-{{ galeria.producto.pk }}">
+  <p class="galeria-admin__resumen">
+    <strong>{{ galeria.total }} de {{ galeria.maximo }} fotografías.</strong>
+    La principal es la que representa al producto; el resto sigue el orden de las posiciones.
+  </p>
+
+  {% for message in messages %}
+    {% if message.extra_tags == galeria.etiqueta %}
+      <p class="galeria-admin__aviso galeria-admin__aviso--{{ message.level_tag }}"
+         role="{% if message.level_tag == 'error' %}alert{% else %}status{% endif %}">{{ message }}</p>
+    {% endif %}
+  {% endfor %}
+
+  {% if galeria.imagenes %}
+    <form method="post" action="{{ galeria.url_accion }}" class="galeria-admin__organizar">
+      {% csrf_token %}
+      <input type="hidden" name="accion" value="organizar">
+      <input type="hidden" name="siguiente" value="{{ galeria.siguiente }}">
+      <ul class="galeria-admin__lista">
+        {% for imagen in galeria.imagenes %}
+          <li class="galeria-admin__foto{% if imagen.es_principal %} es-principal{% endif %}">
+            <div class="galeria-admin__marco">
+              <img src="{{ imagen.src_miniatura }}"
+                   alt="Fotografía {{ forloop.counter }} de {{ galeria.producto.nombre }}"
+                   loading="lazy" referrerpolicy="no-referrer">
+              {% if imagen.es_principal %}<span class="galeria-admin__marca">Principal</span>{% endif %}
+            </div>
+            <label class="galeria-admin__principal">
+              <input type="radio" name="principal" value="{{ imagen.pk }}"{% if imagen.es_principal %} checked{% endif %}>
+              <span>Principal</span>
+            </label>
+            <label class="galeria-admin__posicion">
+              <span>Posición</span>
+              <input type="number" name="posicion-{{ imagen.pk }}" value="{{ forloop.counter }}"
+                     min="1" max="{{ galeria.total }}" step="1" inputmode="numeric" required>
+            </label>
+            <button type="submit" form="galeria-eliminar-{{ imagen.pk }}" class="galeria-admin__eliminar">Eliminar</button>
+          </li>
+        {% endfor %}
+      </ul>
+      <button type="submit" class="galeria-admin__boton">Guardar orden y principal</button>
+    </form>
+
+    {% for imagen in galeria.imagenes %}
+      <form method="post" action="{{ galeria.url_accion }}" id="galeria-eliminar-{{ imagen.pk }}" hidden
+            onsubmit="return confirm('¿Eliminar esta fotografía? No se puede deshacer.');">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="eliminar">
+        <input type="hidden" name="imagen" value="{{ imagen.pk }}">
+        <input type="hidden" name="siguiente" value="{{ galeria.siguiente }}">
+      </form>
+    {% endfor %}
+  {% else %}
+    <p class="galeria-admin__vacia">Este producto todavía no tiene fotografías.</p>
+  {% endif %}
+
+  {% if galeria.libres %}
+    <form method="post" action="{{ galeria.url_accion }}" enctype="multipart/form-data" class="galeria-admin__subir">
+      {% csrf_token %}
+      <input type="hidden" name="accion" value="subir">
+      <input type="hidden" name="siguiente" value="{{ galeria.siguiente }}">
+      <label class="galeria-admin__etiqueta" for="galeria-archivos-{{ galeria.producto.pk }}">Añadir fotografías desde tu equipo</label>
+      <div class="galeria-admin__fila">
+        <input type="file" id="galeria-archivos-{{ galeria.producto.pk }}" name="fotografias"
+               accept="{{ galeria.tipos_sugeridos }}" multiple required>
+        <button type="submit" class="galeria-admin__boton">Subir fotografías</button>
+      </div>
+      <small class="galeria-admin__ayuda">
+        JPG, PNG o WebP. Hasta {{ galeria.mb_por_imagen }} MB por fotografía y {{ galeria.mb_por_envio }} MB por envío.
+        {% if galeria.libres == 1 %}Puedes añadir 1 más.{% else %}Puedes añadir {{ galeria.libres }} más.{% endif %}
+      </small>
+    </form>
+
+    <details class="galeria-admin__por-url">
+      <summary>Añadir una imagen por dirección web (URL)</summary>
+      <form method="post" action="{{ galeria.url_accion }}" class="galeria-admin__url">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="url">
+        <input type="hidden" name="siguiente" value="{{ galeria.siguiente }}">
+        <label class="galeria-admin__etiqueta" for="galeria-url-{{ galeria.producto.pk }}">Dirección de la imagen</label>
+        <div class="galeria-admin__fila">
+          <input type="url" id="galeria-url-{{ galeria.producto.pk }}" name="url"
+                 placeholder="https://" maxlength="{{ galeria.largo_maximo_url }}" required>
+          <button type="submit" class="galeria-admin__boton galeria-admin__boton--secundario">Añadir dirección</button>
+        </div>
+        <small class="galeria-admin__ayuda">Debe empezar por http:// o https://. La imagen se enlaza tal cual: no se descarga ni se optimiza.</small>
+      </form>
+    </details>
+  {% else %}
+    <p class="galeria-admin__ayuda galeria-admin__completa">
+      La galería está completa. Elimina una fotografía para poder añadir otra.
+    </p>
+  {% endif %}
+</div>

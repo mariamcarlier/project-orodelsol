@@ -13,6 +13,7 @@ from django.forms import inlineformset_factory
 from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.http import urlencode
 
 from configuracion.forms import (
     CostoEnvioForm,
@@ -37,7 +38,9 @@ from configuracion.models import (
 from usuarios.forms import AdministrarUsuarioForm, RegistroUsuarioForm
 from usuarios.models import Usuario
 
+from . import servicio_galeria
 from .models import Coleccion, Material, Producto, Talla, VarianteProducto
+from .vistas_galeria import contexto_galeria
 
 
 class GrupoPermisosForm(forms.ModelForm):
@@ -537,6 +540,39 @@ def preparar_formulario(formulario, usuario):
     return formulario
 
 
+# Al volver de una acción de la galería, la dirección lleva `?galeria=<id>`:
+# con eso el panel reabre la ficha de ese producto con sus fotografías a la vista.
+PARAMETRO_GALERIA = "galeria"
+
+
+def direccion_de_galeria(request, producto):
+    """Dirección de esta misma página del panel con la ficha del producto abierta."""
+    parametros = {}
+    for nombre in ("q", "page"):
+        valor = request.GET.get(nombre, "").strip()
+        if valor:
+            parametros[nombre] = valor
+    parametros[PARAMETRO_GALERIA] = producto.pk
+    return f"{request.path}?{urlencode(parametros)}#registros"
+
+
+def adjuntar_galerias(request, filas):
+    """Añade a cada fila de producto los datos de su bloque de fotografías.
+
+    Las galerías de toda la página se leen con una sola consulta.
+    """
+    galerias = servicio_galeria.listar_por_producto([fila["objeto"] for fila in filas])
+    abierta = request.GET.get(PARAMETRO_GALERIA)
+    for fila in filas:
+        producto = fila["objeto"]
+        fila["galeria"] = contexto_galeria(
+            producto,
+            galerias[producto.pk],
+            siguiente=direccion_de_galeria(request, producto),
+        )
+        fila["abrir_galeria"] = abierta == str(producto.pk)
+
+
 def crear_contexto(request, clave, formularios=None, formulario_abierto=None):
     formularios = formularios or {}
     menu = recursos_visibles(request.user)
@@ -643,6 +679,7 @@ def crear_contexto(request, clave, formularios=None, formulario_abierto=None):
                     instance=fila["objeto"], 
                     prefix=f"variantes-{fila['objeto'].pk}"
                 )
+        adjuntar_galerias(request, filas)
 
     return {
         "recursos": menu, 
@@ -813,6 +850,8 @@ def admin_section(request, seccion):
     elif request.method == "GET":
         formularios = {}
         formulario_abierto = None
+        if configuracion["model"] is Producto and request.GET.get(PARAMETRO_GALERIA):
+            formulario_abierto = (seccion, "edit", request.GET[PARAMETRO_GALERIA])
     else:
         return HttpResponseNotAllowed(["GET", "POST"])
 

@@ -1,0 +1,322 @@
+/* ═══════════════════════════════════════════════════════
+   galeria-admin.css
+   Bloque de galería de un producto (Paso 03c):
+   templates/core/productos/_galeria.html
+
+   Se usa en dos pantallas con hojas de estilo distintas (el panel y el
+   formulario de edición). Por eso no hereda nada de ellas: fija sus propios
+   márgenes, listas y botones, y solo toma colores de tokens.css, que cargan
+   las dos.
+   ═══════════════════════════════════════════════════════ */
+
+.galeria-admin {
+  --galeria-texto: var(--color-text-dark, #2c1a10);
+  --galeria-tenue: #6f5a4a;              /* 6.4:1 sobre blanco */
+  --galeria-acento: var(--color-cacao, #785041);
+  --galeria-acento-hover: var(--color-cacao-hover, #5a3a2f);
+  --galeria-borde: #dcd2c5;
+  --galeria-peligro: #8b2d2d;
+  --galeria-radio: var(--radius-lg, 6px);
+
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  margin: 0;
+  color: var(--galeria-texto);
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: left;
+  white-space: normal;   /* en el panel, la celda de acciones impone `nowrap` */
+}
+
+.galeria-admin *,
+.galeria-admin *::before,
+.galeria-admin *::after {
+  box-sizing: border-box;
+}
+
+.galeria-admin p,
+.galeria-admin ul,
+.galeria-admin form {
+  margin: 0;
+  padding: 0;
+}
+
+.galeria-admin__resumen {
+  color: var(--galeria-tenue);
+}
+
+.galeria-admin__resumen strong {
+  color: var(--galeria-texto);
+}
+
+/* ── Avisos de la última acción ───────────────────────── */
+.galeria-admin p.galeria-admin__aviso {
+  padding: 10px 12px;
+  border: 1px solid #b7d9b7;
+  border-radius: var(--galeria-radio);
+  background: #eef7ee;
+  color: #1f5f2a;
+}
+
+.galeria-admin p.galeria-admin__aviso--error {
+  border-color: #e3b5b5;
+  background: #fbeeee;
+  color: var(--galeria-peligro);
+}
+
+/* ── Miniaturas ───────────────────────────────────────── */
+.galeria-admin ul.galeria-admin__lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+  list-style: none;
+}
+
+.galeria-admin__foto {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--galeria-borde);
+  border-radius: var(--galeria-radio);
+  background: #fff;
+}
+
+.galeria-admin__foto.es-principal {
+  border-color: var(--galeria-acento);
+  box-shadow: 0 0 0 1px var(--galeria-acento);
+}
+
+.galeria-admin__marco {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1;
+  border-radius: var(--radius, 3px);
+  background: #f3f0e9;
+}
+
+/* `contain`: se ve la fotografía entera, sin recortes, para poder juzgarla. */
+.galeria-admin__marco img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: contain;
+}
+
+.galeria-admin__marca {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--galeria-acento);
+  color: #fff;
+  font-size: 11px;
+  letter-spacing: .3px;
+}
+
+.galeria-admin__principal,
+.galeria-admin__posicion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.galeria-admin__principal {
+  cursor: pointer;
+}
+
+.galeria-admin__principal input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--galeria-acento);
+}
+
+.galeria-admin__posicion {
+  justify-content: space-between;
+}
+
+.galeria-admin__posicion input {
+  width: 64px;
+  min-height: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--galeria-borde);
+  border-radius: var(--radius, 3px);
+  background: #fff;
+  color: inherit;
+  font: inherit;
+}
+
+.galeria-admin button.galeria-admin__eliminar {
+  justify-self: start;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--galeria-peligro);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ── Botones ──────────────────────────────────────────── */
+.galeria-admin button.galeria-admin__boton {
+  justify-self: start;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--galeria-acento);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.galeria-admin button.galeria-admin__boton:hover {
+  background: var(--galeria-acento-hover);
+}
+
+.galeria-admin button.galeria-admin__boton--secundario {
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--galeria-acento);
+  color: var(--galeria-acento);
+}
+
+.galeria-admin button.galeria-admin__boton--secundario:hover {
+  background: #f7f1e8;
+}
+
+/* ── Añadir fotografías ───────────────────────────────── */
+.galeria-admin__organizar,
+.galeria-admin__subir,
+.galeria-admin__url {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.galeria-admin__subir {
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid var(--galeria-borde);
+}
+
+.galeria-admin__etiqueta {
+  display: block;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.galeria-admin__fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.galeria-admin__fila input {
+  flex: 1 1 220px;
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--galeria-borde);
+  border-radius: var(--radius, 3px);
+  background: #fffefa;
+  color: inherit;
+  font: inherit;
+}
+
+.galeria-admin__fila input[type="file"] {
+  border-style: dashed;
+}
+
+.galeria-admin__ayuda {
+  display: block;
+  color: var(--galeria-tenue);
+  font-size: 12px;
+}
+
+/* Con dos clases para ganar a `.dashboard-actions details` del panel. */
+.galeria-admin details.galeria-admin__por-url {
+  padding: 9px 12px;
+  border: 1px solid var(--galeria-borde);
+  border-radius: var(--galeria-radio);
+  background: #fffefa;
+}
+
+.galeria-admin__por-url > summary {
+  color: var(--galeria-acento);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.galeria-admin__por-url[open] > summary {
+  margin-bottom: 10px;
+}
+
+.galeria-admin p.galeria-admin__vacia {
+  padding: 18px;
+  border: 1px dashed var(--galeria-borde);
+  border-radius: var(--galeria-radio);
+  color: var(--galeria-tenue);
+  text-align: center;
+}
+
+.galeria-admin input:focus-visible,
+.galeria-admin button:focus-visible,
+.galeria-admin summary:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring, 0 0 0 3px rgba(201, 168, 76, .45));
+}
+
+/* ── Dentro de la ficha del panel (<details> plegable) ─── */
+.dashboard-dialog details.dashboard-galeria {
+  margin: 1rem 0 1.25rem;
+  padding: .75rem 1rem;
+  border: 1px solid rgba(197, 160, 89, .45);
+  border-radius: 10px;
+  background: #fff;
+  white-space: normal;
+}
+
+.dashboard-galeria > summary {
+  color: var(--accent-brown, #6b4436);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dashboard-galeria[open] > summary {
+  margin-bottom: .85rem;
+}
+
+/* ── Dentro del formulario de edición (tarjeta propia) ─── */
+.producto-form-card--galeria {
+  margin-top: 28px;
+  scroll-margin-top: 96px;   /* que la cabecera fija no tape el título al volver */
+}
+
+.producto-form-galeria {
+  padding: 28px 34px 32px;
+}
+
+@media (max-width: 640px) {
+  .producto-form-galeria {
+    padding: 22px 20px 26px;
+  }
+
+  .galeria-admin ul.galeria-admin__lista {
+    grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  }
+}

@@ -1,0 +1,182 @@
+"""Pantalla de la galería de un producto (Paso 03c).
+
+Este módulo solo traduce lo que llega del navegador en llamadas a
+`core.servicio_galeria`. No valida imágenes ni conoce las reglas de la galería
+(máximo, principal, orden): todo eso vive en el servicio y en `core.imagenes`.
+
+Lo que sí decide esta capa, porque es cosa de la pantalla:
+- Quién puede entrar: personal con el permiso `core.change_producto`.
+- Las posiciones se muestran como 1, 2, 3...; el servicio trabaja con 0, 1, 2...
+- Al servicio solo se le envían las fotografías cuyo número cambió, que es
+  como `reordenar` sabe cuál se movió a propósito.
+- A dónde volver después de cada acción (`siguiente`), sin salir del sitio.
+
+El bloque se pinta con `templates/core/productos/_galeria.html` y se usa en
+dos pantallas: la ficha del producto en el panel y el formulario de edición.
+"""
+
+import logging
+
+from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import transaction
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
+
+from . import servicio_galeria
+from .imagenes import MAX_BYTES_POR_ENVIO, MAX_BYTES_POR_IMAGEN, MB
+from .models import Producto
+
+logger = logging.getLogger(__name__)
+
+# Lo que el selector de archivos del navegador ofrece por defecto. Es solo una
+# ayuda: lo que de verdad se acepta lo decide `core.imagenes` por el contenido.
+TIPOS_SUGERIDOS = "image/jpeg,image/png,image/webp"
+
+
+def etiqueta_de_mensajes(producto_id):
+    """Marca los mensajes de una galería para pintarlos dentro de su bloque."""
+    return f"galeria-{producto_id}"
+
+
+def contexto_galeria(producto, imagenes, siguiente=""):
+    """Datos que necesita `core/productos/_galeria.html` para un producto."""
+    imagenes = list(imagenes)
+    maximo = servicio_galeria.MAX_IMAGENES_POR_PRODUCTO
+    return {
+        "producto": producto,
+        "imagenes": imagenes,
+        "total": len(imagenes),
+        "maximo": maximo,
+        "libres": max(maximo - len(imagenes), 0),
+        "url_accion": reverse("core:producto_galeria", args=[producto.pk]),
+        "siguiente": siguiente,
+        "etiqueta": etiqueta_de_mensajes(producto.pk),
+        "tipos_sugeridos": TIPOS_SUGERIDOS,
+        "mb_por_imagen": MAX_BYTES_POR_IMAGEN // MB,
+        "mb_por_envio": MAX_BYTES_POR_ENVIO // MB,
+        "largo_maximo_url": servicio_galeria.LARGO_MAXIMO_URL,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Acciones: cada una devuelve el mensaje de éxito o lanza ValidationError.
+# ---------------------------------------------------------------------------
+
+
+def _subir(request, producto):
+    archivos = request.FILES.getlist("fotografias")
+    if not archivos:
+        raise ValidationError(
+            "Selecciona al menos una fotografía de tu equipo.", code="sin_archivos"
+        )
+    creadas = servicio_galeria.agregar_archivos(producto, archivos)
+    if len(creadas) == 1:
+        return "Se añadió 1 fotografía."
+    return f"Se añadieron {len(creadas)} fotografías."
+
+
+def _agregar_url(request, producto):
+    servicio_galeria.agregar_url(producto, request.POST.get("url", ""))
+    return "Se añadió la fotografía por dirección web."
+
+
+def _posicion(valor, total):
+    """Posición escrita en la pantalla (1, 2, 3...) → posición del servicio (0, 1, 2...).
+
+    Un número mayor que la galería equivale a «al final».
+    """
+    try:
+        numero = int(str(valor).strip())
+    except ValueError as exc:
+        raise ValidationError("La posición debe ser un número entero.", code="orden") from exc
+    if numero < 1:
+        raise ValidationError(f"La posición debe estar entre 1 y {total}.", code="orden")
+    return min(numero, total) - 1
+
+
+def _organizar(request, producto):
+    """Guarda en un solo envío la fotografía principal y las posiciones."""
+    imagenes = servicio_galeria.listar(producto)
+    movidas = {}
+    for lugar, imagen in enumerate(imagenes):
+        valor = request.POST.get(f"posicion-{imagen.pk}")
+        if valor is None:
+            continue
+        posicion = _posicion(valor, len(imagenes))
+        if posicion != lugar:
+            movidas[imagen.pk] = posicion
+
+    elegida = request.POST.get("principal")
+    actual = next((str(imagen.pk) for imagen in imagenes if imagen.es_principal), None)
+    cambia_principal = bool(elegida) and elegida != actual
+    if not movidas and not cambia_principal:
+        return "No había cambios que guardar en la galería."
+
+    # Las dos cosas juntas o ninguna: si el orden falla, la principal no cambia.
+    with transaction.atomic():
+        if cambia_principal:
+            servicio_galeria.establecer_principal(producto, elegida)
+        if movidas:
+            servicio_galeria.reordenar(producto, movidas)
+    return "Se guardaron el orden y la fotografía principal."
+
+
+def _eliminar(request, producto):
+    servicio_galeria.eliminar_imagen(producto, request.POST.get("imagen"))
+    return "Se eliminó la fotografía."
+
+
+ACCIONES = {
+    "subir": _subir,
+    "url": _agregar_url,
+    "organizar": _organizar,
+    "eliminar": _eliminar,
+}
+
+
+def _destino(request, producto):
+    """A dónde volver: la dirección pedida si es de este sitio; si no, la ficha."""
+    siguiente = request.POST.get("siguiente", "")
+    if siguiente and url_has_allowed_host_and_scheme(
+        siguiente,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return siguiente
+    return reverse("core:producto_editar", args=[producto.pk]) + "#galeria"
+
+
+# El orden de los decoradores es el mismo que en `producto_guardar`: primero se
+# comprueba quién es el usuario y solo después el método HTTP.
+@staff_member_required
+@require_POST
+def producto_galeria(request, pk):
+    """Ejecuta una acción de la galería y vuelve a la pantalla de origen."""
+    if not request.user.has_perm("core.change_producto"):
+        raise PermissionDenied
+    producto = get_object_or_404(Producto, pk=pk)
+    accion = ACCIONES.get(request.POST.get("accion"))
+    if accion is None:
+        raise PermissionDenied("La acción solicitada no está disponible.")
+
+    etiqueta = etiqueta_de_mensajes(producto.pk)
+    try:
+        mensaje = accion(request, producto)
+    except ValidationError as error:
+        for texto in error.messages:
+            messages.error(request, texto, extra_tags=etiqueta)
+    except OSError:
+        # El servicio ya deshizo lo que había escrito; aquí solo se avisa.
+        logger.exception("Fallo de almacenamiento en la galería del producto %s.", producto.pk)
+        messages.error(
+            request,
+            "No se pudieron guardar los archivos. No se cambió nada; inténtalo de nuevo.",
+            extra_tags=etiqueta,
+        )
+    else:
+        messages.success(request, mensaje, extra_tags=etiqueta)
+    return redirect(_destino(request, producto))

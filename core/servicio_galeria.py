@@ -182,6 +182,18 @@ def listar(producto):
     return _imagenes(producto)
 
 
+def listar_por_producto(productos):
+    """Galerías de varios productos con UNA sola consulta: {id: [fotografías]}.
+
+    Para listados (el panel muestra muchos productos por página). Cada lista
+    sale en el orden en que debe mostrarse; un producto sin galería tiene [].
+    """
+    galerias = {producto.pk: [] for producto in productos}
+    for imagen in ProductoImagen.objects.filter(producto_id__in=list(galerias)):
+        galerias[imagen.producto_id].append(imagen)  # ya ordenadas
+    return galerias
+
+
 def principal(producto):
     """La fotografía principal, o None si el producto no tiene galería."""
     return ProductoImagen.objects.filter(producto_id=producto.pk, es_principal=True).first()

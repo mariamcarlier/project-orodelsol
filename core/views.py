@@ -9,8 +9,10 @@ from django.urls import reverse_lazy
 from django.views.decorators.http import require_http_methods, require_POST
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
+from . import servicio_galeria
 from .dashboard import ColeccionForm, ProductoForm, admin_dashboard, admin_section
 from .models import Coleccion, Producto
+from .vistas_galeria import contexto_galeria
 
 
 # ---------------------------------------------------------------------------
@@ -91,11 +93,13 @@ def producto_guardar(request, pk=None):
         return redirect("core:producto_listar")
 
     titulo = "Editar producto" if instancia else "Nuevo producto"
-    return render(
-        request,
-        "core/productos/form.html",
-        {"form": form, "titulo": titulo},
-    )
+    contexto = {"form": form, "titulo": titulo}
+    if instancia:
+        # La galería necesita un producto ya guardado: solo aparece al editar.
+        contexto["galeria"] = contexto_galeria(
+            instancia, servicio_galeria.listar(instancia)
+        )
+    return render(request, "core/productos/form.html", contexto)
 
 
 @require_POST
