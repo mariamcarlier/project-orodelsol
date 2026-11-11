@@ -18,6 +18,8 @@ fuente por fila» y «a lo sumo una principal»):
   de otro producto —o inventado— se rechaza.
 - Al borrar una fotografía se borran sus tres archivos (original y derivados),
   pero solo si están dentro de la carpeta del propio producto.
+- Al eliminar un producto se vacía su carpeta `productos/<id>/` (lo dispara
+  `core/signals.py`, de modo que vale para cualquier vía de borrado).
 
 Lo que este servicio NO hace (es responsabilidad de quien lo llama):
 - Comprobar permisos: la vista debe exigir `core.change_producto` antes.
@@ -333,10 +335,54 @@ def eliminar_imagen(producto, imagen_id):
         nombres = _nombres_de_archivos(imagen)
         almacenamiento = imagen.archivo.storage
         imagen.delete()
-        _normalizar(bloqueado)  # renumera y, si faltaba la principal, ascende a la primera
+        _normalizar(bloqueado)  # renumera y, si faltaba la principal, asciende a la primera
         transaction.on_commit(
             lambda: _borrar_archivos(bloqueado.pk, nombres, almacenamiento)
         )
+
+
+def _vaciar_carpeta(almacenamiento, carpeta):
+    """Borra los archivos sueltos de `carpeta` y, si queda vacía, la carpeta.
+
+    No entra en subcarpetas: quien llama decide cuáles vaciar. Devuelve False si
+    la carpeta no existe (no había nada que limpiar).
+    """
+    try:
+        _, archivos = almacenamiento.listdir(carpeta)
+    except FileNotFoundError:
+        return False
+    except (OSError, NotImplementedError):
+        logger.exception("No se pudo leer la carpeta %r para limpiarla.", carpeta)
+        return False
+    for nombre in archivos:
+        try:
+            almacenamiento.delete(f"{carpeta}/{nombre}")
+        except OSError:
+            logger.exception("No se pudo borrar el archivo %r.", f"{carpeta}/{nombre}")
+    try:
+        almacenamiento.delete(carpeta)  # solo tiene efecto si quedó vacía
+    except OSError:
+        logger.warning("La carpeta %r no quedó vacía y se conserva.", carpeta)
+    return True
+
+
+def borrar_carpeta_de_producto(producto_id, almacenamiento=None):
+    """Vacía `productos/<id>/` cuando el producto ya no existe.
+
+    Solo toca lo que el servicio escribe ahí: los originales y la subcarpeta
+    `derivados/`. Cualquier otra subcarpeta se deja intacta. Debe llamarse con la
+    transacción ya confirmada: si el borrado del producto se revierte, las
+    fotografías tienen que seguir en su sitio.
+    """
+    try:
+        carpeta = f"productos/{int(producto_id)}"
+    except (TypeError, ValueError):
+        logger.warning("Identificador de producto no válido: %r.", producto_id)
+        return
+    if almacenamiento is None:
+        almacenamiento = ProductoImagen._meta.get_field("archivo").storage
+    _vaciar_carpeta(almacenamiento, f"{carpeta}/derivados")
+    _vaciar_carpeta(almacenamiento, carpeta)
 
 
 def normalizar(producto):
