@@ -902,7 +902,7 @@ class CabeceraDeCuentaTests(TestCase):
         response = self.pagina()
         self.assertContains(response, "<h1", count=1)
         self.assertContains(response, "Te damos la bienvenida, <em>Mariam</em>", html=False)
-        self.assertContains(response, "<h2", count=5) # Mi Perfil, Tallas, Direcciones, Pedido, Deseos
+        self.assertContains(response, "<h2", count=6) # Incluye el título del diálogo de búsqueda
 
     def test_sin_nombre_saluda_con_el_nombre_de_usuario(self):
         self.usuario.first_name = ""
