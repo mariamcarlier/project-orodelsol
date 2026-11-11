@@ -371,7 +371,7 @@ class ProductoImagen(models.Model):
 
     @property
     def src_miniatura(self):
-        """Miniatura (~480 px) o, si no existe, original / URL."""
+        """Miniatura (~400 px) o, si no existe, original / URL."""
         return self._primera_fuente(self.archivo_miniatura, self.archivo)
 
     @property

@@ -80,7 +80,7 @@ def _tamano(archivo):
 
 
 def validar_envio(archivos):
-    """Comprueba que todas las imágenes de un mismo envío no superen 25 MB."""
+    """Comprueba que todas las imágenes de un mismo envío no superen 30 MB."""
     if sum(_tamano(archivo) for archivo in archivos) > MAX_BYTES_POR_ENVIO:
         raise _error(
             f"Las imágenes seleccionadas pesan más de {MAX_BYTES_POR_ENVIO // MB} MB "
