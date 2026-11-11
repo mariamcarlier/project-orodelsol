@@ -354,6 +354,52 @@ class ReordenarTests(_Base):
         self.assertEqual(self.ids(), [self.b.pk, self.c.pk, self.a.pk])
         self.assertGaleriaConsistente()
 
+    def test_bajar_una_fotografia_la_deja_en_la_posicion_pedida(self):
+        # Antes, «mover la primera a la posición 1» no cambiaba nada y «a la 2»
+        # la dejaba en la 1: al bajar, la fotografía quedaba un lugar antes.
+        galeria.reordenar(self.producto, {self.a.pk: 1})
+        self.assertEqual(self.ids(), [self.b.pk, self.a.pk, self.c.pk])
+
+        galeria.reordenar(self.producto, {self.b.pk: 2})
+        self.assertEqual(self.ids(), [self.a.pk, self.c.pk, self.b.pk])
+        self.assertGaleriaConsistente()
+
+    def test_una_posicion_mayor_que_la_galeria_la_manda_al_final(self):
+        galeria.reordenar(self.producto, {self.a.pk: 99})
+
+        self.assertEqual(self.ids(), [self.b.pk, self.c.pk, self.a.pk])
+        self.assertGaleriaConsistente()
+
+    def test_dos_movidas_a_la_misma_posicion_quedan_seguidas_en_su_orden_previo(self):
+        galeria.reordenar(self.producto, {self.a.pk: 2, self.b.pk: 2})
+
+        self.assertEqual(self.ids(), [self.c.pk, self.a.pk, self.b.pk])
+        self.assertGaleriaConsistente()
+
+    def test_dos_movidas_al_mismo_lugar_intermedio_no_se_invierten(self):
+        d, e = galeria.agregar_archivos(self.producto, fotos(2))
+
+        galeria.reordenar(self.producto, {d.pk: 1, e.pk: 1})
+
+        self.assertEqual(self.ids(), [self.a.pk, d.pk, e.pk, self.b.pk, self.c.pk])
+        self.assertGaleriaConsistente()
+
+    def test_varias_movidas_terminan_cada_una_en_su_lugar(self):
+        d, e = galeria.agregar_archivos(self.producto, fotos(2))
+
+        galeria.reordenar(self.producto, {self.a.pk: 3, e.pk: 0})
+
+        self.assertEqual(self.ids(), [e.pk, self.b.pk, self.c.pk, self.a.pk, d.pk])
+        self.assertGaleriaConsistente()
+
+    def test_sin_posiciones_solo_normaliza(self):
+        ProductoImagen.objects.filter(pk=self.c.pk).update(orden=40)
+
+        galeria.reordenar(self.producto, {})
+
+        self.assertEqual(self.ids(), [self.a.pk, self.b.pk, self.c.pk])
+        self.assertGaleriaConsistente()
+
     def test_no_cambia_cual_es_la_principal(self):
         principal = galeria.principal(self.producto).pk
 

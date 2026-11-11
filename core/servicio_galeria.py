@@ -100,6 +100,27 @@ def _normalizar(producto):
     return imagenes
 
 
+def _recolocar(imagenes, movidas):
+    """Orden final al mover las fotografías de `movidas` {pk: posición}.
+
+    Las que no se mueven conservan su orden; cada movida se inserta en el lugar
+    pedido. Se insertan de menor a mayor posición y nunca antes de la anterior,
+    así ninguna inserción desplaza a una ya colocada. (`sorted` es estable: a
+    igual posición manda el orden que ya tenían.)
+    """
+    ordenadas = [imagen for imagen in imagenes if imagen.pk not in movidas]
+    por_colocar = sorted(
+        (imagen for imagen in imagenes if imagen.pk in movidas),
+        key=lambda imagen: movidas[imagen.pk],
+    )
+    anterior = -1
+    for imagen in por_colocar:
+        lugar = min(max(movidas[imagen.pk], anterior + 1), len(ordenadas))
+        ordenadas.insert(lugar, imagen)
+        anterior = lugar
+    return ordenadas
+
+
 def _marcar_gestionada(producto):
     """La galería pasa a ser la fuente de verdad del producto (Decisión 6)."""
     if not producto.galeria_gestionada:
@@ -259,10 +280,16 @@ def establecer_principal(producto, imagen_id):
 def reordenar(producto, posiciones):
     """Aplica posiciones numéricas {id_de_fotografia: posicion} y las normaliza.
 
-    La interfaz envía un número por fotografía; aquí se convierten en 0, 1, 2...
-    Los empates se resuelven por el orden que ya tenían. Las fotografías que no
-    se mencionen conservan su posición actual. Si un número no es válido, o un
+    Las posiciones empiezan en 0. Cada fotografía mencionada termina justo en la
+    posición pedida, tanto si sube como si baja; si el número es mayor que la
+    galería, queda al final. Las que no se mencionan conservan su orden entre
+    sí y ocupan los lugares libres. Si dos se piden en el mismo lugar, quedan
+    seguidas en el orden que ya tenían. Si un número no es válido, o un
     identificador no pertenece al producto, no se cambia nada.
+
+    Conviene enviar solo las fotografías que cambian de lugar. Si se envían
+    todas, las que no cambiaron también cuentan como movidas: «pasar la primera
+    a la posición 1» empataría con la que ya estaba ahí y no cambiaría nada.
     """
     if not isinstance(posiciones, Mapping):
         raise _error("Las posiciones deben indicarse como {fotografía: posición}.", "orden")
@@ -288,20 +315,10 @@ def reordenar(producto, posiciones):
             if imagen is None:
                 raise _error(MENSAJE_NO_PERTENECE, "no_pertenece")
             movidas[imagen.pk] = numero
-        previo = {imagen.pk: imagen.orden for imagen in actuales}
-        # A igual posición gana la fotografía que se movió a propósito («poner la C
-        # en la posición 0» la deja primera); si ambas se movieron o ninguna, manda
-        # el orden que ya tenían.
-        actuales.sort(
-            key=lambda imagen: (
-                movidas.get(imagen.pk, previo[imagen.pk]),
-                imagen.pk not in movidas,
-                previo[imagen.pk],
-            )
-        )
-        for posicion, imagen in enumerate(actuales):
+        ordenadas = _recolocar(actuales, movidas)
+        for posicion, imagen in enumerate(ordenadas):
             imagen.orden = posicion
-        ProductoImagen.objects.bulk_update(actuales, ["orden"])
+        ProductoImagen.objects.bulk_update(ordenadas, ["orden"])
 
 
 def eliminar_imagen(producto, imagen_id):
