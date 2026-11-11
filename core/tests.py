@@ -65,7 +65,7 @@ class InicioCatalogoTests(TestCase):
             "Estamos preparando el catálogo. Vuelve pronto para descubrir nuestros diseños.",
         )
 
-    def test_inicio_conserva_busqueda_favoritos_carrito_y_redes(self):
+    def test_inicio_muestra_busqueda_favoritos_carrito_y_redes(self):
         coleccion = Coleccion.objects.create(nombre="Alma dorada")
         Producto.objects.create(
             coleccion=coleccion,
@@ -77,6 +77,12 @@ class InicioCatalogoTests(TestCase):
         response = self.client.get("/")
 
         self.assertContains(response, 'id="searchToggle"')
+        self.assertContains(response, 'id="searchDialog"')
+        self.assertContains(response, 'id="siteSearch"')
+        self.assertContains(response, "data-home-url=\"/\"")
+        self.assertNotContains(response, 'class="search-dialog__submit"')
+        self.assertContains(response, 'data-search-query="anillos"')
+        self.assertContains(response, 'data-search-suggestion="Anillo de prueba"')
         self.assertContains(response, 'id="favoritesToggle"')
         self.assertContains(response, 'id="cartToggle"')
         self.assertContains(response, 'id="cartDialog"')
