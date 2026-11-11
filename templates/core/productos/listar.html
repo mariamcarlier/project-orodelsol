@@ -35,6 +35,7 @@
         <table class="catalog-list-table js-data-table" id="tabla-productos" data-singular="producto" data-plural="productos">
           <thead>
             <tr>
+              <th>Código</th>
               <th>Producto</th>
               <th>Colección</th>
               <th>Precio</th>
@@ -45,6 +46,7 @@
           <tbody>
             {% for producto in productos %}
             <tr>
+              <td><span class="catalog-list-name">{{ producto.codigo }}</span></td>
               <td>
                 <span class="catalog-list-name">{{ producto.nombre }}</span>
                 {% if producto.detalle %}<span class="catalog-list-subtitle">{{ producto.detalle }}</span>{% endif %}

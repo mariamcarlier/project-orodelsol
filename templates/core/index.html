@@ -156,6 +156,7 @@
             <span class="product-card__label">{{ producto.detalle }} · {{ producto.coleccion.nombre }}</span>
             <h3 class="product-card__name">{{ producto.nombre }}</h3>
             <p class="product-card__price"><strong>COP ${{ producto.precio|floatformat:0 }}</strong></p>
+            {% if producto.codigo %}<span class="product-card__label">Ref. {{ producto.codigo }}</span>{% endif %}
           </div>
         </article>
         {% empty %}
