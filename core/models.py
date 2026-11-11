@@ -4,6 +4,12 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 
+from .upload_paths import (
+    ruta_derivado_producto,
+    ruta_imagen_coleccion,
+    ruta_imagen_producto,
+)
+
 PREFIJO_CODIGO = "AN-"
 
 
@@ -12,6 +18,9 @@ class Coleccion(models.Model):
     descripcion = models.TextField(blank=True)
     temporada = models.CharField(max_length=30, blank=True)
     imagen_url = models.URLField(blank=True)
+    # Portada propia. Convive con imagen_url (compatibilidad). La regla de
+    # «archivo O URL, nunca ambos» se aplicará en el formulario (Paso 7).
+    imagen = models.ImageField(upload_to=ruta_imagen_coleccion, blank=True)
     activa = models.BooleanField(default=True)
 
     class Meta:
@@ -123,6 +132,11 @@ class Producto(models.Model):
     destacado = models.BooleanField(default=False)
     activo = models.BooleanField(default=True)
     es_borrador = models.BooleanField(default=False)
+    # True = la galería (ProductoImagen) ya es la fuente de verdad de las
+    # imágenes de este producto. Mientras sea False, imagen_url sigue
+    # sirviendo como respaldo de lectura. Lo gestionan el servicio de galería
+    # y la migración de datos; por eso no es editable en formularios.
+    galeria_gestionada = models.BooleanField(default=False, editable=False)
     tallas = models.ManyToManyField(
         Talla,
         blank=True,
@@ -257,3 +271,110 @@ class VarianteProducto(models.Model):
     def save(self, *args, **kwargs):
         self.sku = (self.sku or "").strip().upper()
         super().save(*args, **kwargs)
+
+
+class ProductoImagen(models.Model):
+    """Una fotografía de la galería de un producto.
+
+    Cada fila tiene EXACTAMENTE una fuente: un archivo propio (`archivo`) o una
+    URL externa (`url`). Una galería puede mezclar ambas.
+
+    Garantías, por capas (ninguna sustituye a las otras):
+    - Base de datos: una sola fuente por fila y, como máximo, una principal
+      por producto (restricciones de `Meta.constraints`).
+    - `clean()`: mensaje legible para formularios y admin. OJO: `save()` NO
+      llama a `clean()`; solo lo ejecutan `full_clean()`, los ModelForm y el
+      admin.
+    - Servicio de galería (Paso 4): cantidad máxima, «exactamente una
+      principal si hay imágenes» y reglas de publicación. La base de datos no
+      puede exigir «al menos una principal», solo «a lo sumo una».
+    """
+
+    producto = models.ForeignKey(
+        Producto,
+        on_delete=models.CASCADE,
+        related_name="imagenes",
+    )
+    archivo = models.ImageField(upload_to=ruta_imagen_producto, blank=True)
+    archivo_detalle = models.ImageField(
+        upload_to=ruta_derivado_producto, blank=True, editable=False
+    )
+    archivo_miniatura = models.ImageField(
+        upload_to=ruta_derivado_producto, blank=True, editable=False
+    )
+    url = models.URLField(max_length=500, blank=True)
+    es_principal = models.BooleanField(default=False)
+    # Sin unicidad: reordenar no debe chocar con una restricción a mitad de
+    # operación. El orden se normaliza en el servicio; los empates los
+    # resuelve el pk.
+    orden = models.PositiveSmallIntegerField(default=0)
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("orden", "pk")
+        verbose_name = "imagen de producto"
+        verbose_name_plural = "imágenes de producto"
+        constraints = [
+            models.CheckConstraint(
+                condition=(Q(archivo="") & ~Q(url=""))
+                | (~Q(archivo="") & Q(url="")),
+                name="imagen_una_sola_fuente",
+                violation_error_message=(
+                    "Cada fotografía necesita exactamente una fuente: "
+                    "un archivo o una URL."
+                ),
+            ),
+            models.UniqueConstraint(
+                fields=("producto",),
+                condition=Q(es_principal=True),
+                name="imagen_principal_unica",
+                violation_error_message=(
+                    "Un producto solo puede tener una fotografía principal."
+                ),
+            ),
+        ]
+
+    def __str__(self):
+        # Solo usa campos propios: no consulta el producto (evita N+1 en listados).
+        return f"Imagen {self.pk or 'nueva'} del producto {self.producto_id}"
+
+    def clean(self):
+        """Exige exactamente una fuente (archivo o URL).
+
+        Se ejecuta aunque un ModelForm no incluya `archivo` ni `url`: Django
+        omite las restricciones que tocan campos excluidos del formulario,
+        pero siempre llama a `clean()`.
+        """
+        self.url = (self.url or "").strip()
+        tiene_archivo = bool(self.archivo)
+        tiene_url = bool(self.url)
+        if tiene_archivo and tiene_url:
+            raise ValidationError(
+                "Cada fotografía debe tener una sola fuente: "
+                "sube un archivo o indica una URL, no ambos."
+            )
+        if not tiene_archivo and not tiene_url:
+            raise ValidationError(
+                "Cada fotografía necesita una fuente: un archivo o una URL."
+            )
+
+    def _primera_fuente(self, *campos):
+        for campo in campos:
+            if campo:
+                return campo.url
+        return self.url
+
+    @property
+    def src(self):
+        """Imagen original: archivo propio o, si no hay, la URL."""
+        return self._primera_fuente(self.archivo)
+
+    @property
+    def src_miniatura(self):
+        """Miniatura (~480 px) o, si no existe, original / URL."""
+        return self._primera_fuente(self.archivo_miniatura, self.archivo)
+
+    @property
+    def src_detalle(self):
+        """Versión de detalle (~1200 px) o, si no existe, original / URL."""
+        return self._primera_fuente(self.archivo_detalle, self.archivo)

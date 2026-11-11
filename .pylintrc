@@ -1,0 +1,33 @@
+# ============================================================
+# CONFIGURACIÓN DE PYLINT — JOYAS ORO DEL SOL
+# ============================================================
+#
+# PROPÓSITO:
+# Centralizar las reglas de análisis estático del código Python
+# para mantener estándares de calidad y legibilidad en el proyecto.
+#
+# FUNCIONALIDAD:
+# - Integrar Pylint con Django.
+# - Reconocer las características de los modelos y componentes
+#   propios del framework.
+# - Establecer reglas comunes para todos los desarrolladores.
+#
+# USO:
+# Ejecutar desde la raíz del proyecto:
+#     pylint usuarios/models.py
+#
+# TRABAJO COLABORATIVO:
+# Este archivo debe estar versionado en Git para que todos
+# los integrantes utilicen los mismos criterios de análisis.
+#
+# DEPENDENCIA:
+# pylint-django (registrada en requirements.txt).
+#
+# ============================================================
+
+[MAIN]
+load-plugins=pylint_django
+django-settings-module=app.settings
+
+[FORMAT]
+max-line-length=100

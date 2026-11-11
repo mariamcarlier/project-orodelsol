@@ -795,6 +795,38 @@ class TipoDeCuentaTests(TestCase):
         self.assertContains(response, "css/perfil.css", count=1)
 
 
+class InicialesDelAvatarTests(TestCase):
+    """Las iniciales del avatar nunca quedan vacías ni muestran espacios o None."""
+
+    def usuario(self, **datos):
+        datos.setdefault("username", "mariam01")
+        return get_user_model()(**datos)
+
+    def test_usa_la_inicial_del_nombre_y_la_del_apellido(self):
+        usuario = self.usuario(first_name="Ana", last_name="López")
+
+        self.assertEqual(usuario.iniciales, "AL")
+
+    def test_pasa_a_mayusculas_y_respeta_los_acentos(self):
+        usuario = self.usuario(first_name="ángela", last_name="ñáñez")
+
+        self.assertEqual(usuario.iniciales, "ÁÑ")
+
+    def test_usa_solo_lo_que_exista(self):
+        self.assertEqual(self.usuario(first_name="Ana", last_name="").iniciales, "A")
+        self.assertEqual(self.usuario(first_name="", last_name="López").iniciales, "L")
+
+    def test_ignora_espacios_y_valores_none(self):
+        usuario = self.usuario(first_name="   Ana", last_name=None)
+
+        self.assertEqual(usuario.iniciales, "A")
+
+    def test_sin_nombre_ni_apellido_usa_la_inicial_del_usuario(self):
+        usuario = self.usuario(first_name="  ", last_name="")
+
+        self.assertEqual(usuario.iniciales, "M")
+
+
 class SaludoBienvenidaTests(TestCase):
     """El saludo se calcula en Python y nunca muestra None ni espacios sobrantes."""
 
