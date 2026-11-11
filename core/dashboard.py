@@ -1,5 +1,7 @@
 """Gestión CRUD de los modelos del proyecto desde una sola pantalla."""
 
+from decimal import Decimal
+
 from django import forms
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
@@ -143,12 +145,49 @@ class ProductoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance.pk and self.instance.codigo:
             self.fields["codigo"].disabled = True
+        # PROD-12: nombre y precio solo son obligatorios al publicar.
+        # En borrador (o inactivo) se permite guardar incompleto; la
+        # validación de publicación vive en clean() y en Producto.clean().
+        self.fields["nombre"].required = False
+        self.fields["precio"].required = False
+        self.fields["nombre"].help_text = (
+            "Obligatorio al publicar. En borrador puede quedar vacío."
+        )
+        self.fields["precio"].help_text = (
+            "Obligatorio y mayor a cero al publicar. En borrador puede quedar en 0."
+        )
 
-    def clean_precio(self):
-        precio = self.cleaned_data.get("precio")
+    def clean(self):
+        cleaned = super().clean()
+        # Los checkboxes pueden faltar en cleaned_data si hubo un error
+        # previo; en ese caso se lee el dato crudo enviado.
+        def _marcado(nombre):
+            if nombre in cleaned:
+                return bool(cleaned[nombre])
+            return self.data.get(self.add_prefix(nombre)) in (
+                "on", "true", "True", "1",
+            )
+
+        es_borrador = _marcado("es_borrador")
+        nombre = (cleaned.get("nombre") or "").strip()
+        precio = cleaned.get("precio")
+
+        if es_borrador:
+            # Borrador o inactivo: guardar incompleto, dejando valores
+            # que la BD acepta (precio NOT NULL, nombre cadena).
+            cleaned["nombre"] = nombre
+            if precio is None:
+                cleaned["precio"] = Decimal("0")
+            return cleaned
+
+        errores = {}
+        if not nombre:
+            errores["nombre"] = "El nombre es obligatorio para publicar."
         if precio is None or precio <= 0:
-            raise forms.ValidationError("El precio debe ser mayor a cero.")
-        return precio
+            errores["precio"] = "El precio debe ser mayor a cero para publicar."
+        if errores:
+            raise forms.ValidationError(errores)
+        return cleaned
 
 
 class VarianteForm(forms.ModelForm):
@@ -702,11 +741,15 @@ def procesar_accion(request, clave, configuracion):
         
         objetivos = modelo.objects.filter(pk__in=ids)
         omitidos = 0
+        cambios = {campo: estado == "1"}
         if modelo is Producto and campo == "activo" and estado == "1":
             omitidos = objetivos.incompletos().count()
             objetivos = objetivos.completos()
-            
-        actualizados = objetivos.update(**{campo: estado == "1"})
+            # Publicar un borrador completo también lo saca de borrador;
+            # si no, quedaría "activo" pero invisible en la tienda.
+            cambios["es_borrador"] = False
+
+        actualizados = objetivos.update(**cambios)
         messages.success(
             request,
             f"Se actualizaron {actualizados} registros seleccionados.",
