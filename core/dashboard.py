@@ -124,6 +124,9 @@ class ProductoForm(forms.ModelForm):
         help_texts = {
             "codigo": "Déjalo vacío para generarlo automáticamente. Una vez creado no se puede cambiar.",
             "es_borrador": "Un borrador no se muestra en la tienda aunque esté activo.",
+            "imagen_url": (
+                "Solo se usa mientras el producto no tenga fotografías en su galería."
+            ),
         }
         widgets = {
             "codigo": forms.TextInput(attrs={"class": "form-control"}),
@@ -146,6 +149,10 @@ class ProductoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance.pk and self.instance.codigo:
             self.fields["codigo"].disabled = True
+        if self.instance.pk and self.instance.galeria_gestionada:
+            # La galería ya es la fuente de las imágenes (Paso 03d): la URL
+            # antigua no se muestra ni se puede cambiar, pero su valor se conserva.
+            del self.fields["imagen_url"]
 
     def clean_precio(self):
         precio = self.cleaned_data.get("precio")

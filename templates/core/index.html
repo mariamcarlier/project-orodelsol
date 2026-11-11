@@ -136,11 +136,14 @@
         {% for producto in productos %}
         <article class="product-card reveal" data-product-id="{{ producto.pk }}">
           <div class="product-card__media">
-            {% if producto.imagen_url %}
-              <img src="{{ producto.imagen_url }}" data-image-fallback="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ producto.nombre }}" loading="lazy">
+            {# Fotografía principal de la galería o, si el producto aún no la usa, su URL (Paso 03d). #}
+            {% with imagen=producto.imagen_catalogo %}
+            {% if imagen %}
+              <img src="{{ imagen }}" data-image-fallback="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ producto.nombre }}" loading="lazy">
             {% else %}
               <img src="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ producto.nombre }}" loading="lazy">
             {% endif %}
+            {% endwith %}
             {% if producto.destacado %}<span class="product-card__badge product-card__badge--fav">Destacado</span>{% endif %}
             <div class="product-card__actions">
               <button class="product-card__btn" type="button" data-action="favorite"

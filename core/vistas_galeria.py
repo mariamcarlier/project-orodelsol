@@ -6,6 +6,7 @@ Este módulo solo traduce lo que llega del navegador en llamadas a
 
 Lo que sí decide esta capa, porque es cosa de la pantalla:
 - Quién puede entrar: personal con el permiso `core.change_producto`.
+- Un producto publicado no puede quedarse sin su única fotografía (Paso 03d).
 - Las posiciones se muestran como 1, 2, 3...; el servicio trabaja con 0, 1, 2...
 - Al servicio solo se le envían las fotografías cuyo número cambió, que es
   como `reordenar` sabe cuál se movió a propósito.
@@ -37,6 +38,12 @@ logger = logging.getLogger(__name__)
 TIPOS_SUGERIDOS = "image/jpeg,image/png,image/webp"
 
 
+MENSAJE_ULTIMA_FOTOGRAFIA = (
+    "Este producto está publicado y esta es su única fotografía. "
+    "Sube otra antes de eliminarla o guarda el producto como borrador."
+)
+
+
 def etiqueta_de_mensajes(producto_id):
     """Marca los mensajes de una galería para pintarlos dentro de su bloque."""
     return f"galeria-{producto_id}"
@@ -59,6 +66,9 @@ def contexto_galeria(producto, imagenes, siguiente=""):
         "mb_por_imagen": MAX_BYTES_POR_IMAGEN // MB,
         "mb_por_envio": MAX_BYTES_POR_ENVIO // MB,
         "largo_maximo_url": servicio_galeria.LARGO_MAXIMO_URL,
+        # Paso 03d: qué muestra hoy la tienda y qué falta para publicar.
+        "gestionada": producto.galeria_gestionada,
+        "usa_url_antigua": not producto.galeria_gestionada and bool(producto.imagen_url),
     }
 
 
@@ -126,7 +136,20 @@ def _organizar(request, producto):
 
 
 def _eliminar(request, producto):
-    servicio_galeria.eliminar_imagen(producto, request.POST.get("imagen"))
+    """Elimina una fotografía, salvo que deje sin imagen a un producto publicado.
+
+    El servicio no decide sobre la publicación (ver su docstring); esa regla es
+    del Paso 03d y se comprueba aquí, con el producto bloqueado para que dos
+    personas no puedan borrar a la vez las dos últimas fotografías.
+    """
+    imagen_id = request.POST.get("imagen")
+    with transaction.atomic():
+        vigente = Producto.objects.select_for_update().get(pk=producto.pk)
+        if vigente.es_publico:
+            ids = list(vigente.imagenes.values_list("pk", flat=True)[:2])
+            if len(ids) == 1 and str(ids[0]) == str(imagen_id).strip():
+                raise ValidationError(MENSAJE_ULTIMA_FOTOGRAFIA, code="publicado")
+        servicio_galeria.eliminar_imagen(vigente, imagen_id)
     return "Se eliminó la fotografía."
 
 

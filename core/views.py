@@ -46,7 +46,11 @@ def inicio(request):
             filter=Q(productos__activo=True, productos__es_borrador=False),
         )
     )
-    productos = Producto.objects.publicos().select_related("coleccion")[:4]
+    productos = (
+        Producto.objects.publicos()
+        .select_related("coleccion")
+        .con_fotografia_principal()[:4]
+    )
     return render(
         request,
         "core/index.html",
@@ -62,7 +66,9 @@ def inicio(request):
 def producto_listar(request):
     if not request.user.has_perm("core.view_producto"):
         raise PermissionDenied
-    productos = Producto.objects.select_related("coleccion").all()
+    # La cabecera del sitio pinta la imagen de los primeros productos de la
+    # página (buscador): se precarga para no consultar uno por uno.
+    productos = Producto.objects.select_related("coleccion").con_fotografia_principal()
     return render(request, "core/productos/listar.html", {"productos": productos})
 
 

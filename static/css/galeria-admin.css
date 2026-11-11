@@ -274,6 +274,14 @@
   text-align: center;
 }
 
+.galeria-admin p.galeria-admin__nota {
+  padding: 10px 12px;
+  border-left: 3px solid var(--color-oro-borde, #c4ae88);
+  background: #fbf7ee;
+  color: var(--galeria-tenue);
+  font-size: 13px;
+}
+
 .galeria-admin input:focus-visible,
 .galeria-admin button:focus-visible,
 .galeria-admin summary:focus-visible {

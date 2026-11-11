@@ -63,7 +63,18 @@
       </form>
     {% endfor %}
   {% else %}
-    <p class="galeria-admin__vacia">Este producto todavía no tiene fotografías.</p>
+    <p class="galeria-admin__vacia">
+      Este producto todavía no tiene fotografías.
+      {% if galeria.gestionada %}Sin una fotografía principal no se puede publicar.{% endif %}
+    </p>
+  {% endif %}
+
+  {% if galeria.usa_url_antigua %}
+    <p class="galeria-admin__nota">
+      La tienda muestra por ahora la «URL de la imagen» de la ficha. En cuanto añadas una
+      fotografía aquí, la galería pasa a ser la única fuente de imágenes de este producto y
+      esa URL deja de usarse.
+    </p>
   {% endif %}
 
   {% if galeria.libres %}
