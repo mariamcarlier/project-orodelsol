@@ -99,8 +99,10 @@
         {% for coleccion in colecciones %}
         <article class="collection-card">
           <div class="collection-card__media">
-            {% if coleccion.imagen_url %}
-              <img src="{{ coleccion.imagen_url }}" data-image-fallback="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ coleccion.nombre }}" loading="lazy">
+            {# Portada propia: el archivo subido o, si no hay, su URL (Paso 04). Sin portada, la imagen de siempre. #}
+            {% with portada=coleccion.imagen_catalogo %}
+            {% if portada %}
+              <img src="{{ portada }}" data-image-fallback="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ coleccion.nombre }}" loading="lazy">
             {% elif coleccion.nombre|slugify == "alma-dorada" %}
               <img src="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ coleccion.nombre }}" loading="lazy">
             {% elif coleccion.nombre|slugify == "luna-de-miel" %}
@@ -110,6 +112,7 @@
             {% else %}
               <img src="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ coleccion.nombre }}" loading="lazy">
             {% endif %}
+            {% endwith %}
           </div>
           <div class="collection-card__info">
             <span class="collection-card__season">Colección{% if coleccion.temporada %} · {{ coleccion.temporada }}{% endif %}</span>

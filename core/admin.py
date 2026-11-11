@@ -7,9 +7,11 @@ class ColeccionAdmin(admin.ModelAdmin):
     list_display = ("nombre", "temporada", "activa")
     list_filter = ("activa", "temporada")
     search_fields = ("nombre", "descripcion")
-    # La portada por archivo (`imagen`) aún no tiene validación de formato ni de
-    # tamaño (llega en un paso posterior). Sin esta línea el admin mostraría un
-    # campo de subida abierto que acepta cualquier imagen, sin límite de peso.
+    # La portada por archivo (`imagen`) se sube desde el panel y desde el
+    # formulario de colecciones, que la validan y la optimizan (`ColeccionForm`,
+    # Paso 04). Este admin genera su propio formulario, sin esa validación: sin
+    # esta línea mostraría un campo de subida abierto que acepta cualquier
+    # imagen, sin límite de peso.
     exclude = ("imagen",)
     actions = ("activar_colecciones", "desactivar_colecciones")
 

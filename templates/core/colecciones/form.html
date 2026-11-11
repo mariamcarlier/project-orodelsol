@@ -5,6 +5,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/coleccion-form.css' %}">
+<link rel="stylesheet" href="{% static 'css/portada-campo.css' %}?v=1">
 {% endblock %}
 
 {% block content %}
@@ -33,7 +34,8 @@
         <div class="coleccion-form-errors" role="alert">{{ form.non_field_errors }}</div>
       {% endif %}
 
-      <form method="post" class="coleccion-form" novalidate>
+      {# multipart: sin esto el navegador no envía el archivo de la portada. #}
+      <form method="post" enctype="multipart/form-data" class="coleccion-form" novalidate>
         {% csrf_token %}
         <div class="coleccion-form__grid">
           {% for field in form %}
@@ -50,12 +52,12 @@
                 {% for error in field.errors %}<span class="coleccion-form__error">{{ error }}</span>{% endfor %}
               </div>
             {% else %}
-              <div class="coleccion-form__field{% if field.name == 'descripcion' %} coleccion-form__field--wide{% endif %}{% if field.errors %} is-invalid{% endif %}">
+              <div class="coleccion-form__field{% if field.name == 'descripcion' or field.name == 'imagen' %} coleccion-form__field--wide{% endif %}{% if field.errors %} is-invalid{% endif %}">
                 <label class="coleccion-form__label" for="{{ field.id_for_label }}">
                   {{ field.label }}{% if field.field.required %}<span class="coleccion-form__required" aria-label="obligatorio">*</span>{% endif %}
                 </label>
                 {{ field }}
-                {% if field.help_text %}<span class="coleccion-form__help">{{ field.help_text|striptags }}</span>{% endif %}
+                {% if field.help_text %}<span class="coleccion-form__help" id="{{ field.auto_id }}_helptext">{{ field.help_text|striptags }}</span>{% endif %}
                 {% for error in field.errors %}<span class="coleccion-form__error">{{ error }}</span>{% endfor %}
               </div>
             {% endif %}

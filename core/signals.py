@@ -12,8 +12,8 @@ from django.db import transaction
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
-from . import servicio_galeria
-from .models import Producto
+from . import portadas, servicio_galeria
+from .models import Coleccion, Producto
 
 
 @receiver(post_delete, sender=Producto, dispatch_uid="core.limpiar_galeria_de_producto")
@@ -30,3 +30,13 @@ def limpiar_galeria_de_producto(instance, **kwargs):
     transaction.on_commit(
         lambda: servicio_galeria.borrar_carpeta_de_producto(producto_id)
     )
+
+
+@receiver(post_delete, sender=Coleccion, dispatch_uid="core.limpiar_portada_de_coleccion")
+def limpiar_portada_de_coleccion(sender, instance, **kwargs):
+    """Al eliminar una colección, borra su archivo de portada.
+
+    Solo si ninguna otra colección lo usa, y solo al confirmarse la transacción.
+    Una colección con productos no llega aquí: Django se niega a eliminarla.
+    """
+    portadas.programar_borrado(sender, instance.imagen.name)

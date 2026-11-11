@@ -1,9 +1,10 @@
 """El esquema de galería no debe abrir subidas de archivos sin validar.
 
-`Coleccion.imagen` existe desde la migración 0007, pero la validación de
-formato y tamaño llega en un paso posterior. Mientras tanto, el admin de
-Django no debe ofrecerla (un `ModelAdmin` sin `fields` muestra todos los
-campos editables, incluido el nuevo).
+`Coleccion.imagen` existe desde la migración 0007. Desde el Paso 04 la portada
+se sube, ya validada, desde el panel y el formulario de colecciones
+(`ColeccionForm`). El admin de Django genera su propio formulario, sin esa
+validación, así que NO debe ofrecerla (un `ModelAdmin` sin `fields` muestra
+todos los campos editables, incluido este).
 """
 
 import shutil

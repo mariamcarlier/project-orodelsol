@@ -22,7 +22,7 @@
                         <div class="dashboard-field{% if field.name == 'permissions' and recurso.key == 'grupos' %} dashboard-field--permissions{% elif field.name == 'groups' %} dashboard-field--groups{% endif %}">
                             <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                             {{ field }}
-                            {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                            {% if field.help_text %}<small id="{{ field.auto_id }}_helptext">{{ field.help_text }}</small>{% endif %}
                             {% if field.name == 'groups' and not field.field.queryset %}
                                 <small class="dashboard-empty-groups">
                                     Aún no hay grupos creados.
@@ -123,7 +123,7 @@
                                                 <div class="dashboard-field{% if field.name == 'permissions' and recurso.key == 'grupos' %} dashboard-field--permissions{% elif field.name == 'groups' %} dashboard-field--groups{% endif %}">
                                                     <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                                                     {{ field }}
-                                                    {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                                                    {% if field.help_text %}<small id="{{ field.auto_id }}_helptext">{{ field.help_text }}</small>{% endif %}
                                                     {% for error in field.errors %}
                                                         <span class="dashboard-error">{{ error }}</span>
                                                     {% endfor %}

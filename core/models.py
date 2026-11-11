@@ -4,6 +4,7 @@ from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import models
 from django.db.models import Exists, OuterRef, Prefetch, Q
 
+from . import portadas
 from .upload_paths import (
     ruta_derivado_producto,
     ruta_imagen_coleccion,
@@ -24,6 +25,10 @@ MENSAJE_SIN_FOTOGRAFIA_PRINCIPAL = (
     "Para publicar el producto, su galería necesita una fotografía principal. "
     "Sube al menos una fotografía o guárdalo como borrador."
 )
+MENSAJE_PORTADA_DOBLE = (
+    "Una colección usa una sola portada: un archivo o una dirección (URL), "
+    "nunca los dos. Quita uno de los dos antes de guardar."
+)
 
 
 class Coleccion(models.Model):
@@ -31,8 +36,10 @@ class Coleccion(models.Model):
     descripcion = models.TextField(blank=True)
     temporada = models.CharField(max_length=30, blank=True)
     imagen_url = models.URLField(blank=True)
-    # Portada propia. Convive con imagen_url (compatibilidad). La regla de
-    # «archivo O URL, nunca ambos» se aplicará en el formulario (Paso 7).
+    # Portada propia (Paso 04). Convive con imagen_url por compatibilidad, pero
+    # una colección usa archivo O URL, nunca ambos: lo exigen `clean()` y
+    # `ColeccionForm`. El archivo llega ya validado y optimizado por
+    # `core.portadas`; quien lo cuida en el disco es `save()`.
     imagen = models.ImageField(upload_to=ruta_imagen_coleccion, blank=True)
     activa = models.BooleanField(default=True)
 
@@ -43,6 +50,38 @@ class Coleccion(models.Model):
 
     def __str__(self):
         return self.nombre
+
+    @property
+    def imagen_catalogo(self):
+        """Dirección de la portada que enseña la tienda; cadena vacía si no tiene.
+
+        El archivo propio o, si no hay, `imagen_url`. No consulta la base de datos.
+        """
+        if self.imagen:
+            return self.imagen.url
+        return (self.imagen_url or "").strip()
+
+    def clean(self):
+        """Como mucho una portada: un archivo o una dirección, nunca los dos.
+
+        Es la última barrera para cualquier formulario, también el del admin de
+        Django; `ColeccionForm` avisa antes, junto al campo que hay que corregir.
+        OJO: `save()` NO llama a `clean()`.
+        """
+        super().clean()
+        self.imagen_url = (self.imagen_url or "").strip()
+        if self.imagen and self.imagen_url:
+            raise ValidationError(MENSAJE_PORTADA_DOBLE, code="portada_doble")
+
+    def save(self, *args, **kwargs):
+        """Guarda sin dejar archivos de portada sueltos (ver `core/portadas.py`).
+
+        Vale para cualquier vía —formularios, panel, admin o consola—: si el
+        guardado falla, el archivo recién escrito se borra; si la portada
+        cambia, el archivo anterior se borra al confirmarse la transacción.
+        """
+        with portadas.cuidar_archivo(self):
+            super().save(*args, **kwargs)
 
 
 def _sin_ceros(valor):
