@@ -598,11 +598,10 @@ class ConsultarPerfilTests(TestCase):
         self.assertEqual(nuevo_usuario.telefono, "3005556677")
         self.assertTrue(nuevo_usuario.check_password("StrongPass123!"))
 
-    @override_settings(SITE_ID=None)
     def test_recuperacion_envia_enlace_funcional(self):
         Site.objects.update_or_create(
-            domain="testserver",
-            defaults={"name": "testserver"},
+            pk=settings.SITE_ID,
+            defaults={"domain": "example.com", "name": "example.com"},
         )
         Site.objects.clear_cache()
         response = self.client.post(
