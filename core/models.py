@@ -238,7 +238,9 @@ class Producto(models.Model):
         ordering = ("-destacado", "nombre")
 
     def __str__(self):
-        return self.nombre
+        # El código es el identificador estable del producto: se muestra
+        # junto al nombre para distinguir piezas en admin y listados.
+        return f"{self.codigo} - {self.nombre}" if self.codigo else self.nombre
 
     @property
     def es_publico(self):
@@ -386,6 +388,22 @@ class VarianteProducto(models.Model):
             errores["talla"] = "Esta talla no está permitida para el producto."
         if not self.producto.materiales.filter(pk=self.material_id).exists():
             errores["material"] = "Este material no está permitido para el producto."
+        # La restricción variante_unica vive en BD, pero en formularios
+        # inline el campo `producto` no se envía y Django no la valida:
+        # sin esta revisión, duplicar una variante daría un error 500
+        # (IntegrityError) en vez de un mensaje legible.
+        duplicada = VarianteProducto.objects.filter(
+            producto_id=self.producto_id,
+            talla_id=self.talla_id,
+            material_id=self.material_id,
+        )
+        if self.pk:
+            duplicada = duplicada.exclude(pk=self.pk)
+        if duplicada.exists():
+            errores["talla"] = (
+                "Ya existe una variante con esta talla y material "
+                "para el producto."
+            )
         if errores:
             raise ValidationError(errores)
 
