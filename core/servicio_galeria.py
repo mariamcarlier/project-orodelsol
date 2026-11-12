@@ -40,7 +40,7 @@ from collections.abc import Mapping
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.validators import URLValidator
-from django.db import transaction
+from django.db import DatabaseError, transaction
 
 from .imagenes import procesar_imagen, validar_envio
 from .models import Producto, ProductoImagen
@@ -391,12 +391,17 @@ def _vaciar_carpeta(almacenamiento, carpeta):
 
 
 def borrar_carpeta_de_producto(producto_id, almacenamiento=None):
-    """Vacía `productos/<id>/` cuando el producto ya no existe.
+    """Vacía `productos/<id>/` de un producto que YA NO existe.
 
     Solo toca lo que el servicio escribe ahí: los originales y la subcarpeta
     `derivados/`. Cualquier otra subcarpeta se deja intacta. Debe llamarse con la
     transacción ya confirmada: si el borrado del producto se revierte, las
     fotografías tienen que seguir en su sitio.
+
+    Si existe un producto con ese identificador, no borra nada y devuelve
+    False: esa carpeta es de un producto vivo. Importa en un reintento tardío:
+    en SQLite, una migración que reconstruye la tabla de productos puede hacer
+    que un producto nuevo reciba el identificador de uno eliminado.
 
     Si falla a medias (un archivo en uso, un permiso), borra lo que puede, lo
     anota en el registro y devuelve False. Se puede volver a llamar más tarde
@@ -404,9 +409,24 @@ def borrar_carpeta_de_producto(producto_id, almacenamiento=None):
     cuando no queda ningún archivo del servicio en la carpeta.
     """
     try:
-        carpeta = f"productos/{int(producto_id)}"
+        identificador = int(producto_id)
     except (TypeError, ValueError):
         logger.warning("Identificador de producto no válido: %r.", producto_id)
+        return False
+    carpeta = f"productos/{identificador}"
+    try:
+        existe = Producto.objects.filter(pk=identificador).exists()
+    except DatabaseError:
+        logger.exception(
+            "No se pudo comprobar que el producto %s ya no existe: %r se conserva.",
+            identificador,
+            carpeta,
+        )
+        return False
+    if existe:
+        logger.warning(
+            "El producto %s existe: su carpeta %r no se borra.", identificador, carpeta
+        )
         return False
     if almacenamiento is None:
         almacenamiento = ProductoImagen._meta.get_field("archivo").storage
@@ -420,7 +440,7 @@ def borrar_carpeta_de_producto(producto_id, almacenamiento=None):
             "Quedaron archivos sin borrar en %r. Para reintentarlo: "
             "servicio_galeria.borrar_carpeta_de_producto(%s).",
             carpeta,
-            int(producto_id),
+            identificador,
         )
         return False
     return True

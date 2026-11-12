@@ -14,13 +14,14 @@ termina el trabajo.
 import shutil
 import tempfile
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
 from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
-from django.db import transaction
+from django.db import DatabaseError, transaction
 from django.test import TransactionTestCase, override_settings
 from django.urls import reverse
 
@@ -42,44 +43,111 @@ def crear_superusuario():
     )
 
 
+def eliminar_fila(producto):
+    """Elimina el producto de la base de datos y deja sus archivos; devuelve su id.
+
+    Dentro de un `TestCase` la transacción no llega a confirmarse, así que la
+    limpieza que programa la señal no se ejecuta: la carpeta queda como estaba,
+    que es la situación de un producto eliminado cuya limpieza quedó pendiente.
+    """
+    producto_id = producto.pk
+    producto.delete()
+    return producto_id
+
+
 class BorrarCarpetaDeProductoTests(_Base):
-    def carpeta(self, producto=None):
-        return self.media / "productos" / str((producto or self.producto).pk)
+    def carpeta(self, producto_id):
+        return self.media / "productos" / str(producto_id)
 
     def test_borra_originales_derivados_y_las_carpetas(self):
         galeria.agregar_archivos(self.producto, fotos(2))
         self.assertEqual(len(self.archivos_en_disco()), 6)
+        producto_id = eliminar_fila(self.producto)
+        self.assertEqual(len(self.archivos_en_disco()), 6)  # la fila se fue; los archivos no
 
-        galeria.borrar_carpeta_de_producto(self.producto.pk)
+        galeria.borrar_carpeta_de_producto(producto_id)
 
         self.assertEqual(self.archivos_en_disco(), [])
-        self.assertFalse(self.carpeta().exists())
+        self.assertFalse(self.carpeta(producto_id).exists())
 
     def test_no_toca_la_carpeta_de_otro_producto(self):
         otro = crear_producto("Anillo Brisa")
         galeria.agregar_archivos(self.producto, [foto()])
         galeria.agregar_archivos(otro, [foto()])
+        producto_id = eliminar_fila(self.producto)
 
-        galeria.borrar_carpeta_de_producto(self.producto.pk)
+        galeria.borrar_carpeta_de_producto(producto_id)
 
-        self.assertFalse(self.carpeta().exists())
+        self.assertFalse(self.carpeta(producto_id).exists())
         self.assertEqual(len(self.archivos_en_disco()), 3)
         for ruta in self.archivos_en_disco():
-            self.assertIn(self.carpeta(otro), ruta.parents)
+            self.assertIn(self.carpeta(otro.pk), ruta.parents)
+
+    def test_si_el_producto_existe_no_borra_nada(self):
+        galeria.agregar_archivos(self.producto, [foto()])
+
+        with self.assertLogs("core.servicio_galeria", level="WARNING") as registro:
+            limpia = galeria.borrar_carpeta_de_producto(self.producto.pk)
+
+        self.assertFalse(limpia)
+        self.assertEqual(len(self.archivos_en_disco()), 3)
+        self.assertEqual(len(self.filas()), 1)
+        self.assertIn(f"productos/{self.producto.pk}", "\n".join(registro.output))
+
+    def test_un_reintento_tardio_no_borra_las_fotografias_de_otro_producto_con_el_mismo_id(self):
+        # Un producto eliminado dejó un archivo que no se pudo borrar. Después,
+        # un producto NUEVO recibe su mismo identificador (en SQLite puede pasar
+        # tras una migración que reconstruye la tabla) y sube sus fotografías.
+        coleccion_id = self.producto.coleccion_id
+        producto_id = eliminar_fila(self.producto)
+        pendiente = default_storage.save(f"productos/{producto_id}/viejo.jpg", ContentFile(b"x"))
+        nuevo = Producto.objects.create(
+            pk=producto_id,
+            coleccion_id=coleccion_id,
+            nombre="Anillo Brisa",
+            precio=Decimal("1000000.00"),
+        )
+        galeria.agregar_archivos(nuevo, [foto()])
+        antes = self.archivos_en_disco()
+        self.assertEqual(len(antes), 4)
+
+        # Alguien sigue la indicación que quedó en el registro del producto anterior.
+        with self.assertLogs("core.servicio_galeria", level="WARNING"):
+            limpia = galeria.borrar_carpeta_de_producto(producto_id)
+
+        self.assertFalse(limpia)
+        self.assertEqual(self.archivos_en_disco(), antes)  # las del nuevo siguen ahí
+        self.assertIn(self.media / pendiente, antes)
+        self.assertEqual(len(galeria.listar(nuevo)), 1)
+
+    def test_si_no_se_puede_comprobar_que_el_producto_ya_no_existe_no_borra_nada(self):
+        galeria.agregar_archivos(self.producto, [foto()])
+        producto_id = eliminar_fila(self.producto)
+        sin_conexion = DatabaseError("sin conexión")
+
+        with mock.patch.object(Producto.objects, "filter", side_effect=sin_conexion):
+            with self.assertLogs("core.servicio_galeria", level="ERROR"):
+                limpia = galeria.borrar_carpeta_de_producto(producto_id)  # no lanza
+
+        self.assertFalse(limpia)
+        self.assertEqual(len(self.archivos_en_disco()), 3)  # ante la duda, se conserva
 
     def test_un_id_que_empieza_igual_no_se_confunde(self):
         # «productos/1» no debe arrastrar «productos/10» ni «productos/11».
-        for carpeta in ("1", "10", "11"):
+        producto_id = eliminar_fila(self.producto)
+        for carpeta in (f"{producto_id}", f"{producto_id}0", f"{producto_id}1"):
             default_storage.save(f"productos/{carpeta}/a.jpg", ContentFile(b"x"))
             default_storage.save(f"productos/{carpeta}/derivados/a.webp", ContentFile(b"x"))
 
-        galeria.borrar_carpeta_de_producto(1)
+        galeria.borrar_carpeta_de_producto(producto_id)
 
-        self.assertFalse((self.media / "productos" / "1").exists())
+        self.assertFalse(self.carpeta(producto_id).exists())
         self.assertEqual(len(self.archivos_en_disco()), 4)
 
     def test_sin_carpeta_no_falla(self):
-        galeria.borrar_carpeta_de_producto(self.producto.pk)  # no debe lanzar
+        producto_id = eliminar_fila(self.producto)
+
+        self.assertTrue(galeria.borrar_carpeta_de_producto(producto_id))  # no debe lanzar
 
         self.assertEqual(self.archivos_en_disco(), [])
 
@@ -88,9 +156,10 @@ class BorrarCarpetaDeProductoTests(_Base):
         ajeno = default_storage.save(
             f"productos/{self.producto.pk}/respaldo/nota.txt", ContentFile(b"x")
         )
+        producto_id = eliminar_fila(self.producto)
 
         with self.assertLogs("core.servicio_galeria", level="WARNING"):
-            galeria.borrar_carpeta_de_producto(self.producto.pk)
+            galeria.borrar_carpeta_de_producto(producto_id)
 
         self.assertEqual(self.archivos_en_disco(), [self.media / ajeno])
 
@@ -107,10 +176,11 @@ class BorrarCarpetaDeProductoTests(_Base):
     def test_un_fallo_del_almacenamiento_no_se_propaga(self):
         galeria.agregar_archivos(self.producto, [foto()])
         almacenamiento = ProductoImagen._meta.get_field("archivo").storage
+        producto_id = eliminar_fila(self.producto)
 
         with mock.patch.object(almacenamiento, "delete", side_effect=OSError("disco lleno")):
             with self.assertLogs("core.servicio_galeria", level="WARNING"):
-                galeria.borrar_carpeta_de_producto(self.producto.pk)  # no debe lanzar
+                galeria.borrar_carpeta_de_producto(producto_id)  # no debe lanzar
 
         self.assertEqual(len(self.archivos_en_disco()), 3)
 
@@ -238,7 +308,11 @@ class FallosParcialesTests(_Base):
         )
 
     def limpiar_fallando_con(self, condicion):
-        """Limpia la carpeta con archivos que no se dejan borrar; devuelve (resultado, registro)."""
+        """Elimina el producto y limpia su carpeta con archivos que no se dejan borrar.
+
+        Devuelve (resultado, registro).
+        """
+        eliminar_fila(self.producto)
         with borrado_que_falla_con(self.almacenamiento, condicion):
             with self.assertLogs("core.servicio_galeria", level="ERROR") as registro:
                 resultado = galeria.borrar_carpeta_de_producto(self.producto_id)  # no lanza
@@ -295,6 +369,7 @@ class FallosParcialesTests(_Base):
         )
 
     def test_si_una_carpeta_no_se_puede_leer_no_se_propaga_ni_se_da_por_limpia(self):
+        eliminar_fila(self.producto)
         with mock.patch.object(
             self.almacenamiento, "listdir", side_effect=PermissionError(13, "Sin permiso")
         ):
@@ -305,6 +380,8 @@ class FallosParcialesTests(_Base):
         self.assertEqual(len(self.nombres_en_disco()), 6)
 
     def test_sin_fallos_la_carpeta_queda_limpia(self):
+        eliminar_fila(self.producto)
+
         self.assertTrue(galeria.borrar_carpeta_de_producto(self.producto_id))
         self.assertTrue(galeria.borrar_carpeta_de_producto(self.producto_id))  # ya no existe
 
