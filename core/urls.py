@@ -33,6 +33,11 @@ urlpatterns = [
         name="admin_section",
     ),
     path("productos/", views.producto_listar, name="producto_listar"),
+    path(
+        "productos/<int:pk>/piedras/<str:ref>/disponible/",
+        views.producto_piedra_disponible,
+        name="producto_piedra_disponible",
+    ),
     path("productos/nuevo/", views.producto_guardar, name="producto_crear"),
     path("productos/<int:pk>/editar/", views.producto_guardar, name="producto_editar"),
     path("productos/<int:pk>/eliminar/", views.producto_eliminar, name="producto_eliminar"),

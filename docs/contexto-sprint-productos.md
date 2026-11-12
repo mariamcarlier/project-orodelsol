@@ -32,7 +32,7 @@
 | **PROD-04** Código y referencia | JODS-27 (+274/276) | ✅ `Producto.codigo` único, auto `AN-NNNN`, bloqueado al editar, visible en panel/admin, migraciones 0003–0005, 31 tests en `test_variantes.py` | Cerrado en este cambio: faltaba en el listado clásico y en `__str__`. |
 | **PROD-05** Variantes | JODS-28 (+282/283) | ✅ Modelo + `UniqueConstraint(producto,talla,material)` + SKU único + formset en panel al editar + inline en admin. Verificado end-to-end desde el panel (`test_variante_panel.py`) | Solo se gestionan desde panel/admin, **no** desde `/productos/editar` (vista clásica). Decisión: se mantiene así (el panel es la vía principal); la vista clásica queda para datos base del producto. |
 | **PROD-08** Precios | JODS-31 (+300/301) | ✅ `precio > 0` en formulario y modelo, `precio_adicional >= 0`, `precio_final` | No hay historial de precios. Si se exige, es historia nueva. |
-| **PROD-11** Tallas y materiales | JODS-34 (+332–335) | ✅ `Talla` (US + diámetro verificado + nacional), `Material`, M2M permitidos, seed idempotente | ⚠️ El criterio menciona **piedras** activables por producto: no existe modelo `Piedra`. Decidir si entra en este sprint. |
+| **PROD-11** Tallas, materiales y piedras | JODS-34 (+332–335) | ✅ `Talla` (US + diámetro verificado + nacional), `Material`, `Piedra` (A–I), M2M `tallas`/`materiales`/`piedras`, bandera `personalizable`, seed idempotente. Tests en `test_piedras.py` | Cerrado. |
 | **PROD-12** Borrador | JODS-35 (+338–340) | ✅ `es_borrador`, `publicos()`, `Producto.clean()` exime requisitos al borrador y **`ProductoForm` ya permite guardar incompleto** (nombre vacío / precio 0). Activar masivamente un borrador completo lo publica. Tests en `test_borrador.py` | Cerrado. |
 
 > Nota sobre el patch `producto-variante.patch` (5 commits): **no se borró**.
@@ -113,11 +113,48 @@ Regla simple: **la casilla "Borrador" es la que relaja la validación**.
 
 Tests nuevos: `core/test_borrador.py` (8 tests). Total `core`: 332 OK.
 
+## 6c. PROD-11 — cierre (tallas, materiales y piedras)
+
+Decisiones del equipo:
+
+| Tema | Decisión |
+|---|---|
+| Catálogo de piedras | Las **9 referencias** de la tabla de colores de la empresa, con sus imágenes (copiadas del repo de referencia y optimizadas a 200 px). |
+| Activar/desactivar por producto | **M2M `Producto.piedras`**: asignada = disponible; quitarla = desactivarla para ese producto. |
+| Producto personalizable | Bandera `personalizable`. Si está activa, el producto **debe** tener al menos una piedra para publicarse. |
+| Cliente | Elige la piedra en la **tarjeta del inicio**; solo ve las asignadas. El servidor valida antes de escribir en el carrito. |
+
+Piezas nuevas:
+
+- `core/models.py`: modelo `Piedra` (`ref` único, `nombre`, `imagen` en `static/`, `orden`),
+  M2M `Producto.piedras`, `Producto.personalizable`, `piedras_disponibles()` y
+  validación en `Producto.clean()`.
+- `core/migrations/0008_piedras_catalogo.py`.
+- `core/management/commands/seed_tallas_materiales.py`: ahora también carga las
+  9 piedras (sigue siendo idempotente).
+- `core/dashboard.py`: campos `personalizable` y `piedras` en el formulario
+  (casillas = maestro de piedras), columna "Personalizable" y error específico
+  si falta la piedra.
+- `core/admin.py`: registro de `Piedra` y `piedras` en `filter_horizontal`.
+- `core/views.py` + `core/urls.py`: `core:producto_piedra_disponible`
+  (`GET /productos/<pk>/piedras/<ref>/disponible/`) devuelve 200/400; es la
+  guarda de servidor que impide agregar al carrito una piedra desactivada.
+- `templates/core/index.html`, `static/css/components.css`, `static/js/main.js`:
+  selector de piedra en la tarjeta, piedra guardada en el carrito y validación
+  antes de añadir.
+
+Comandos en tu máquina (una vez):
+
+```powershell
+python manage.py migrate
+python manage.py seed_tallas_materiales
+```
+
+Tests nuevos: `core/test_piedras.py` (16 tests). Total `core`: 348·OK, proyecto: 481·OK.
+
 ## 7. Decisiones pendientes (para las próximas historias)
 
-1. **Piedras (PROD-11)**: ¿se crea catálogo de piedras activables por producto
-   en este sprint o se recorta a tallas/materiales?
-2. **Borrador (PROD-12)**: ¿precio `0` y sin nombre permitidos en borrador?
-   (Implica relajar `ProductoForm.clean_precio` solo si `es_borrador`.)
-3. **Ficha pública**: ¿se crea página de detalle del producto (galería,
+1. **PROD-08 Precios**: ¿se necesita historial de precios (quién y cuándo
+   cambió el precio) o basta con validar el valor actual?
+2. **Ficha pública**: ¿se crea página de detalle del producto (galería,
    selector de talla/piedra, *Add to Bag*) o sigue solo la tarjeta en inicio?

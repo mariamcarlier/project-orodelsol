@@ -304,7 +304,8 @@ function renderCart() {
 
     const detail = document.createElement('span');
     detail.className = 'cart-item__detail';
-    detail.textContent = `${item.quantity} × ${currencyFormatter.format(item.price)}`;
+    const piedra = item.stoneName ? ` · Piedra ${item.stoneName}` : '';
+    detail.textContent = `${item.quantity} × ${currencyFormatter.format(item.price)}${piedra}`;
 
     const remove = document.createElement('button');
     remove.className = 'cart-item__remove';
@@ -451,6 +452,70 @@ function initStoreControls() {
     });
   }
 
+  // PROD-11: el cliente elige la piedra; el servidor confirma que sigue
+  // disponible antes de escribirla en el carrito del navegador.
+  document.addEventListener('click', (event) => {
+    const piedra = event.target.closest('[data-stone-ref]');
+    if (!piedra) return;
+    event.preventDefault();
+    const card = piedra.closest('[data-product-id]');
+    if (!card) return;
+    card.querySelectorAll('[data-stone-ref]').forEach((otra) => {
+      const activa = otra === piedra;
+      otra.classList.toggle('is-selected', activa);
+      otra.setAttribute('aria-pressed', activa ? 'true' : 'false');
+    });
+  });
+
+  function addToStoreCart(card, button) {
+    const id = card.dataset.productId;
+    const elegida = card.querySelector('[data-stone-ref].is-selected');
+
+    if (card.querySelector('[data-stone-ref]') && !elegida) {
+      showStoreNotice('Elige una piedra antes de añadir al carrito.');
+      return;
+    }
+
+    const guardar = (piedra) => {
+      const clave = piedra ? `${id}-${piedra.ref}` : id;
+      const item = cart[clave] || {
+        name: button.dataset.productName,
+        price: Number(button.dataset.productPrice),
+        quantity: 0,
+        stone: piedra ? piedra.ref : '',
+        stoneName: piedra ? piedra.nombre : '',
+      };
+      item.quantity += 1;
+      cart[clave] = item;
+      const saved = saveStoredValue(STORE_KEYS.cart, cart);
+      renderCart();
+      if (saved) {
+        const detalle = piedra ? ` (${piedra.nombre})` : '';
+        showStoreNotice(`${item.name}${detalle} añadido al carrito.`);
+      }
+    };
+
+    if (!elegida) {
+      guardar(null);
+      return;
+    }
+
+    const ref = elegida.dataset.stoneRef;
+    const url = (button.dataset.stoneCheckUrl || '').replace('REF', encodeURIComponent(ref));
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then((respuesta) => respuesta.json())
+      .then((datos) => {
+        if (!datos.disponible) {
+          showStoreNotice(datos.error || 'Esta piedra ya no está disponible.');
+          return;
+        }
+        guardar({ ref, nombre: elegida.dataset.stoneName || ref });
+      })
+      .catch(() => {
+        showStoreNotice('No pudimos verificar la piedra. Intenta de nuevo.');
+      });
+  }
+
   document.addEventListener('click', (event) => {
     const button = event.target.closest('[data-action]');
     if (button && button.dataset.action === 'favorite') {
@@ -468,17 +533,7 @@ function initStoreControls() {
     } else if (button && button.dataset.action === 'add-to-cart') {
       const card = button.closest('[data-product-id]');
       if (!card) return;
-      const id = card.dataset.productId;
-      const item = cart[id] || {
-        name: button.dataset.productName,
-        price: Number(button.dataset.productPrice),
-        quantity: 0,
-      };
-      item.quantity += 1;
-      cart[id] = item;
-      const saved = saveStoredValue(STORE_KEYS.cart, cart);
-      renderCart();
-      if (saved) showStoreNotice(`${item.name} añadido al carrito.`);
+      addToStoreCart(card, button);
     } else if (button && button.dataset.action === 'remove-from-cart') {
       delete cart[button.dataset.productId];
       saveStoredValue(STORE_KEYS.cart, cart);

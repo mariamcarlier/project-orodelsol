@@ -96,6 +96,38 @@ class Material(models.Model):
         return self.nombre
 
 
+class Piedra(models.Model):
+    """Catálogo maestro de piedras, según la tabla de referencias de colores.
+
+    `ref` es la letra comercial (A–I) que usa la empresa; `nombre` es el color.
+    El maestro es único para toda la tienda. Qué piedras acepta cada producto
+    se decide con la M2M `Producto.piedras` (asignada = disponible).
+    """
+
+    ref = models.CharField(max_length=3, unique=True)
+    nombre = models.CharField(max_length=40, unique=True)
+    imagen = models.CharField(
+        max_length=120,
+        blank=True,
+        help_text="Ruta relativa dentro de static/, por ejemplo img/piedras/A-Cristal.webp",
+    )
+    orden = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ("orden", "ref")
+        verbose_name = "piedra"
+        verbose_name_plural = "piedras"
+        constraints = [
+            models.CheckConstraint(
+                condition=~Q(ref=""),
+                name="piedra_ref_no_vacia",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.ref} - {self.nombre}"
+
+
 class ProductoQuerySet(models.QuerySet):
     def publicos(self):
         """Visibilidad pública = activo AND NOT es_borrador."""
@@ -149,6 +181,19 @@ class Producto(models.Model):
         related_name="productos",
         verbose_name="materiales permitidos",
     )
+    piedras = models.ManyToManyField(
+        Piedra,
+        blank=True,
+        related_name="productos",
+        verbose_name="piedras disponibles",
+    )
+    personalizable = models.BooleanField(
+        default=False,
+        help_text=(
+            "Si está marcado, el cliente elige la piedra y el producto debe "
+            "tener al menos una piedra disponible."
+        ),
+    )
 
     objects = ProductoQuerySet.as_manager()
 
@@ -180,6 +225,10 @@ class Producto(models.Model):
         if not self.codigo:
             self.codigo = self.siguiente_codigo()
 
+    def piedras_disponibles(self):
+        """Piedras que el cliente puede elegir: las asignadas al producto."""
+        return self.piedras.all()
+
     def clean(self):
         self.asegurar_codigo()
         if not self.es_publico:
@@ -193,6 +242,12 @@ class Producto(models.Model):
             faltantes["imagen_url"] = (
                 "La imagen es obligatoria para publicar. "
                 "Márcalo como borrador si aún no la tienes."
+            )
+        # Sin pk no se puede consultar la M2M: lo valida ProductoForm.
+        if self.personalizable and self.pk and not self.piedras.exists():
+            faltantes["personalizable"] = (
+                "Un producto personalizable necesita al menos una piedra "
+                "disponible."
             )
         if faltantes:
             raise ValidationError(faltantes)
