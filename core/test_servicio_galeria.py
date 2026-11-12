@@ -274,7 +274,7 @@ class AgregarUrlTests(_Base):
 
         self.assertEqual(ctx.exception.code, "url_invalida")
 
-    def test_rechaza_la_sexta(self):
+    def test_rechaza_una_mas_que_el_maximo(self):
         for n in range(MAX_IMAGENES_POR_PRODUCTO):
             galeria.agregar_url(self.producto, url(n))
 
@@ -596,4 +596,5 @@ class NormalizarYConsultaTests(_Base):
         self.assertIsNone(galeria.principal(self.producto))
 
     def test_el_maximo_aprobado_no_cambia_por_accidente(self):
-        self.assertEqual(MAX_IMAGENES_POR_PRODUCTO, 5)
+        # Aprobado para Joyas Oro del Sol: 10 fotografías por producto.
+        self.assertEqual(MAX_IMAGENES_POR_PRODUCTO, 10)

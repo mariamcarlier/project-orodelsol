@@ -43,7 +43,9 @@ from .models import Producto, ProductoImagen
 
 logger = logging.getLogger(__name__)
 
-MAX_IMAGENES_POR_PRODUCTO = 5
+# Regla de negocio aprobada: hasta 10 fotografías por producto. Es el único
+# lugar donde se cambia; las pantallas y los mensajes leen esta constante.
+MAX_IMAGENES_POR_PRODUCTO = 10
 MAX_POSICION = 32767  # tope de PositiveSmallIntegerField en todas las bases de datos
 LARGO_MAXIMO_URL = ProductoImagen._meta.get_field("url").max_length
 _VALIDADOR_URL = URLValidator(schemes=["http", "https"])
