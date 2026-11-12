@@ -461,6 +461,25 @@ class BloqueEnElFormularioTests(_BasePantalla):
         self.assertContains(respuesta, 'name="principal"', count=3)
         self.assertContains(respuesta, 'name="accion" value="eliminar"', count=3)
 
+    def test_el_texto_alternativo_nombra_al_producto(self):
+        galeria.agregar_archivos(self.producto, fotos(2))
+
+        respuesta = self.client.get(self.url_editar)
+
+        self.assertContains(respuesta, f'alt="Fotografía 1 de {self.producto.nombre}"')
+        self.assertContains(respuesta, f'alt="Fotografía 2 de {self.producto.nombre}"')
+
+    def test_un_borrador_sin_nombre_se_nombra_por_su_codigo(self):
+        # Desde PROD-12 un borrador puede guardarse sin nombre.
+        galeria.agregar_archivos(self.producto, fotos(1))
+        Producto.objects.filter(pk=self.producto.pk).update(nombre="", es_borrador=True)
+        self.producto.refresh_from_db()
+
+        respuesta = self.client.get(self.url_editar)
+
+        self.assertContains(respuesta, f'alt="Fotografía 1 de {self.producto.codigo}"')
+        self.assertNotContains(respuesta, 'alt="Fotografía 1 de "')
+
     def test_el_formulario_de_subida_envia_archivos_a_la_galeria(self):
         respuesta = self.client.get(self.url_editar)
 

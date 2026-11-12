@@ -33,7 +33,7 @@
           <li class="galeria-admin__foto{% if imagen.es_principal %} es-principal{% endif %}">
             <div class="galeria-admin__marco">
               <img src="{{ imagen.src_miniatura }}"
-                   alt="Fotografía {{ forloop.counter }} de {{ galeria.producto.nombre }}"
+                   alt="Fotografía {{ forloop.counter }} de {{ galeria.producto.nombre|default:galeria.producto.codigo }}"
                    loading="lazy" referrerpolicy="no-referrer">
               {% if imagen.es_principal %}<span class="galeria-admin__marca">Principal</span>{% endif %}
             </div>

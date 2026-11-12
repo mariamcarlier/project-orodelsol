@@ -364,7 +364,8 @@ class MigracionEsquemaGaleriaTests(TransactionTestCase):
         self.assertFalse(Producto.objects.filter(galeria_gestionada=True).exists())
 
     def test_no_crea_filas_de_galeria(self):
-        # Migrar las URL históricas a la galería es trabajo de la 0008 (Paso 2).
+        # La 0007 solo cambia el esquema. Pasar las URL históricas a la galería
+        # es trabajo de una migración de datos aparte, todavía pendiente.
         apps = self.aplicar_0007()
 
         self.assertEqual(apps.get_model("core", "ProductoImagen").objects.count(), 0)

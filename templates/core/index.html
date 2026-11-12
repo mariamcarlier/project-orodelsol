@@ -117,7 +117,7 @@
           <div class="collection-card__info">
             <span class="collection-card__season">Colección{% if coleccion.temporada %} · {{ coleccion.temporada }}{% endif %}</span>
             <h3 class="collection-card__name">{{ coleccion.nombre }}</h3>
-            <span class="collection-card__desc">{{ coleccion.producto_count }} productos{% if coleccion.descripcion %} · {{ coleccion.descripcion }}{% endif %}</span>
+            <span class="collection-card__desc">{{ coleccion.producto_count }} producto{{ coleccion.producto_count|pluralize }}{% if coleccion.descripcion %} · {{ coleccion.descripcion }}{% endif %}</span>
             <a href="{% url 'core:inicio' %}#productos" class="collection-card__cta">Explorar productos</a>
           </div>
         </article>

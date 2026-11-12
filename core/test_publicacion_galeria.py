@@ -530,3 +530,39 @@ class OrdenEnLaTiendaTests(_Base):
             "En la tienda va primero la principal y después las demás, "
             "en el orden de sus posiciones.",
         )
+
+
+class TarjetasDeColeccionTests(_Base):
+    """El número de productos de cada colección, en singular o en plural."""
+
+    def descripcion(self, respuesta, texto):
+        self.assertContains(
+            respuesta, f'<span class="collection-card__desc">{texto}</span>', html=True
+        )
+
+    def test_dice_1_producto_y_no_1_productos(self):
+        publicar(crear("Único"))
+
+        respuesta = self.client.get(reverse("core:inicio"))
+
+        # `_Base` crea un producto público en la misma colección: son dos.
+        self.descripcion(respuesta, "2 productos")
+
+        Producto.objects.filter(nombre="Único").delete()
+        respuesta = self.client.get(reverse("core:inicio"))
+
+        self.descripcion(respuesta, "1 producto")
+
+    def test_sin_productos_publicados_dice_0_productos(self):
+        Producto.objects.all().update(es_borrador=True)
+
+        respuesta = self.client.get(reverse("core:inicio"))
+
+        self.descripcion(respuesta, "0 productos")
+
+    def test_la_descripcion_de_la_coleccion_va_despues_del_numero(self):
+        Coleccion.objects.update(descripcion="Oro de 18 quilates")
+
+        respuesta = self.client.get(reverse("core:inicio"))
+
+        self.descripcion(respuesta, "1 producto · Oro de 18 quilates")
