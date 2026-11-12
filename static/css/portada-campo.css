@@ -58,12 +58,3 @@
   padding: 0;
   accent-color: var(--color-cacao, #785041);
 }
-
-/* ── Solo en el panel ─────────────────────────────────────
-   El diálogo de edición vive dentro de la celda de acciones de la tabla, que
-   impone `white-space: nowrap`. Sin esta regla, los textos de ayuda y los
-   avisos de este formulario no parten línea y el diálogo se desborda hacia
-   la derecha. (Esta hoja solo se carga en la sección Colecciones.) */
-.dashboard-dialog {
-  white-space: normal;
-}

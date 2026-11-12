@@ -439,6 +439,11 @@ body.dashboard-body {
     max-width: min(760px, calc(100vw - 2rem));
     overflow: auto;
     padding: clamp(1.25rem, 3vw, 2rem);
+    /* El diálogo vive dentro de la celda de acciones de la tabla, que impone
+       `nowrap`. Sin devolverlo a `normal`, los textos de ayuda y los avisos no
+       parten línea, ensanchan el formulario y el diálogo se desborda hacia la
+       derecha (en un teléfono se abre desplazado y corta el contenido). */
+    white-space: normal;
     width: 100%;
 }
 
