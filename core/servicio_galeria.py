@@ -20,6 +20,9 @@ fuente por fila» y «a lo sumo una principal»):
   pero solo si están dentro de la carpeta del propio producto.
 - Al eliminar un producto se vacía su carpeta `productos/<id>/` (lo dispara
   `core/signals.py`, de modo que vale para cualquier vía de borrado).
+- Borrar archivos nunca hace fallar una operación que ya se confirmó: si un
+  archivo no se deja borrar, se anota en el registro y se sigue con los demás.
+  Lo que quede suelto en la carpeta se recoge al eliminar el producto.
 
 Lo que este servicio NO hace (es responsabilidad de quien lo llama):
 - Comprobar permisos: la vista debe exigir `core.change_producto` antes.
@@ -351,34 +354,40 @@ def eliminar_imagen(producto, imagen_id):
         almacenamiento = imagen.archivo.storage
         imagen.delete()
         _normalizar(bloqueado)  # renumera y, si faltaba la principal, asciende a la primera
+        # `robust`: la fila ya se eliminó; un fallo al borrar archivos se anota
+        # en el registro, pero no convierte la operación en un error.
         transaction.on_commit(
-            lambda: _borrar_archivos(bloqueado.pk, nombres, almacenamiento)
+            lambda: _borrar_archivos(bloqueado.pk, nombres, almacenamiento),
+            robust=True,
         )
 
 
 def _vaciar_carpeta(almacenamiento, carpeta):
     """Borra los archivos sueltos de `carpeta` y, si queda vacía, la carpeta.
 
-    No entra en subcarpetas: quien llama decide cuáles vaciar. Devuelve False si
-    la carpeta no existe (no había nada que limpiar).
+    No entra en subcarpetas: quien llama decide cuáles vaciar. Un archivo que
+    no se deja borrar no impide borrar los demás. Devuelve True si no quedó
+    ningún archivo por borrar (también cuando la carpeta no existe).
     """
     try:
         _, archivos = almacenamiento.listdir(carpeta)
     except FileNotFoundError:
-        return False
+        return True  # no había nada que limpiar
     except (OSError, NotImplementedError):
         logger.exception("No se pudo leer la carpeta %r para limpiarla.", carpeta)
         return False
+    limpia = True
     for nombre in archivos:
         try:
             almacenamiento.delete(f"{carpeta}/{nombre}")
         except OSError:
             logger.exception("No se pudo borrar el archivo %r.", f"{carpeta}/{nombre}")
+            limpia = False
     try:
         almacenamiento.delete(carpeta)  # solo tiene efecto si quedó vacía
-    except OSError:
-        logger.warning("La carpeta %r no quedó vacía y se conserva.", carpeta)
-    return True
+    except OSError as error:
+        logger.warning("La carpeta %r no se pudo borrar y se conserva: %s", carpeta, error)
+    return limpia
 
 
 def borrar_carpeta_de_producto(producto_id, almacenamiento=None):
@@ -388,16 +397,33 @@ def borrar_carpeta_de_producto(producto_id, almacenamiento=None):
     `derivados/`. Cualquier otra subcarpeta se deja intacta. Debe llamarse con la
     transacción ya confirmada: si el borrado del producto se revierte, las
     fotografías tienen que seguir en su sitio.
+
+    Si falla a medias (un archivo en uso, un permiso), borra lo que puede, lo
+    anota en el registro y devuelve False. Se puede volver a llamar más tarde
+    con el mismo identificador: termina lo que quedó pendiente. Devuelve True
+    cuando no queda ningún archivo del servicio en la carpeta.
     """
     try:
         carpeta = f"productos/{int(producto_id)}"
     except (TypeError, ValueError):
         logger.warning("Identificador de producto no válido: %r.", producto_id)
-        return
+        return False
     if almacenamiento is None:
         almacenamiento = ProductoImagen._meta.get_field("archivo").storage
-    _vaciar_carpeta(almacenamiento, f"{carpeta}/derivados")
-    _vaciar_carpeta(almacenamiento, carpeta)
+    # Las dos carpetas se intentan siempre: un fallo en una no salta la otra.
+    resultados = [
+        _vaciar_carpeta(almacenamiento, f"{carpeta}/derivados"),
+        _vaciar_carpeta(almacenamiento, carpeta),
+    ]
+    if not all(resultados):
+        logger.error(
+            "Quedaron archivos sin borrar en %r. Para reintentarlo: "
+            "servicio_galeria.borrar_carpeta_de_producto(%s).",
+            carpeta,
+            int(producto_id),
+        )
+        return False
+    return True
 
 
 def normalizar(producto):

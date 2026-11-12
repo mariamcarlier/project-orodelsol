@@ -5,7 +5,9 @@ vías de borrado (vistas, panel, admin de Django, consola, borrados en bloque),
 porque Django las emite por cada objeto eliminado.
 
 El borrado en disco se programa con `transaction.on_commit`: si la operación se
-revierte, los archivos siguen en su sitio.
+revierte, los archivos siguen en su sitio. Y al revés: una vez confirmada, un
+fallo al borrar archivos no la deshace ni la convierte en un error; se anota en
+el registro (`robust=True`).
 """
 
 from django.db import transaction
@@ -27,8 +29,11 @@ def limpiar_galeria_de_producto(instance, **kwargs):
     producto_id = instance.pk
     if producto_id is None:
         return
+    # `robust`: el producto ya se eliminó. Si la limpieza falla por algo que no
+    # se previó, se anota en el registro y quien eliminó no recibe un error.
     transaction.on_commit(
-        lambda: servicio_galeria.borrar_carpeta_de_producto(producto_id)
+        lambda: servicio_galeria.borrar_carpeta_de_producto(producto_id),
+        robust=True,
     )
 
 
