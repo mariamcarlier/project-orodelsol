@@ -33,7 +33,7 @@
 | **PROD-05** Variantes | JODS-28 (+282/283) | ✅ Modelo + `UniqueConstraint(producto,talla,material)` + SKU único + formset en panel al editar + inline en admin. Verificado end-to-end desde el panel (`test_variante_panel.py`) | Solo se gestionan desde panel/admin, **no** desde `/productos/editar` (vista clásica). Decisión: se mantiene así (el panel es la vía principal); la vista clásica queda para datos base del producto. |
 | **PROD-08** Precios | JODS-31 (+300/301) | ✅ `precio > 0` en formulario y modelo, `precio_adicional >= 0`, `precio_final` | No hay historial de precios. Si se exige, es historia nueva. |
 | **PROD-11** Tallas y materiales | JODS-34 (+332–335) | ✅ `Talla` (US + diámetro verificado + nacional), `Material`, M2M permitidos, seed idempotente | ⚠️ El criterio menciona **piedras** activables por producto: no existe modelo `Piedra`. Decidir si entra en este sprint. |
-| **PROD-12** Borrador | JODS-35 (+338–340) | ⚠️ Parcial: `es_borrador`, `publicos()`, `clean()` exime imagen/nombre/precio | ❌ El formulario exige `precio > 0` y nombre siempre, así que un borrador sin precio/nombre **no se puede guardar** desde el panel. Corregir al llegar a esta historia. |
+| **PROD-12** Borrador | JODS-35 (+338–340) | ✅ `es_borrador`, `publicos()`, `Producto.clean()` exime requisitos al borrador y **`ProductoForm` ya permite guardar incompleto** (nombre vacío / precio 0). Activar masivamente un borrador completo lo publica. Tests en `test_borrador.py` | Cerrado. |
 
 > Nota sobre el patch `producto-variante.patch` (5 commits): **no se borró**.
 > Ya está aplicado en `main` (migraciones 0003–0005, modelos, panel, admin,
@@ -88,6 +88,30 @@ Criterios → dónde se cumplen:
 
 Tests nuevos: `core/test_variante_panel.py` (3 tests: crear desde panel,
 duplicada rechazada con error legible, sin permiso 403).
+
+## 6b. PROD-12 — cierre (borrador)
+
+Regla simple: **la casilla "Borrador" es la que relaja la validación**.
+`activo` solo controla visibilidad; no afecta qué se exige.
+
+| Caso | Nombre | Precio | Imagen | Resultado |
+|---|---|---|---|---|
+| Borrador (`es_borrador` ✔) | opcional | opcional (0) | opcional | Se guarda. No aparece en la tienda. |
+| No borrador | **obligatorio** | **> 0 obligatorio** | obligatoria | Se guarda y se publica. |
+
+- `ProductoForm`: `nombre` y `precio` dejan de ser obligatorios a nivel HTML
+  (`required=False`) y la validación se decide en `clean()` según
+  `es_borrador`. Sin esto Django rechazaba el envío antes de llegar a `clean()`.
+- Escenario 2 (datos obligatorios incompletos): error **específico por campo**
+  — *"El nombre es obligatorio para publicar."* / *"El precio debe ser mayor a
+  cero para publicar."* — y el formulario se queda abierto con los datos.
+- El borrador conserva sus datos y se completa después; al desmarcar
+  "Borrador" con todo completo queda publicado.
+- Activación masiva: un borrador **completo** se marca `activo=True` **y**
+  `es_borrador=False` (antes quedaba "activo" pero invisible). Los incompletos
+  se omiten con aviso, igual que antes.
+
+Tests nuevos: `core/test_borrador.py` (8 tests). Total `core`: 332 OK.
 
 ## 7. Decisiones pendientes (para las próximas historias)
 

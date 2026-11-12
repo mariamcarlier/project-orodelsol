@@ -39,7 +39,8 @@ class ProductoAdmin(admin.ModelAdmin):
     @admin.action(description="Activar productos seleccionados")
     def activar_productos(self, request, queryset):
         omitidos = queryset.incompletos().count()
-        queryset.completos().update(activo=True)
+        # Publicar un borrador completo también lo saca de borrador.
+        queryset.completos().update(activo=True, es_borrador=False)
         if omitidos:
             self.message_user(
                 request,
