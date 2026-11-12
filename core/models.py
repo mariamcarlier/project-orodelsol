@@ -284,6 +284,23 @@ class Producto(models.Model):
             return principal.src_detalle if principal else ""
         return (self.imagen_url or "").strip()
 
+    @property
+    def fotografias_tienda(self):
+        """Fotografías de la galería en el orden en que las enseña la tienda.
+
+        Regla aprobada: primero la principal y después las demás, según su
+        posición. Elegir la principal no obliga a moverla al primer lugar de la
+        galería. La primera de esta lista es la de `imagen_catalogo`.
+
+        Lista vacía si el producto todavía no usa la galería (la tienda muestra
+        entonces `imagen_url`) o si su galería se quedó vacía.
+        """
+        if self.pk is None or not self.galeria_gestionada:
+            return []
+        # `imagenes` ya viene por posición y `sorted` es estable: las que no
+        # son la principal conservan ese orden entre sí.
+        return sorted(self.imagenes.all(), key=lambda imagen: not imagen.es_principal)
+
     @classmethod
     def siguiente_codigo(cls):
         """Siguiente AN-NNNN: arranca desde el mayor número ya usado."""

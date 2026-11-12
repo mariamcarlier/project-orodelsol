@@ -27,7 +27,8 @@ Lo que este servicio NO hace (es responsabilidad de quien lo llama):
   (eso es el Paso 03d).
 
 La posición de una fotografía y cuál es la principal son cosas independientes:
-cambiar la principal no mueve la fotografía de lugar.
+cambiar la principal no mueve la fotografía de lugar. La tienda enseña primero
+la principal y después las demás por posición (`Producto.fotografias_tienda`).
 """
 
 import logging

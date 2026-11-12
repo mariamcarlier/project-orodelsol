@@ -8,6 +8,12 @@ Esa regla vive en `Producto.tiene_imagen` y, como consulta, en
 `ProductoQuerySet.con_imagen()`. Aquí se comprueba que las dos dicen siempre lo
 mismo y que la respetan `clean()`, `completos()`, los formularios, la pantalla
 de la galería y la tienda. Cada prueba usa un `MEDIA_ROOT` temporal.
+
+Dos decisiones aprobadas que también se fijan aquí:
+- Una galería gestionada que se queda vacía NO vuelve a `imagen_url`: el
+  producto queda sin fotografía (casos `vaciada` de `_Casos`).
+- En la tienda va primero la fotografía principal y después las demás, por su
+  posición (`Producto.fotografias_tienda`, clase `OrdenEnLaTiendaTests`).
 """
 
 from decimal import Decimal
@@ -410,3 +416,117 @@ class CatalogoPublicoTests(_Casos):
 
         self.assertEqual(con_imagen, {p.nombre for p in self.con_imagen})
         self.assertEqual(imagenes[self.vaciada.nombre], "")
+
+
+class OrdenEnLaTiendaTests(_Base):
+    """Primero la principal; después las demás, según su posición."""
+
+    def setUp(self):
+        super().setUp()
+        galeria.agregar_archivos(self.producto, fotos(3))
+        self.a, self.b, self.c = galeria.listar(self.producto)  # la principal es `a`
+        self.producto.refresh_from_db()
+
+    def en_la_tienda(self):
+        return [imagen.pk for imagen in self.producto.fotografias_tienda]
+
+    def en_la_galeria(self):
+        return [imagen.pk for imagen in galeria.listar(self.producto)]
+
+    def test_sin_cambios_coincide_con_el_orden_de_la_galeria(self):
+        self.assertEqual(self.en_la_tienda(), [self.a.pk, self.b.pk, self.c.pk])
+
+    def test_la_principal_va_primero_aunque_ocupe_la_ultima_posicion(self):
+        galeria.establecer_principal(self.producto, self.c.pk)
+
+        self.assertEqual(self.en_la_tienda(), [self.c.pk, self.a.pk, self.b.pk])
+        # Elegir la principal no la cambia de lugar en la galería.
+        self.assertEqual(self.en_la_galeria(), [self.a.pk, self.b.pk, self.c.pk])
+
+    def test_las_demas_siguen_su_posicion(self):
+        galeria.establecer_principal(self.producto, self.b.pk)
+        galeria.reordenar(self.producto, {self.c.pk: 0})  # galería: c, a, b
+
+        self.assertEqual(self.en_la_galeria(), [self.c.pk, self.a.pk, self.b.pk])
+        self.assertEqual(self.en_la_tienda(), [self.b.pk, self.c.pk, self.a.pk])
+
+    def test_la_primera_es_la_imagen_de_la_tarjeta_del_catalogo(self):
+        galeria.establecer_principal(self.producto, self.b.pk)
+
+        primera = self.producto.fotografias_tienda[0]
+
+        self.assertEqual(primera, self.producto.fotografia_principal)
+        self.assertEqual(self.producto.imagen_catalogo, primera.src_detalle)
+
+    def test_mezcla_fotografias_subidas_y_enlazadas(self):
+        enlazada = galeria.agregar_url(self.producto, url(9))
+        galeria.establecer_principal(self.producto, enlazada.pk)
+
+        self.assertEqual(
+            self.en_la_tienda(), [enlazada.pk, self.a.pk, self.b.pk, self.c.pk]
+        )
+
+    def test_al_eliminar_la_principal_pasa_a_ir_primero_la_que_la_sustituye(self):
+        galeria.establecer_principal(self.producto, self.c.pk)
+
+        galeria.eliminar_imagen(self.producto, self.c.pk)
+
+        self.assertEqual(self.en_la_tienda(), [self.a.pk, self.b.pk])
+        self.assertEqual(self.producto.fotografias_tienda[0], self.producto.fotografia_principal)
+
+    def test_sin_galeria_gestionada_no_hay_fotografias_aunque_tenga_url(self):
+        con_url = crear("Con URL", imagen_url=URL_ANTIGUA)
+        # Filas creadas sin pasar por el servicio: el producto sigue sin
+        # gestionar y la tienda muestra su URL, así que aquí no cuentan.
+        ProductoImagen.objects.create(producto=con_url, url=url(5), es_principal=True)
+
+        self.assertFalse(con_url.galeria_gestionada)
+        self.assertEqual(con_url.fotografias_tienda, [])
+        self.assertEqual(con_url.imagen_catalogo, URL_ANTIGUA)
+
+    def test_un_producto_sin_guardar_no_tiene_fotografias(self):
+        for gestionada in (False, True):
+            with self.subTest(galeria_gestionada=gestionada):
+                nuevo = Producto(
+                    coleccion=self.producto.coleccion,
+                    nombre="Nuevo",
+                    precio=1,
+                    galeria_gestionada=gestionada,
+                )
+
+                self.assertEqual(nuevo.fotografias_tienda, [])
+
+    def test_una_galeria_que_se_quedo_vacia_no_ofrece_fotografias(self):
+        vaciada = crear("Vaciada", imagen_url=URL_ANTIGUA)
+        unica = galeria.agregar_url(vaciada, url(8))
+        galeria.eliminar_imagen(vaciada, unica.pk)
+        vaciada.refresh_from_db()
+
+        self.assertEqual(vaciada.fotografias_tienda, [])
+        self.assertEqual(vaciada.imagen_catalogo, "")  # y no vuelve a la URL antigua
+
+    def test_sin_principal_se_ofrecen_por_posicion(self):
+        # Estado que el servicio nunca deja, pero que la base de datos permite.
+        ProductoImagen.objects.filter(producto=self.producto).update(es_principal=False)
+
+        self.assertEqual(self.en_la_tienda(), [self.a.pk, self.b.pk, self.c.pk])
+
+    def test_con_la_galeria_precargada_no_consulta_la_base_de_datos(self):
+        galeria.establecer_principal(self.producto, self.c.pk)
+        (producto,) = Producto.objects.filter(pk=self.producto.pk).prefetch_related("imagenes")
+
+        with self.assertNumQueries(0):
+            orden = [imagen.pk for imagen in producto.fotografias_tienda]
+
+        self.assertEqual(orden, [self.c.pk, self.a.pk, self.b.pk])
+
+    def test_el_bloque_de_la_galeria_explica_el_orden_de_la_tienda(self):
+        self.client.force_login(crear_usuario("administrador", "100000001", superusuario=True))
+
+        respuesta = self.client.get(reverse("core:producto_editar", args=[self.producto.pk]))
+
+        self.assertContains(
+            respuesta,
+            "En la tienda va primero la principal y después las demás, "
+            "en el orden de sus posiciones.",
+        )
