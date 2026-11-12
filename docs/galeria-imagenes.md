@@ -3,6 +3,10 @@
 > Qué guarda el módulo, qué necesita en producción y qué no hay que hacer.
 > Complementa a `docs/contexto-sprint-productos.md`. Aquí solo va lo que no se
 > ve leyendo una pantalla; el detalle de cada regla está en el código citado.
+>
+> Las decisiones de negocio que este módulo tiene que respetar están en
+> `docs/estrategia-negocio.md` (§3). El porqué del diseño, en
+> `docs/decisiones/0001-galeria-de-imagenes.md`.
 
 ## 1. Decisiones vigentes
 
