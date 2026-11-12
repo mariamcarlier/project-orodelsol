@@ -1,5 +1,5 @@
 from django.contrib import admin, messages
-from .models import Coleccion, Material, Producto, Talla, VarianteProducto
+from .models import Coleccion, Material, Piedra, Producto, Talla, VarianteProducto
 
 
 @admin.register(Coleccion)
@@ -31,10 +31,10 @@ class VarianteProductoInline(admin.TabularInline):
 
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ("codigo", "nombre", "coleccion", "precio", "destacado", "activo", "es_borrador")
-    list_filter = ("coleccion", "destacado", "activo", "es_borrador")
+    list_display = ("codigo", "nombre", "coleccion", "precio", "personalizable", "destacado", "activo", "es_borrador")
+    list_filter = ("coleccion", "personalizable", "destacado", "activo", "es_borrador")
     search_fields = ("codigo", "nombre", "detalle", "descripcion")
-    filter_horizontal = ("tallas", "materiales")
+    filter_horizontal = ("tallas", "materiales", "piedras")
     inlines = (VarianteProductoInline,)
     actions = ("activar_productos", "desactivar_productos")
 
@@ -66,6 +66,13 @@ class TallaAdmin(admin.ModelAdmin):
 class MaterialAdmin(admin.ModelAdmin):
     list_display = ("nombre",)
     search_fields = ("nombre",)
+
+
+@admin.register(Piedra)
+class PiedraAdmin(admin.ModelAdmin):
+    list_display = ("ref", "nombre", "imagen", "orden")
+    list_editable = ("nombre", "orden")
+    search_fields = ("ref", "nombre")
 
 
 @admin.register(VarianteProducto)

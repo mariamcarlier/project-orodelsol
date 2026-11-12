@@ -25,14 +25,14 @@
 | Migraciones por pasos | Esquema → datos → restricciones (0003/0004/0005), para no romper productos existentes. |
 | Autorización | `is_staff` + permiso Django (`add/change/view/delete_producto`). Sin permiso → 403. |
 
-## 3. Mapa del sprint y estado auditado en `main`
+## 3. Mapa del sprint y estado (todas las historias cerradas)
 
 | Historia | Jira | Estado en `main` (commit `1f00391`) | Falta / riesgo |
 |---|---|---|---|
 | **PROD-04** Código y referencia | JODS-27 (+274/276) | ✅ `Producto.codigo` único, auto `AN-NNNN`, bloqueado al editar, visible en panel/admin, migraciones 0003–0005, 31 tests en `test_variantes.py` | Cerrado en este cambio: faltaba en el listado clásico y en `__str__`. |
 | **PROD-05** Variantes | JODS-28 (+282/283) | ✅ Modelo + `UniqueConstraint(producto,talla,material)` + SKU único + formset en panel al editar + inline en admin. Verificado end-to-end desde el panel (`test_variante_panel.py`) | Solo se gestionan desde panel/admin, **no** desde `/productos/editar` (vista clásica). Decisión: se mantiene así (el panel es la vía principal); la vista clásica queda para datos base del producto. |
-| **PROD-08** Precios | JODS-31 (+300/301) | ✅ `precio > 0` en formulario y modelo, `precio_adicional >= 0`, `precio_final` | No hay historial de precios. Si se exige, es historia nueva. |
-| **PROD-11** Tallas y materiales | JODS-34 (+332–335) | ✅ `Talla` (US + diámetro verificado + nacional), `Material`, M2M permitidos, seed idempotente | ⚠️ El criterio menciona **piedras** activables por producto: no existe modelo `Piedra`. Decidir si entra en este sprint. |
+| **PROD-08** Precios | JODS-31 (+300/301) | ✅ `precio > 0` al publicar, `precio_adicional >= 0`, `precio_final`, `CheckConstraint` de no negativo en BD, cambio reflejado al instante. Tests en `test_precios.py` | Cerrado. Sin historial de precios (decisión del equipo). |
+| **PROD-11** Tallas, materiales y piedras | JODS-34 (+332–335) | ✅ `Talla` (US + diámetro verificado + nacional), `Material`, `Piedra` (A–I), M2M `tallas`/`materiales`/`piedras`, bandera `personalizable`, seed idempotente. Tests en `test_piedras.py` | Cerrado. |
 | **PROD-12** Borrador | JODS-35 (+338–340) | ✅ `es_borrador`, `publicos()`, `Producto.clean()` exime requisitos al borrador y **`ProductoForm` ya permite guardar incompleto** (nombre vacío / precio 0). Activar masivamente un borrador completo lo publica. Tests en `test_borrador.py` | Cerrado. |
 
 > Nota sobre el patch `producto-variante.patch` (5 commits): **no se borró**.
@@ -113,11 +113,69 @@ Regla simple: **la casilla "Borrador" es la que relaja la validación**.
 
 Tests nuevos: `core/test_borrador.py` (8 tests). Total `core`: 332 OK.
 
-## 7. Decisiones pendientes (para las próximas historias)
+## 6c. PROD-11 — cierre (tallas, materiales y piedras)
 
-1. **Piedras (PROD-11)**: ¿se crea catálogo de piedras activables por producto
-   en este sprint o se recorta a tallas/materiales?
-2. **Borrador (PROD-12)**: ¿precio `0` y sin nombre permitidos en borrador?
-   (Implica relajar `ProductoForm.clean_precio` solo si `es_borrador`.)
-3. **Ficha pública**: ¿se crea página de detalle del producto (galería,
-   selector de talla/piedra, *Add to Bag*) o sigue solo la tarjeta en inicio?
+Decisiones del equipo:
+
+| Tema | Decisión |
+|---|---|
+| Catálogo de piedras | Las **9 referencias** de la tabla de colores de la empresa, con sus imágenes (copiadas del repo de referencia y optimizadas a 200 px). |
+| Activar/desactivar por producto | **M2M `Producto.piedras`**: asignada = disponible; quitarla = desactivarla para ese producto. |
+| Producto personalizable | Bandera `personalizable`. Si está activa, el producto **debe** tener al menos una piedra para publicarse. |
+| Cliente | Elige la piedra en la **tarjeta del inicio**; solo ve las asignadas. El servidor valida antes de escribir en el carrito. |
+
+Piezas nuevas:
+
+- `core/models.py`: modelo `Piedra` (`ref` único, `nombre`, `imagen` en `static/`, `orden`),
+  M2M `Producto.piedras`, `Producto.personalizable`, `piedras_disponibles()` y
+  validación en `Producto.clean()`.
+- `core/migrations/0008_piedras_catalogo.py`.
+- `core/management/commands/seed_tallas_materiales.py`: ahora también carga las
+  9 piedras (sigue siendo idempotente).
+- `core/dashboard.py`: campos `personalizable` y `piedras` en el formulario
+  (casillas = maestro de piedras), columna "Personalizable" y error específico
+  si falta la piedra.
+- `core/admin.py`: registro de `Piedra` y `piedras` en `filter_horizontal`.
+- `core/views.py` + `core/urls.py`: `core:producto_piedra_disponible`
+  (`GET /productos/<pk>/piedras/<ref>/disponible/`) devuelve 200/400; es la
+  guarda de servidor que impide agregar al carrito una piedra desactivada.
+- `templates/core/index.html`, `static/css/components.css`, `static/js/main.js`:
+  selector de piedra en la tarjeta, piedra guardada en el carrito y validación
+  antes de añadir.
+
+Comandos en tu máquina (una vez):
+
+```powershell
+python manage.py migrate
+python manage.py seed_tallas_materiales
+```
+
+Tests nuevos: `core/test_piedras.py` (16 tests). Total `core`: 348·OK, proyecto: 481·OK.
+
+## 6d. PROD-08 — cierre (precios)
+
+Decisión: **sin historial de precios**. Los criterios solo piden validar el
+valor y reflejarlo; una tabla de histórico agrega código que hoy nadie
+consulta. Si el negocio lo pide después, se agrega como historia nueva.
+
+| Criterio | Cómo se cumple |
+|---|---|
+| Actualizar el precio | `ProductoForm.precio` en panel, admin y vista clásica. |
+| Valor numérico | `DecimalField`: un texto como "un millón" da error de campo. |
+| Valor positivo | > 0 obligatorio al **publicar**; 0 permitido solo en borrador (PROD-12); negativo **nunca** (modelo + BD). |
+| Reflejo inmediato | Sin caché: la tarjeta y el panel leen de BD en cada petición (`test_precios.py`). |
+| Precio de la variante | `precio_final = producto.precio + precio_adicional`, se recalcula al actualizar. |
+| Sin autorización | `is_staff` + `change_producto` → 403. |
+
+Nuevo: `core/migrations/0009_precio_no_negativo.py` (`CheckConstraint`
+`producto_precio_no_negativo`) y validación de negativos en `Producto.clean()`.
+
+Tests nuevos: `core/test_precios.py` (10 tests). Total `core`: 358·OK, proyecto: 491·OK.
+
+## 7. Pendiente fuera de estas 5 historias
+
+1. **Ficha pública**: no existe página de detalle del producto (galería,
+   selector de talla/piedra, *Add to Bag* como en las referencias). Hoy el
+   cliente elige la piedra en la tarjeta del inicio.
+2. **Historial de precios**: descartado por ahora; es historia nueva si el
+   negocio lo pide.

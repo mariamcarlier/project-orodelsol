@@ -154,7 +154,8 @@
             </div>
             <button class="product-card__bar" type="button" data-action="add-to-cart"
                     data-product-name="{{ producto.nombre }}"
-                    data-product-price="{{ producto.precio|floatformat:0 }}">
+                    data-product-price="{{ producto.precio|floatformat:0 }}"
+                    data-stone-check-url="{% url 'core:producto_piedra_disponible' producto.pk 'REF' %}">
               Añadir al carrito
             </button>
           </div>
@@ -163,6 +164,25 @@
             <h3 class="product-card__name">{{ producto.nombre }}</h3>
             <p class="product-card__price"><strong>COP ${{ producto.precio|floatformat:0 }}</strong></p>
             {% if producto.codigo %}<span class="product-card__label">Ref. {{ producto.codigo }}</span>{% endif %}
+            {% if producto.personalizable %}
+              {% with piedras=producto.piedras.all %}
+                {% if piedras %}
+                <div class="product-card__stones" role="group"
+                     aria-label="Elige la piedra de {{ producto.nombre }}">
+                  <span class="product-card__stones-label">Piedra:</span>
+                  {% for piedra in piedras %}
+                  <button type="button" class="product-card__stone"
+                          data-stone-ref="{{ piedra.ref }}"
+                          data-stone-name="{{ piedra.nombre }}"
+                          title="{{ piedra.nombre }}"
+                          aria-label="{{ piedra.nombre }}"
+                          aria-pressed="false"
+                          {% if piedra.imagen %}style="background-image:url('{% static piedra.imagen %}')"{% endif %}></button>
+                  {% endfor %}
+                </div>
+                {% endif %}
+              {% endwith %}
+            {% endif %}
           </div>
         </article>
         {% empty %}

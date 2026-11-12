@@ -292,3 +292,41 @@
   gap: var(--space-gap);
   
 }
+
+/* ── Selector de piedra (PROD-11) ── */
+.product-card__stones {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.product-card__stones-label {
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #7a6a58);
+}
+
+.product-card__stone {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(74, 47, 30, .35);
+  background-color: #f3ece0;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  padding: 0;
+  transition: transform .15s, box-shadow .15s;
+}
+
+.product-card__stone:hover {
+  transform: scale(1.1);
+}
+
+.product-card__stone.is-selected {
+  box-shadow: 0 0 0 2px var(--color-cacao, #4a2f1e);
+  transform: scale(1.1);
+}
