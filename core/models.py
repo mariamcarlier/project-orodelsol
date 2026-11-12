@@ -199,6 +199,14 @@ class Producto(models.Model):
 
     class Meta:
         ordering = ("-destacado", "nombre")
+        constraints = [
+            # 0 solo se permite mientras el producto es borrador; un precio
+            # negativo nunca es válido, ni siquiera en borrador.
+            models.CheckConstraint(
+                condition=Q(precio__gte=0),
+                name="producto_precio_no_negativo",
+            ),
+        ]
 
     def __str__(self):
         # El código es el identificador estable del producto: se muestra
@@ -231,6 +239,11 @@ class Producto(models.Model):
 
     def clean(self):
         self.asegurar_codigo()
+        # Un precio negativo nunca es válido; el 0 sí, mientras sea borrador.
+        if self.precio is not None and self.precio < 0:
+            raise ValidationError(
+                {"precio": "El precio no puede ser un valor negativo."}
+            )
         if not self.es_publico:
             return
         faltantes = {}

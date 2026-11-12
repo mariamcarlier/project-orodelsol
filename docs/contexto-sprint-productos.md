@@ -25,13 +25,13 @@
 | Migraciones por pasos | Esquema → datos → restricciones (0003/0004/0005), para no romper productos existentes. |
 | Autorización | `is_staff` + permiso Django (`add/change/view/delete_producto`). Sin permiso → 403. |
 
-## 3. Mapa del sprint y estado auditado en `main`
+## 3. Mapa del sprint y estado (todas las historias cerradas)
 
 | Historia | Jira | Estado en `main` (commit `1f00391`) | Falta / riesgo |
 |---|---|---|---|
 | **PROD-04** Código y referencia | JODS-27 (+274/276) | ✅ `Producto.codigo` único, auto `AN-NNNN`, bloqueado al editar, visible en panel/admin, migraciones 0003–0005, 31 tests en `test_variantes.py` | Cerrado en este cambio: faltaba en el listado clásico y en `__str__`. |
 | **PROD-05** Variantes | JODS-28 (+282/283) | ✅ Modelo + `UniqueConstraint(producto,talla,material)` + SKU único + formset en panel al editar + inline en admin. Verificado end-to-end desde el panel (`test_variante_panel.py`) | Solo se gestionan desde panel/admin, **no** desde `/productos/editar` (vista clásica). Decisión: se mantiene así (el panel es la vía principal); la vista clásica queda para datos base del producto. |
-| **PROD-08** Precios | JODS-31 (+300/301) | ✅ `precio > 0` en formulario y modelo, `precio_adicional >= 0`, `precio_final` | No hay historial de precios. Si se exige, es historia nueva. |
+| **PROD-08** Precios | JODS-31 (+300/301) | ✅ `precio > 0` al publicar, `precio_adicional >= 0`, `precio_final`, `CheckConstraint` de no negativo en BD, cambio reflejado al instante. Tests en `test_precios.py` | Cerrado. Sin historial de precios (decisión del equipo). |
 | **PROD-11** Tallas, materiales y piedras | JODS-34 (+332–335) | ✅ `Talla` (US + diámetro verificado + nacional), `Material`, `Piedra` (A–I), M2M `tallas`/`materiales`/`piedras`, bandera `personalizable`, seed idempotente. Tests en `test_piedras.py` | Cerrado. |
 | **PROD-12** Borrador | JODS-35 (+338–340) | ✅ `es_borrador`, `publicos()`, `Producto.clean()` exime requisitos al borrador y **`ProductoForm` ya permite guardar incompleto** (nombre vacío / precio 0). Activar masivamente un borrador completo lo publica. Tests en `test_borrador.py` | Cerrado. |
 
@@ -152,9 +152,30 @@ python manage.py seed_tallas_materiales
 
 Tests nuevos: `core/test_piedras.py` (16 tests). Total `core`: 348·OK, proyecto: 481·OK.
 
-## 7. Decisiones pendientes (para las próximas historias)
+## 6d. PROD-08 — cierre (precios)
 
-1. **PROD-08 Precios**: ¿se necesita historial de precios (quién y cuándo
-   cambió el precio) o basta con validar el valor actual?
-2. **Ficha pública**: ¿se crea página de detalle del producto (galería,
-   selector de talla/piedra, *Add to Bag*) o sigue solo la tarjeta en inicio?
+Decisión: **sin historial de precios**. Los criterios solo piden validar el
+valor y reflejarlo; una tabla de histórico agrega código que hoy nadie
+consulta. Si el negocio lo pide después, se agrega como historia nueva.
+
+| Criterio | Cómo se cumple |
+|---|---|
+| Actualizar el precio | `ProductoForm.precio` en panel, admin y vista clásica. |
+| Valor numérico | `DecimalField`: un texto como "un millón" da error de campo. |
+| Valor positivo | > 0 obligatorio al **publicar**; 0 permitido solo en borrador (PROD-12); negativo **nunca** (modelo + BD). |
+| Reflejo inmediato | Sin caché: la tarjeta y el panel leen de BD en cada petición (`test_precios.py`). |
+| Precio de la variante | `precio_final = producto.precio + precio_adicional`, se recalcula al actualizar. |
+| Sin autorización | `is_staff` + `change_producto` → 403. |
+
+Nuevo: `core/migrations/0009_precio_no_negativo.py` (`CheckConstraint`
+`producto_precio_no_negativo`) y validación de negativos en `Producto.clean()`.
+
+Tests nuevos: `core/test_precios.py` (10 tests). Total `core`: 358·OK, proyecto: 491·OK.
+
+## 7. Pendiente fuera de estas 5 historias
+
+1. **Ficha pública**: no existe página de detalle del producto (galería,
+   selector de talla/piedra, *Add to Bag* como en las referencias). Hoy el
+   cliente elige la piedra en la tarjeta del inicio.
+2. **Historial de precios**: descartado por ahora; es historia nueva si el
+   negocio lo pide.
