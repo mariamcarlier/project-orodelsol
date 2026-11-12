@@ -68,10 +68,12 @@ def _error(mensaje, codigo):
 
 
 def _tamano(archivo):
-    """Peso en bytes de un archivo subido, sin consumir su contenido."""
-    tamano = getattr(archivo, "size", None)
-    if tamano is not None:
-        return tamano
+    """Peso real en bytes de un archivo subido, sin consumir su contenido.
+
+    Se mide sobre el contenido (dónde termina el archivo) y no sobre
+    `archivo.size`, que es un dato declarado. Así el límite por envío se
+    comprueba igual que el de cada imagen: sobre los bytes reales.
+    """
     posicion = archivo.tell()
     archivo.seek(0, 2)
     total = archivo.tell()
@@ -80,7 +82,7 @@ def _tamano(archivo):
 
 
 def validar_envio(archivos):
-    """Comprueba que todas las imágenes de un mismo envío no superen 25 MB."""
+    """Comprueba que los bytes reales de todas las imágenes de un envío no superen 30 MB."""
     if sum(_tamano(archivo) for archivo in archivos) > MAX_BYTES_POR_ENVIO:
         raise _error(
             f"Las imágenes seleccionadas pesan más de {MAX_BYTES_POR_ENVIO // MB} MB "

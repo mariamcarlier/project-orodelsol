@@ -18,6 +18,11 @@ fuente por fila» y «a lo sumo una principal»):
   de otro producto —o inventado— se rechaza.
 - Al borrar una fotografía se borran sus tres archivos (original y derivados),
   pero solo si están dentro de la carpeta del propio producto.
+- Al eliminar un producto se vacía su carpeta `productos/<id>/` (lo dispara
+  `core/signals.py`, de modo que vale para cualquier vía de borrado).
+- Borrar archivos nunca hace fallar una operación que ya se confirmó: si un
+  archivo no se deja borrar, se anota en el registro y se sigue con los demás.
+  Lo que quede suelto en la carpeta se recoge al eliminar el producto.
 
 Lo que este servicio NO hace (es responsabilidad de quien lo llama):
 - Comprobar permisos: la vista debe exigir `core.change_producto` antes.
@@ -25,7 +30,8 @@ Lo que este servicio NO hace (es responsabilidad de quien lo llama):
   (eso es el Paso 03d).
 
 La posición de una fotografía y cuál es la principal son cosas independientes:
-cambiar la principal no mueve la fotografía de lugar.
+cambiar la principal no mueve la fotografía de lugar. La tienda enseña primero
+la principal y después las demás por posición (`Producto.fotografias_tienda`).
 """
 
 import logging
@@ -34,14 +40,16 @@ from collections.abc import Mapping
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.validators import URLValidator
-from django.db import transaction
+from django.db import DatabaseError, transaction
 
 from .imagenes import procesar_imagen, validar_envio
 from .models import Producto, ProductoImagen
 
 logger = logging.getLogger(__name__)
 
-MAX_IMAGENES_POR_PRODUCTO = 5
+# Regla de negocio aprobada: hasta 10 fotografías por producto. Es el único
+# lugar donde se cambia; las pantallas y los mensajes leen esta constante.
+MAX_IMAGENES_POR_PRODUCTO = 10
 MAX_POSICION = 32767  # tope de PositiveSmallIntegerField en todas las bases de datos
 LARGO_MAXIMO_URL = ProductoImagen._meta.get_field("url").max_length
 _VALIDADOR_URL = URLValidator(schemes=["http", "https"])
@@ -98,6 +106,27 @@ def _normalizar(producto):
         ProductoImagen.objects.filter(pk=primera.pk).update(es_principal=True)
         primera.es_principal = True
     return imagenes
+
+
+def _recolocar(imagenes, movidas):
+    """Orden final al mover las fotografías de `movidas` {pk: posición}.
+
+    Las que no se mueven conservan su orden; cada movida se inserta en el lugar
+    pedido. Se insertan de menor a mayor posición y nunca antes de la anterior,
+    así ninguna inserción desplaza a una ya colocada. (`sorted` es estable: a
+    igual posición manda el orden que ya tenían.)
+    """
+    ordenadas = [imagen for imagen in imagenes if imagen.pk not in movidas]
+    por_colocar = sorted(
+        (imagen for imagen in imagenes if imagen.pk in movidas),
+        key=lambda imagen: movidas[imagen.pk],
+    )
+    anterior = -1
+    for imagen in por_colocar:
+        lugar = min(max(movidas[imagen.pk], anterior + 1), len(ordenadas))
+        ordenadas.insert(lugar, imagen)
+        anterior = lugar
+    return ordenadas
 
 
 def _marcar_gestionada(producto):
@@ -157,6 +186,18 @@ def _guardar_archivos(imagen, resultado, guardados):
 def listar(producto):
     """Fotografías del producto, en el orden en que deben mostrarse."""
     return _imagenes(producto)
+
+
+def listar_por_producto(productos):
+    """Galerías de varios productos con UNA sola consulta: {id: [fotografías]}.
+
+    Para listados (el panel muestra muchos productos por página). Cada lista
+    sale en el orden en que debe mostrarse; un producto sin galería tiene [].
+    """
+    galerias = {producto.pk: [] for producto in productos}
+    for imagen in ProductoImagen.objects.filter(producto_id__in=list(galerias)):
+        galerias[imagen.producto_id].append(imagen)  # ya ordenadas
+    return galerias
 
 
 def principal(producto):
@@ -259,10 +300,16 @@ def establecer_principal(producto, imagen_id):
 def reordenar(producto, posiciones):
     """Aplica posiciones numéricas {id_de_fotografia: posicion} y las normaliza.
 
-    La interfaz envía un número por fotografía; aquí se convierten en 0, 1, 2...
-    Los empates se resuelven por el orden que ya tenían. Las fotografías que no
-    se mencionen conservan su posición actual. Si un número no es válido, o un
+    Las posiciones empiezan en 0. Cada fotografía mencionada termina justo en la
+    posición pedida, tanto si sube como si baja; si el número es mayor que la
+    galería, queda al final. Las que no se mencionan conservan su orden entre
+    sí y ocupan los lugares libres. Si dos se piden en el mismo lugar, quedan
+    seguidas en el orden que ya tenían. Si un número no es válido, o un
     identificador no pertenece al producto, no se cambia nada.
+
+    Conviene enviar solo las fotografías que cambian de lugar. Si se envían
+    todas, las que no cambiaron también cuentan como movidas: «pasar la primera
+    a la posición 1» empataría con la que ya estaba ahí y no cambiaría nada.
     """
     if not isinstance(posiciones, Mapping):
         raise _error("Las posiciones deben indicarse como {fotografía: posición}.", "orden")
@@ -288,20 +335,10 @@ def reordenar(producto, posiciones):
             if imagen is None:
                 raise _error(MENSAJE_NO_PERTENECE, "no_pertenece")
             movidas[imagen.pk] = numero
-        previo = {imagen.pk: imagen.orden for imagen in actuales}
-        # A igual posición gana la fotografía que se movió a propósito («poner la C
-        # en la posición 0» la deja primera); si ambas se movieron o ninguna, manda
-        # el orden que ya tenían.
-        actuales.sort(
-            key=lambda imagen: (
-                movidas.get(imagen.pk, previo[imagen.pk]),
-                imagen.pk not in movidas,
-                previo[imagen.pk],
-            )
-        )
-        for posicion, imagen in enumerate(actuales):
+        ordenadas = _recolocar(actuales, movidas)
+        for posicion, imagen in enumerate(ordenadas):
             imagen.orden = posicion
-        ProductoImagen.objects.bulk_update(actuales, ["orden"])
+        ProductoImagen.objects.bulk_update(ordenadas, ["orden"])
 
 
 def eliminar_imagen(producto, imagen_id):
@@ -316,10 +353,97 @@ def eliminar_imagen(producto, imagen_id):
         nombres = _nombres_de_archivos(imagen)
         almacenamiento = imagen.archivo.storage
         imagen.delete()
-        _normalizar(bloqueado)  # renumera y, si faltaba la principal, ascende a la primera
+        _normalizar(bloqueado)  # renumera y, si faltaba la principal, asciende a la primera
+        # `robust`: la fila ya se eliminó; un fallo al borrar archivos se anota
+        # en el registro, pero no convierte la operación en un error.
         transaction.on_commit(
-            lambda: _borrar_archivos(bloqueado.pk, nombres, almacenamiento)
+            lambda: _borrar_archivos(bloqueado.pk, nombres, almacenamiento),
+            robust=True,
         )
+
+
+def _vaciar_carpeta(almacenamiento, carpeta):
+    """Borra los archivos sueltos de `carpeta` y, si queda vacía, la carpeta.
+
+    No entra en subcarpetas: quien llama decide cuáles vaciar. Un archivo que
+    no se deja borrar no impide borrar los demás. Devuelve True si no quedó
+    ningún archivo por borrar (también cuando la carpeta no existe).
+    """
+    try:
+        _, archivos = almacenamiento.listdir(carpeta)
+    except FileNotFoundError:
+        return True  # no había nada que limpiar
+    except (OSError, NotImplementedError):
+        logger.exception("No se pudo leer la carpeta %r para limpiarla.", carpeta)
+        return False
+    limpia = True
+    for nombre in archivos:
+        try:
+            almacenamiento.delete(f"{carpeta}/{nombre}")
+        except OSError:
+            logger.exception("No se pudo borrar el archivo %r.", f"{carpeta}/{nombre}")
+            limpia = False
+    try:
+        almacenamiento.delete(carpeta)  # solo tiene efecto si quedó vacía
+    except OSError as error:
+        logger.warning("La carpeta %r no se pudo borrar y se conserva: %s", carpeta, error)
+    return limpia
+
+
+def borrar_carpeta_de_producto(producto_id, almacenamiento=None):
+    """Vacía `productos/<id>/` de un producto que YA NO existe.
+
+    Solo toca lo que el servicio escribe ahí: los originales y la subcarpeta
+    `derivados/`. Cualquier otra subcarpeta se deja intacta. Debe llamarse con la
+    transacción ya confirmada: si el borrado del producto se revierte, las
+    fotografías tienen que seguir en su sitio.
+
+    Si existe un producto con ese identificador, no borra nada y devuelve
+    False: esa carpeta es de un producto vivo. Importa en un reintento tardío:
+    en SQLite, una migración que reconstruye la tabla de productos puede hacer
+    que un producto nuevo reciba el identificador de uno eliminado.
+
+    Si falla a medias (un archivo en uso, un permiso), borra lo que puede, lo
+    anota en el registro y devuelve False. Se puede volver a llamar más tarde
+    con el mismo identificador: termina lo que quedó pendiente. Devuelve True
+    cuando no queda ningún archivo del servicio en la carpeta.
+    """
+    try:
+        identificador = int(producto_id)
+    except (TypeError, ValueError):
+        logger.warning("Identificador de producto no válido: %r.", producto_id)
+        return False
+    carpeta = f"productos/{identificador}"
+    try:
+        existe = Producto.objects.filter(pk=identificador).exists()
+    except DatabaseError:
+        logger.exception(
+            "No se pudo comprobar que el producto %s ya no existe: %r se conserva.",
+            identificador,
+            carpeta,
+        )
+        return False
+    if existe:
+        logger.warning(
+            "El producto %s existe: su carpeta %r no se borra.", identificador, carpeta
+        )
+        return False
+    if almacenamiento is None:
+        almacenamiento = ProductoImagen._meta.get_field("archivo").storage
+    # Las dos carpetas se intentan siempre: un fallo en una no salta la otra.
+    resultados = [
+        _vaciar_carpeta(almacenamiento, f"{carpeta}/derivados"),
+        _vaciar_carpeta(almacenamiento, carpeta),
+    ]
+    if not all(resultados):
+        logger.error(
+            "Quedaron archivos sin borrar en %r. Para reintentarlo: "
+            "servicio_galeria.borrar_carpeta_de_producto(%s).",
+            carpeta,
+            identificador,
+        )
+        return False
+    return True
 
 
 def normalizar(producto):

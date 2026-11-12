@@ -274,7 +274,7 @@ class AgregarUrlTests(_Base):
 
         self.assertEqual(ctx.exception.code, "url_invalida")
 
-    def test_rechaza_la_sexta(self):
+    def test_rechaza_una_mas_que_el_maximo(self):
         for n in range(MAX_IMAGENES_POR_PRODUCTO):
             galeria.agregar_url(self.producto, url(n))
 
@@ -352,6 +352,52 @@ class ReordenarTests(_Base):
         )
 
         self.assertEqual(self.ids(), [self.b.pk, self.c.pk, self.a.pk])
+        self.assertGaleriaConsistente()
+
+    def test_bajar_una_fotografia_la_deja_en_la_posicion_pedida(self):
+        # Antes, «mover la primera a la posición 1» no cambiaba nada y «a la 2»
+        # la dejaba en la 1: al bajar, la fotografía quedaba un lugar antes.
+        galeria.reordenar(self.producto, {self.a.pk: 1})
+        self.assertEqual(self.ids(), [self.b.pk, self.a.pk, self.c.pk])
+
+        galeria.reordenar(self.producto, {self.b.pk: 2})
+        self.assertEqual(self.ids(), [self.a.pk, self.c.pk, self.b.pk])
+        self.assertGaleriaConsistente()
+
+    def test_una_posicion_mayor_que_la_galeria_la_manda_al_final(self):
+        galeria.reordenar(self.producto, {self.a.pk: 99})
+
+        self.assertEqual(self.ids(), [self.b.pk, self.c.pk, self.a.pk])
+        self.assertGaleriaConsistente()
+
+    def test_dos_movidas_a_la_misma_posicion_quedan_seguidas_en_su_orden_previo(self):
+        galeria.reordenar(self.producto, {self.a.pk: 2, self.b.pk: 2})
+
+        self.assertEqual(self.ids(), [self.c.pk, self.a.pk, self.b.pk])
+        self.assertGaleriaConsistente()
+
+    def test_dos_movidas_al_mismo_lugar_intermedio_no_se_invierten(self):
+        d, e = galeria.agregar_archivos(self.producto, fotos(2))
+
+        galeria.reordenar(self.producto, {d.pk: 1, e.pk: 1})
+
+        self.assertEqual(self.ids(), [self.a.pk, d.pk, e.pk, self.b.pk, self.c.pk])
+        self.assertGaleriaConsistente()
+
+    def test_varias_movidas_terminan_cada_una_en_su_lugar(self):
+        d, e = galeria.agregar_archivos(self.producto, fotos(2))
+
+        galeria.reordenar(self.producto, {self.a.pk: 3, e.pk: 0})
+
+        self.assertEqual(self.ids(), [e.pk, self.b.pk, self.c.pk, self.a.pk, d.pk])
+        self.assertGaleriaConsistente()
+
+    def test_sin_posiciones_solo_normaliza(self):
+        ProductoImagen.objects.filter(pk=self.c.pk).update(orden=40)
+
+        galeria.reordenar(self.producto, {})
+
+        self.assertEqual(self.ids(), [self.a.pk, self.b.pk, self.c.pk])
         self.assertGaleriaConsistente()
 
     def test_no_cambia_cual_es_la_principal(self):
@@ -527,8 +573,28 @@ class NormalizarYConsultaTests(_Base):
 
         self.assertEqual([i.pk for i in galeria.listar(self.producto)], [c.pk, a.pk, b.pk])
 
+    def test_listar_por_producto_agrupa_varias_galerias_con_una_consulta(self):
+        otro = crear_producto("Anillo Brisa")
+        sin_galeria = crear_producto("Anillo Cielo")
+        galeria.agregar_archivos(self.producto, fotos(3))
+        a, b, c = self.filas()
+        galeria.reordenar(self.producto, {c.pk: 0})
+        de_otro = galeria.agregar_url(otro, url(1))
+
+        with self.assertNumQueries(1):
+            galerias = galeria.listar_por_producto([self.producto, otro, sin_galeria])
+
+        self.assertEqual(
+            {pk: [imagen.pk for imagen in imagenes] for pk, imagenes in galerias.items()},
+            {self.producto.pk: [c.pk, a.pk, b.pk], otro.pk: [de_otro.pk], sin_galeria.pk: []},
+        )
+
+    def test_listar_por_producto_sin_productos_no_falla(self):
+        self.assertEqual(galeria.listar_por_producto([]), {})
+
     def test_principal_de_un_producto_sin_galeria_es_none(self):
         self.assertIsNone(galeria.principal(self.producto))
 
     def test_el_maximo_aprobado_no_cambia_por_accidente(self):
-        self.assertEqual(MAX_IMAGENES_POR_PRODUCTO, 5)
+        # Aprobado para Joyas Oro del Sol: 10 fotografías por producto.
+        self.assertEqual(MAX_IMAGENES_POR_PRODUCTO, 10)
