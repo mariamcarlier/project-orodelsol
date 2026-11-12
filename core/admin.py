@@ -11,7 +11,8 @@ class ColeccionAdmin(admin.ModelAdmin):
     # formulario de colecciones, que la validan y la optimizan (`ColeccionForm`,
     # Paso 04). Este admin genera su propio formulario, sin esa validación: sin
     # esta línea mostraría un campo de subida abierto que acepta cualquier
-    # imagen, sin límite de peso.
+    # imagen, sin límite de peso. (`imagen_detalle` no hace falta excluirlo: no
+    # es editable y ningún formulario lo ofrece.)
     exclude = ("imagen",)
     actions = ("activar_colecciones", "desactivar_colecciones")
 

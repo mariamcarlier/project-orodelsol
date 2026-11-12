@@ -6,6 +6,7 @@ from django.db.models import Exists, OuterRef, Prefetch, Q
 
 from . import portadas
 from .upload_paths import (
+    ruta_derivado_coleccion,
     ruta_derivado_producto,
     ruta_imagen_coleccion,
     ruta_imagen_producto,
@@ -38,9 +39,15 @@ class Coleccion(models.Model):
     imagen_url = models.URLField(blank=True)
     # Portada propia (Paso 04). Convive con imagen_url por compatibilidad, pero
     # una colección usa archivo O URL, nunca ambos: lo exigen `clean()` y
-    # `ColeccionForm`. El archivo llega ya validado y optimizado por
-    # `core.portadas`; quien lo cuida en el disco es `save()`.
+    # `ColeccionForm`. Son dos archivos, como en `ProductoImagen`: `imagen` es
+    # el ORIGINAL limpio (su formato, sus medidas, su perfil de color) e
+    # `imagen_detalle` la versión optimizada (WebP) que enseña la tienda.
+    # Llegan ya validados por `core.portadas`; quien los cuida en el disco y
+    # mantiene `imagen_detalle` al día es `save()`.
     imagen = models.ImageField(upload_to=ruta_imagen_coleccion, blank=True)
+    imagen_detalle = models.ImageField(
+        upload_to=ruta_derivado_coleccion, blank=True, editable=False
+    )
     activa = models.BooleanField(default=True)
 
     class Meta:
@@ -55,10 +62,13 @@ class Coleccion(models.Model):
     def imagen_catalogo(self):
         """Dirección de la portada que enseña la tienda; cadena vacía si no tiene.
 
-        El archivo propio o, si no hay, `imagen_url`. No consulta la base de datos.
+        Con archivo propio, su versión optimizada; si esa portada no la tiene
+        (se guardó antes de la migración 0010 o sin pasar por el formulario),
+        el propio archivo. Sin archivo, `imagen_url`. No consulta la base de
+        datos.
         """
         if self.imagen:
-            return self.imagen.url
+            return (self.imagen_detalle or self.imagen).url
         return (self.imagen_url or "").strip()
 
     def clean(self):
@@ -77,10 +87,15 @@ class Coleccion(models.Model):
         """Guarda sin dejar archivos de portada sueltos (ver `core/portadas.py`).
 
         Vale para cualquier vía —formularios, panel, admin o consola—: si el
-        guardado falla, el archivo recién escrito se borra; si la portada
-        cambia, el archivo anterior se borra al confirmarse la transacción.
+        guardado falla, los archivos recién escritos se borran; si la portada
+        cambia, los anteriores se borran al confirmarse la transacción; y
+        `imagen_detalle` queda siempre acorde con `imagen`.
         """
-        with portadas.cuidar_archivo(self):
+        campos = kwargs.get("update_fields")
+        if campos is not None and portadas.CAMPO in campos:
+            # El original y su versión optimizada se guardan siempre juntos.
+            campos = kwargs["update_fields"] = {*campos, portadas.CAMPO_DETALLE}
+        with portadas.cuidar_archivos(self, campos):
             super().save(*args, **kwargs)
 
 

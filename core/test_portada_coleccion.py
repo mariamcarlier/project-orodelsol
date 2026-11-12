@@ -1,11 +1,19 @@
 """Portada de una colección (Paso 04): `core/portadas.py`, `Coleccion` y `ColeccionForm`.
 
 Qué se comprueba aquí:
-- El archivo que se sube pasa por `core.imagenes` y se guarda UNA versión WebP.
+- El archivo que se sube pasa por `core.imagenes` y se guardan DOS archivos: el
+  original limpio (`imagen`) y su versión optimizada (`imagen_detalle`), que es
+  la que enseña la tienda. Optimizar no sustituye al original.
 - La regla «un archivo o una dirección (URL), nunca los dos».
 - El disco no se separa de la base de datos: al sustituir, quitar o eliminar no
   quedan archivos sueltos, y nada se borra antes de confirmar la transacción.
 - Las pantallas: formulario de colecciones, panel, admin de Django y tienda.
+
+Lo que tiene que ver con que sean dos archivos —que `imagen_detalle` sea
+siempre la versión de la `imagen` guardada, las portadas que solo tienen
+`imagen` y los fallos con uno solo de los dos— está en
+`core/test_portada_dos_archivos.py`. La migración que añade `imagen_detalle`,
+en `core/test_migracion_portada_detalle.py`.
 
 Las reglas de validación de imágenes ya se prueban en `core/test_imagenes.py`;
 aquí solo se comprueba que la portada las usa. Cada prueba escribe en un
@@ -32,7 +40,7 @@ from django.db.models import ProtectedError
 from django.db.models.signals import post_save
 from django.test import TestCase, TransactionTestCase, override_settings
 from django.urls import reverse
-from PIL import Image
+from PIL import Image, ImageCms
 
 from . import portadas
 from .dashboard import (
@@ -40,15 +48,18 @@ from .dashboard import (
     MENSAJE_DIRECCION_CON_ARCHIVO,
     ColeccionForm,
 )
-from .imagenes import LADO_DETALLE_PX, MAX_BYTES_POR_IMAGEN
+from .imagenes import LADO_DETALLE_PX, MAX_BYTES_POR_IMAGEN, procesar_imagen
 from .models import MENSAJE_PORTADA_DOBLE, Coleccion, Producto
 from .test_galeria_vistas import crear_usuario
 from .test_servicio_galeria import foto
+from .upload_paths import ruta_derivado_coleccion, ruta_imagen_coleccion
 
 URL_EXTERNA = "https://example.com/portada.jpg"
 QUITAR = {"imagen-clear": "on"}  # la casilla «Quitar la portada actual»
-RUTA_DE_PORTADA = re.compile(r"colecciones/[0-9a-f]{32}\.webp")
+RUTA_DEL_ORIGINAL = re.compile(r"colecciones/[0-9a-f]{32}\.(?:jpg|png|webp)")
+RUTA_DEL_DETALLE = re.compile(r"colecciones/derivados/[0-9a-f]{32}\.webp")
 OTRO_COLOR = (10, 20, 30)
+GRANDE = (LADO_DETALLE_PX * 2, LADO_DETALLE_PX)  # más grande que la versión de la tienda
 
 
 def datos(coleccion=None, **cambios):
@@ -79,6 +90,46 @@ def gif():
     return SimpleUploadedFile("foto.gif", salida.getvalue(), content_type="image/gif")
 
 
+def imagen_en(formato, tamano=(120, 160), **opciones):
+    """Un archivo subido en ese formato (`JPEG`, `PNG` o `WEBP`)."""
+    salida = BytesIO()
+    Image.new("RGB", tamano, (200, 150, 50)).save(salida, format=formato, **opciones)
+    return SimpleUploadedFile(
+        f"foto.{formato.lower()}", salida.getvalue(), content_type=f"image/{formato.lower()}"
+    )
+
+
+def archivos_de(coleccion):
+    """Los archivos de una portada: el original y, si la tiene, su versión optimizada."""
+    return sorted(
+        nombre for nombre in (coleccion.imagen.name, coleccion.imagen_detalle.name) if nombre
+    )
+
+
+def falla_solo_con(almacenamiento, operacion, condicion, error):
+    """Hace fallar `almacenamiento.<operacion>` solo con los nombres que cumplen `condicion`.
+
+    Imita un fallo parcial: uno de los dos archivos de la portada no se deja
+    borrar (o escribir) y el otro sí. Con el resto, la operación es la de verdad.
+    """
+    de_verdad = getattr(almacenamiento, operacion)
+
+    def operar(nombre, *args, **kwargs):
+        if condicion(nombre):
+            raise error
+        return de_verdad(nombre, *args, **kwargs)
+
+    return mock.patch.object(almacenamiento, operacion, side_effect=operar)
+
+
+def es_derivado(nombre):
+    return nombre.startswith("colecciones/derivados/")
+
+
+def es_original(nombre):
+    return nombre.startswith("colecciones/") and not es_derivado(nombre)
+
+
 def media_temporal(prueba):
     """Pone `MEDIA_ROOT` en una carpeta temporal que se borra al terminar la prueba."""
     carpeta = tempfile.mkdtemp(prefix="portada-test-")
@@ -104,11 +155,14 @@ class _Base(TestCase):
     def archivos(self):
         return archivos_en(self.media)
 
-    def abrir(self, coleccion):
-        """La portada guardada, ya leída (sin dejar el archivo abierto en el disco)."""
-        with Image.open(self.media / coleccion.imagen.name) as imagen:
+    def abrir(self, nombre):
+        """Un archivo guardado, ya leído (sin dejarlo abierto en el disco)."""
+        with Image.open(self.media / nombre) as imagen:
             imagen.load()
             return imagen.format, imagen.size, dict(imagen.getexif())
+
+    def contenido(self, nombre):
+        return (self.media / nombre).read_bytes()
 
     def guardar(self, form):
         """Guarda como lo hace una vista: al volver, la transacción ya se confirmó."""
@@ -130,43 +184,69 @@ class _Base(TestCase):
 
 
 class SubirPortadaTests(_Base):
-    def test_guarda_una_sola_version_webp_en_la_carpeta_de_colecciones(self):
+    def test_guarda_el_original_y_su_version_optimizada(self):
         coleccion = self.guardar(formulario(archivo=foto()))
 
         coleccion.refresh_from_db()
-        self.assertTrue(RUTA_DE_PORTADA.fullmatch(coleccion.imagen.name), coleccion.imagen.name)
-        self.assertEqual(self.archivos(), [coleccion.imagen.name])
-        formato, _, _ = self.abrir(coleccion)
-        self.assertEqual(formato, "WEBP")  # se subió un PNG: lo guardado es la versión procesada
+        original, detalle = coleccion.imagen.name, coleccion.imagen_detalle.name
+        self.assertTrue(RUTA_DEL_ORIGINAL.fullmatch(original), original)
+        self.assertTrue(RUTA_DEL_DETALLE.fullmatch(detalle), detalle)
+        self.assertEqual(self.archivos(), sorted([original, detalle]))
+        # Cada campo guarda justo lo que entrega `core.imagenes` para él.
+        esperado = procesar_imagen(foto())
+        self.assertEqual(self.contenido(original), esperado.original)
+        self.assertEqual(self.contenido(detalle), esperado.detalle)
 
-    def test_una_imagen_grande_se_guarda_con_la_medida_de_la_tienda(self):
-        grande = foto(tamano=(LADO_DETALLE_PX * 2, LADO_DETALLE_PX))
+    def test_el_original_conserva_su_formato_y_sus_medidas(self):
+        for formato, extension in {"JPEG": ".jpg", "PNG": ".png", "WEBP": ".webp"}.items():
+            with self.subTest(formato=formato):
+                coleccion = self.guardar(
+                    formulario(archivo=imagen_en(formato, GRANDE), nombre=f"Luz {formato}")
+                )
 
-        coleccion = self.guardar(formulario(archivo=grande))
+                self.assertTrue(coleccion.imagen.name.endswith(extension), coleccion.imagen.name)
+                guardado, medidas, _ = self.abrir(coleccion.imagen.name)
+                # Ni convertido ni reducido.
+                self.assertEqual((guardado, medidas), (formato, GRANDE))
 
-        _, medidas, _ = self.abrir(coleccion)
+    def test_la_version_optimizada_es_webp_con_la_medida_de_la_tienda(self):
+        coleccion = self.guardar(formulario(archivo=imagen_en("JPEG", GRANDE)))
+
+        formato, medidas, _ = self.abrir(coleccion.imagen_detalle.name)
+        self.assertEqual(formato, "WEBP")
         self.assertEqual(medidas, (LADO_DETALLE_PX, LADO_DETALLE_PX // 2))
+
+    def test_el_original_conserva_su_perfil_de_color(self):
+        perfil = ImageCms.ImageCmsProfile(ImageCms.createProfile("sRGB")).tobytes()
+
+        coleccion = self.guardar(formulario(archivo=imagen_en("JPEG", icc_profile=perfil)))
+
+        with Image.open(self.media / coleccion.imagen.name) as original:
+            self.assertEqual(original.info.get("icc_profile"), perfil)
 
     def test_el_nombre_que_trae_el_archivo_nunca_llega_al_disco(self):
         self.guardar(formulario(archivo=foto("../../etc/passwd mía.png")))
 
-        (nombre,) = self.archivos()
-        self.assertTrue(RUTA_DE_PORTADA.fullmatch(nombre), nombre)
+        (original,) = filter(es_original, self.archivos())
+        (detalle,) = filter(es_derivado, self.archivos())
+        self.assertTrue(RUTA_DEL_ORIGINAL.fullmatch(original), original)
+        self.assertTrue(RUTA_DEL_DETALLE.fullmatch(detalle), detalle)
 
-    def test_lo_guardado_no_lleva_los_metadatos_del_archivo_original(self):
+    def test_ninguno_de_los_dos_archivos_lleva_los_metadatos_del_archivo_subido(self):
         exif = Image.Exif()
         exif[0x010F] = "MarcaDeCamara"  # Make
         exif[0x8825] = {1: "N", 2: (4.0, 36.0, 0.0), 3: "W", 4: (74.0, 4.0, 0.0)}  # GPS
-        salida = BytesIO()
-        Image.new("RGB", (120, 160), (200, 150, 50)).save(salida, format="JPEG", exif=exif)
-        self.assertIn(b"MarcaDeCamara", salida.getvalue())  # la entrada sí los traía
-        original = SimpleUploadedFile("foto.jpg", salida.getvalue(), content_type="image/jpeg")
+        subido = imagen_en("JPEG", exif=exif)
+        self.assertIn(b"MarcaDeCamara", subido.read())  # la entrada sí los traía
+        subido.seek(0)
 
-        coleccion = self.guardar(formulario(archivo=original))
+        coleccion = self.guardar(formulario(archivo=subido))
 
-        _, _, metadatos = self.abrir(coleccion)
-        self.assertEqual(metadatos, {})
-        self.assertNotIn(b"MarcaDeCamara", (self.media / coleccion.imagen.name).read_bytes())
+        for nombre in archivos_de(coleccion):
+            with self.subTest(nombre=nombre):
+                _, _, metadatos = self.abrir(nombre)
+                self.assertEqual(metadatos, {})
+                self.assertNotIn(b"MarcaDeCamara", self.contenido(nombre))
 
     def test_rechaza_lo_mismo_que_las_fotografias_de_producto(self):
         pesada = foto().read() + b"0" * (MAX_BYTES_POR_IMAGEN + 1)
@@ -188,25 +268,26 @@ class SubirPortadaTests(_Base):
 
     def test_un_archivo_rechazado_no_toca_la_portada_que_ya_habia(self):
         coleccion = self.con_portada()
-        anterior = coleccion.imagen.name
+        anterior = archivos_de(coleccion)
 
         form = formulario(coleccion, archivo=archivo_que_no_es_imagen())
 
         self.assertFalse(form.is_valid())
         coleccion.refresh_from_db()
-        self.assertEqual(coleccion.imagen.name, anterior)
-        self.assertEqual(self.archivos(), [anterior])
+        self.assertEqual(archivos_de(coleccion), anterior)
+        self.assertEqual(self.archivos(), anterior)
 
     def test_la_portada_es_opcional(self):
         coleccion = self.guardar(formulario())
 
         self.assertFalse(coleccion.imagen)
+        self.assertFalse(coleccion.imagen_detalle)
         self.assertEqual(coleccion.imagen_url, "")
         self.assertEqual(self.archivos(), [])
 
     def test_guardar_otros_datos_conserva_la_portada(self):
         coleccion = self.con_portada()
-        anterior = coleccion.imagen.name
+        anterior = archivos_de(coleccion)
         form = formulario(coleccion, temporada="2027")
         self.assertTrue(form.is_valid(), form.errors.as_json())
 
@@ -215,8 +296,14 @@ class SubirPortadaTests(_Base):
 
         self.assertEqual(pendientes, [])  # no se programa ningún borrado
         coleccion.refresh_from_db()
-        self.assertEqual((coleccion.temporada, coleccion.imagen.name), ("2027", anterior))
-        self.assertEqual(self.archivos(), [anterior])
+        self.assertEqual((coleccion.temporada, archivos_de(coleccion)), ("2027", anterior))
+        self.assertEqual(self.archivos(), anterior)
+
+    def test_la_ayuda_dice_que_el_original_se_conserva(self):
+        ayuda = ColeccionForm()["imagen"].help_text
+
+        self.assertIn("Se conserva el original", ayuda)
+        self.assertIn("versión optimizada", ayuda)
 
     def test_el_selector_propone_solo_los_formatos_admitidos(self):
         selector = str(ColeccionForm()["imagen"])
@@ -261,13 +348,13 @@ class UnArchivoOUnaDireccionTests(_Base):
 
     def test_con_portada_subida_no_admite_ademas_una_direccion(self):
         coleccion = self.con_portada()
-        anterior = coleccion.imagen.name
+        anterior = archivos_de(coleccion)
 
         form = formulario(coleccion, imagen_url=URL_EXTERNA)
 
         self.assertUnicoError(form, "imagen_url", MENSAJE_DIRECCION_CON_ARCHIVO)
         coleccion.refresh_from_db()
-        self.assertEqual((coleccion.imagen.name, coleccion.imagen_url), (anterior, ""))
+        self.assertEqual((archivos_de(coleccion), coleccion.imagen_url), (anterior, ""))
 
     def test_con_direccion_guardada_no_admite_ademas_un_archivo(self):
         coleccion = Coleccion.objects.create(nombre="Luz Dorada", imagen_url=URL_EXTERNA)
@@ -288,7 +375,8 @@ class UnArchivoOUnaDireccionTests(_Base):
 
         coleccion.refresh_from_db()
         self.assertEqual(coleccion.imagen_url, "")
-        self.assertEqual(self.archivos(), [coleccion.imagen.name])
+        self.assertEqual(len(archivos_de(coleccion)), 2)
+        self.assertEqual(self.archivos(), archivos_de(coleccion))
 
     def test_cambiar_el_archivo_por_una_direccion_en_un_solo_envio(self):
         coleccion = self.con_portada()
@@ -296,21 +384,21 @@ class UnArchivoOUnaDireccionTests(_Base):
         self.guardar(formulario(coleccion, imagen_url=URL_EXTERNA, **QUITAR))
 
         coleccion.refresh_from_db()
-        self.assertFalse(coleccion.imagen)
+        self.assertEqual(archivos_de(coleccion), [])
         self.assertEqual(coleccion.imagen_url, URL_EXTERNA)
         self.assertEqual(self.archivos(), [])
 
     def test_no_se_puede_subir_y_quitar_en_el_mismo_envio(self):
         coleccion = self.con_portada()
-        anterior = coleccion.imagen.name
+        anterior = archivos_de(coleccion)
 
         form = formulario(coleccion, archivo=foto(color=OTRO_COLOR), **QUITAR)
 
         self.assertFalse(form.is_valid())
         self.assertEqual(self.codigos(form, "imagen"), ["contradiction"])
         coleccion.refresh_from_db()
-        self.assertEqual(coleccion.imagen.name, anterior)
-        self.assertEqual(self.archivos(), [anterior])
+        self.assertEqual(archivos_de(coleccion), anterior)
+        self.assertEqual(self.archivos(), anterior)
 
     def test_el_modelo_rechaza_las_dos_portadas_a_la_vez(self):
         coleccion = Coleccion(
@@ -355,11 +443,13 @@ class UnArchivoOUnaDireccionTests(_Base):
         con_las_dos = Coleccion(imagen="colecciones/a.webp", imagen_url=URL_EXTERNA)
 
         with self.assertNumQueries(0):
-            self.assertEqual(con_archivo.imagen_catalogo, con_archivo.imagen.url)
+            # Con archivo, la tienda enseña la versión optimizada, no el original.
+            self.assertEqual(con_archivo.imagen_catalogo, con_archivo.imagen_detalle.url)
             self.assertEqual(con_direccion.imagen_catalogo, URL_EXTERNA)
             self.assertEqual(sin_portada.imagen_catalogo, "")
             self.assertEqual(con_las_dos.imagen_catalogo, con_las_dos.imagen.url)
-        self.assertTrue(con_archivo.imagen_catalogo.endswith(con_archivo.imagen.name))
+        self.assertTrue(con_archivo.imagen_catalogo.endswith(con_archivo.imagen_detalle.name))
+        self.assertNotEqual(con_archivo.imagen_catalogo, con_archivo.imagen.url)
 
 
 # ---------------------------------------------------------------------------
@@ -371,27 +461,29 @@ class ArchivosEnElDiscoTests(_Base):
     def setUp(self):
         super().setUp()
         self.coleccion = self.con_portada()
-        self.anterior = self.coleccion.imagen.name
-        self.assertEqual(self.archivos(), [self.anterior])
+        self.anteriores = archivos_de(self.coleccion)
+        self.assertEqual(len(self.anteriores), 2)
+        self.assertEqual(self.archivos(), self.anteriores)
 
     def en_la_base(self):
-        return Coleccion.objects.get(pk=self.coleccion.pk).imagen.name
+        return archivos_de(Coleccion.objects.get(pk=self.coleccion.pk))
 
-    def test_al_subir_otra_fotografia_se_borra_la_anterior(self):
+    def test_al_subir_otra_fotografia_se_borran_los_dos_archivos_anteriores(self):
         self.guardar(formulario(self.coleccion, archivo=foto(color=OTRO_COLOR)))
 
-        self.assertNotEqual(self.en_la_base(), self.anterior)
-        self.assertEqual(self.archivos(), [self.en_la_base()])
+        self.assertEqual(set(self.en_la_base()) & set(self.anteriores), set())
+        self.assertEqual(len(self.en_la_base()), 2)
+        self.assertEqual(self.archivos(), self.en_la_base())
 
-    def test_la_anterior_no_se_borra_hasta_confirmar_la_transaccion(self):
+    def test_los_anteriores_no_se_borran_hasta_confirmar_la_transaccion(self):
         form = formulario(self.coleccion, archivo=foto(color=OTRO_COLOR))
         self.assertTrue(form.is_valid(), form.errors.as_json())
 
         with self.captureOnCommitCallbacks(execute=False) as pendientes:
             form.save()
 
-        self.assertEqual(len(pendientes), 1)
-        self.assertEqual(self.archivos(), sorted([self.anterior, self.en_la_base()]))
+        self.assertEqual(len(pendientes), 2)  # un borrado por archivo
+        self.assertEqual(self.archivos(), sorted(self.anteriores + self.en_la_base()))
 
     def test_si_la_operacion_se_revierte_la_portada_anterior_sigue_en_su_sitio(self):
         form = formulario(self.coleccion, archivo=foto(color=OTRO_COLOR))
@@ -404,17 +496,17 @@ class ArchivosEnElDiscoTests(_Base):
                     raise RuntimeError("algo falló después de guardar")
 
         self.assertEqual(pendientes, [])
-        self.assertEqual(self.en_la_base(), self.anterior)
-        # Límite conocido (ver core/portadas.py): el archivo nuevo sí queda en el disco.
-        self.assertIn(self.anterior, self.archivos())
+        self.assertEqual(self.en_la_base(), self.anteriores)
+        # Límite conocido (ver core/portadas.py): los archivos nuevos sí quedan en el disco.
+        self.assertLessEqual(set(self.anteriores), set(self.archivos()))
 
-    def test_al_quitar_la_portada_se_borra_su_archivo(self):
+    def test_al_quitar_la_portada_se_borran_sus_dos_archivos(self):
         self.guardar(formulario(self.coleccion, **QUITAR))
 
-        self.assertEqual(self.en_la_base(), "")
+        self.assertEqual(self.en_la_base(), [])
         self.assertEqual(self.archivos(), [])
 
-    def test_si_el_guardado_falla_el_archivo_nuevo_no_queda_en_el_disco(self):
+    def test_si_el_guardado_falla_los_archivos_nuevos_no_quedan_en_el_disco(self):
         Coleccion.objects.create(nombre="Repetida")
         form = formulario(self.coleccion, archivo=foto(color=OTRO_COLOR))
         self.assertTrue(form.is_valid(), form.errors.as_json())
@@ -424,12 +516,12 @@ class ArchivosEnElDiscoTests(_Base):
         with self.assertRaises(IntegrityError), transaction.atomic():
             coleccion.save()
 
-        self.assertEqual(self.archivos(), [self.anterior])
+        self.assertEqual(self.archivos(), self.anteriores)
         # El objeto vuelve a apuntar a la portada guardada: reintentar no deja una ruta rota.
-        self.assertEqual(coleccion.imagen.name, self.anterior)
-        self.assertEqual(self.en_la_base(), self.anterior)
+        self.assertEqual(archivos_de(coleccion), self.anteriores)
+        self.assertEqual(self.en_la_base(), self.anteriores)
 
-    def test_si_falla_al_crear_tampoco_queda_el_archivo(self):
+    def test_si_falla_al_crear_tampoco_quedan_los_archivos(self):
         form = formulario(archivo=foto(color=OTRO_COLOR), nombre="Otra")
         self.assertTrue(form.is_valid(), form.errors.as_json())
         nueva = form.save(commit=False)
@@ -438,29 +530,58 @@ class ArchivosEnElDiscoTests(_Base):
         with self.assertRaises(IntegrityError), transaction.atomic():
             nueva.save()
 
-        self.assertEqual(self.archivos(), [self.anterior])
-        self.assertFalse(nueva.imagen)
+        self.assertEqual(self.archivos(), self.anteriores)
+        self.assertEqual(archivos_de(nueva), [])
 
-    def test_no_borra_un_archivo_que_otra_coleccion_sigue_usando(self):
-        gemela = Coleccion.objects.create(nombre="Gemela", imagen=self.anterior)
+    def test_no_borra_los_archivos_que_otra_coleccion_sigue_usando(self):
+        gemela = Coleccion.objects.create(
+            nombre="Gemela",
+            imagen=self.coleccion.imagen.name,
+            imagen_detalle=self.coleccion.imagen_detalle.name,
+        )
 
         self.guardar(formulario(self.coleccion, **QUITAR))
 
-        self.assertEqual(self.en_la_base(), "")
-        self.assertEqual(self.archivos(), [self.anterior])
+        self.assertEqual(self.en_la_base(), [])
+        self.assertEqual(self.archivos(), self.anteriores)
         gemela.refresh_from_db()
-        self.assertEqual(gemela.imagen.name, self.anterior)
+        self.assertEqual(archivos_de(gemela), self.anteriores)
+
+    def test_cada_archivo_se_comprueba_por_separado(self):
+        # Otra colección usa solo el original: la versión optimizada sí se borra.
+        original = self.coleccion.imagen.name
+        Coleccion.objects.create(nombre="Gemela", imagen=original)
+
+        self.guardar(formulario(self.coleccion, **QUITAR))
+
+        self.assertEqual(self.archivos(), [original])
+
+    def test_un_archivo_en_uso_en_el_otro_campo_tampoco_se_borra(self):
+        # Una portada antigua (solo `imagen`) cuyo archivo otra colección usa
+        # como versión optimizada: el uso se busca en los dos campos.
+        original, detalle = self.coleccion.imagen.name, self.coleccion.imagen_detalle.name
+        Coleccion.objects.filter(pk=self.coleccion.pk).update(imagen=detalle, imagen_detalle="")
+        default_storage.delete(original)
+        otra = self.con_portada("Otra", color=OTRO_COLOR)
+        Coleccion.objects.filter(pk=otra.pk).update(imagen_detalle=detalle)
+        antigua = Coleccion.objects.get(pk=self.coleccion.pk)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            antigua.delete()
+
+        self.assertIn(detalle, self.archivos())
 
     def test_nunca_borra_un_archivo_que_no_tenga_forma_de_portada(self):
         ajeno = default_storage.save("productos/7/foto.jpg", ContentFile(b"x"))
-        rara = Coleccion.objects.create(nombre="Rara", imagen=ajeno)
+        otro_ajeno = default_storage.save("productos/7/derivados/foto.webp", ContentFile(b"x"))
+        rara = Coleccion.objects.create(nombre="Rara", imagen=ajeno, imagen_detalle=otro_ajeno)
         rara.imagen = ""
 
         with self.assertLogs("core.portadas", level="WARNING"):
             with self.captureOnCommitCallbacks(execute=True):
                 rara.save()
 
-        self.assertEqual(self.archivos(), sorted([self.anterior, ajeno]))
+        self.assertEqual(self.archivos(), sorted([*self.anteriores, ajeno, otro_ajeno]))
 
     def test_los_nombres_sospechosos_ni_siquiera_llegan_al_almacenamiento(self):
         almacenamiento = Coleccion._meta.get_field("imagen").storage
@@ -472,6 +593,11 @@ class ArchivosEnElDiscoTests(_Base):
             "/colecciones/a.webp",
             "colecciones/sin-extension",
             "colecciones/",
+            "colecciones/derivados/",
+            "colecciones/derivados/sub/a.webp",
+            "colecciones/derivados/../a.webp",
+            "colecciones/derivados/a.png",  # una versión optimizada siempre es WebP
+            "colecciones/derivados/a.webp/b.webp",
         )
 
         with mock.patch.object(almacenamiento, "delete") as borrar:
@@ -481,6 +607,24 @@ class ArchivosEnElDiscoTests(_Base):
                         self.assertFalse(portadas.borrar_si_nadie_la_usa(Coleccion, nombre))
 
         borrar.assert_not_called()
+
+    def test_lo_que_generan_las_rutas_de_carga_si_se_borra(self):
+        # Contrato con `core/upload_paths.py`: las dos formas que escribe el modelo
+        # son justo las que la limpieza acepta borrar.
+        generadas = [
+            ruta_imagen_coleccion(None, "portada.jpg"),
+            ruta_imagen_coleccion(None, "portada.png"),
+            ruta_imagen_coleccion(None, "portada.webp"),
+            ruta_derivado_coleccion(None, "detalle.webp"),
+        ]
+
+        for nombre in generadas:
+            with self.subTest(nombre=nombre):
+                default_storage.save(nombre, ContentFile(b"x"))
+
+                self.assertTrue(portadas.borrar_si_nadie_la_usa(Coleccion, nombre))
+
+        self.assertEqual(self.archivos(), self.anteriores)
 
     def test_un_fallo_del_almacenamiento_al_borrar_no_impide_guardar(self):
         almacenamiento = Coleccion._meta.get_field("imagen").storage
@@ -492,18 +636,20 @@ class ArchivosEnElDiscoTests(_Base):
                 with self.captureOnCommitCallbacks(execute=True):
                     form.save()  # no debe lanzar
 
-        self.assertEqual(self.en_la_base(), "")
-        self.assertEqual(self.archivos(), [self.anterior])  # queda suelto, pero se guardó
+        self.assertEqual(self.en_la_base(), [])
+        self.assertEqual(self.archivos(), self.anteriores)  # quedan sueltos, pero se guardó
 
     def test_si_no_se_puede_comprobar_el_uso_el_archivo_no_se_borra(self):
         sin_conexion = DatabaseError("sin conexión")
 
         with mock.patch.object(Coleccion.objects, "filter", side_effect=sin_conexion):
             with self.assertLogs("core.portadas", level="ERROR"):
-                borrado = portadas.borrar_si_nadie_la_usa(Coleccion, self.anterior)  # no lanza
+                borrado = portadas.borrar_si_nadie_la_usa(
+                    Coleccion, self.coleccion.imagen.name
+                )  # no lanza
 
         self.assertFalse(borrado)
-        self.assertEqual(self.archivos(), [self.anterior])  # ante la duda, se conserva
+        self.assertEqual(self.archivos(), self.anteriores)  # ante la duda, se conserva
 
     def test_guardar_solo_otros_campos_no_borra_la_portada(self):
         self.coleccion.imagen = ""  # cambio en memoria que NO se guarda
@@ -512,17 +658,17 @@ class ArchivosEnElDiscoTests(_Base):
         with self.captureOnCommitCallbacks(execute=True):
             self.coleccion.save(update_fields=["temporada"])
 
-        self.assertEqual(self.en_la_base(), self.anterior)
-        self.assertEqual(self.archivos(), [self.anterior])
+        self.assertEqual(self.en_la_base(), self.anteriores)
+        self.assertEqual(self.archivos(), self.anteriores)
 
-    def test_tambien_cuida_el_archivo_cuando_se_guarda_sin_formulario(self):
+    def test_tambien_cuida_los_archivos_cuando_se_guarda_sin_formulario(self):
         self.coleccion.imagen = ContentFile(b"otra portada", name="otra.webp")
 
         with self.captureOnCommitCallbacks(execute=True):
             self.coleccion.save()
 
-        self.assertNotEqual(self.en_la_base(), self.anterior)
-        self.assertEqual(self.archivos(), [self.en_la_base()])
+        self.assertEqual(set(self.en_la_base()) & set(self.anteriores), set())
+        self.assertEqual(self.archivos(), self.en_la_base())
 
 
 # ---------------------------------------------------------------------------
@@ -536,20 +682,20 @@ class EliminarColeccionTests(_Base):
         self.coleccion = self.con_portada()
         self.coleccion_id = self.coleccion.pk  # delete() lo borra del objeto en memoria
         self.otra = self.con_portada("Otra", color=OTRO_COLOR)
-        self.assertEqual(len(self.archivos()), 2)
+        self.assertEqual(len(self.archivos()), 4)  # dos archivos por portada
 
     def iniciar_sesion(self):
         self.client.force_login(crear_usuario("administrador", "100000001", superusuario=True))
 
     def assertSoloQuedaLaOtra(self):
         self.assertFalse(Coleccion.objects.filter(pk=self.coleccion_id).exists())
-        self.assertEqual(self.archivos(), [self.otra.imagen.name])
+        self.assertEqual(self.archivos(), archivos_de(self.otra))
 
     def assertNoSeBorroNada(self):
         self.assertTrue(Coleccion.objects.filter(pk=self.coleccion_id).exists())
-        self.assertEqual(len(self.archivos()), 2)
+        self.assertEqual(len(self.archivos()), 4)
 
-    def test_borrar_el_objeto_borra_su_archivo(self):
+    def test_borrar_el_objeto_borra_sus_dos_archivos(self):
         with self.captureOnCommitCallbacks(execute=True):
             self.coleccion.delete()
 
@@ -561,14 +707,14 @@ class EliminarColeccionTests(_Base):
 
         self.assertSoloQuedaLaOtra()
 
-    def test_el_archivo_no_se_toca_hasta_confirmar_la_transaccion(self):
+    def test_los_archivos_no_se_tocan_hasta_confirmar_la_transaccion(self):
         with self.captureOnCommitCallbacks(execute=False) as pendientes:
             self.coleccion.delete()
 
-        self.assertEqual(len(pendientes), 1)
-        self.assertEqual(len(self.archivos()), 2)
+        self.assertEqual(len(pendientes), 2)  # un borrado por archivo
+        self.assertEqual(len(self.archivos()), 4)
 
-    def test_si_el_borrado_se_revierte_el_archivo_sigue_ahi(self):
+    def test_si_el_borrado_se_revierte_los_archivos_siguen_ahi(self):
         with self.captureOnCommitCallbacks(execute=True) as pendientes:
             with self.assertRaises(RuntimeError):
                 with transaction.atomic():
@@ -597,7 +743,7 @@ class EliminarColeccionTests(_Base):
             sin_portada.delete()
 
         self.assertEqual(pendientes, [])
-        self.assertEqual(len(self.archivos()), 2)
+        self.assertEqual(len(self.archivos()), 4)
 
     def test_eliminar_desde_la_pantalla_de_colecciones(self):
         self.iniciar_sesion()
@@ -634,6 +780,29 @@ class EliminarColeccionTests(_Base):
         self.assertEqual(respuesta.status_code, 302)
         self.assertSoloQuedaLaOtra()
 
+    def test_guardar_desde_el_admin_de_django_conserva_los_dos_archivos(self):
+        # Ese formulario no incluye la portada: guardar otros datos no debe tocarla.
+        self.iniciar_sesion()
+        anteriores = archivos_de(self.coleccion)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            respuesta = self.client.post(
+                reverse("admin:core_coleccion_change", args=[self.coleccion_id]),
+                {
+                    "nombre": self.coleccion.nombre,
+                    "descripcion": "",
+                    "temporada": "2027",
+                    "imagen_url": "",
+                    "activa": "on",
+                },
+            )
+
+        self.assertEqual(respuesta.status_code, 302)
+        self.coleccion.refresh_from_db()
+        self.assertEqual(self.coleccion.temporada, "2027")
+        self.assertEqual(archivos_de(self.coleccion), anteriores)
+        self.assertEqual(len(self.archivos()), 4)
+
 
 # ---------------------------------------------------------------------------
 # Sin una transacción abierta, que es como guardan las vistas
@@ -657,24 +826,26 @@ class SinTransaccionAbiertaTests(TransactionTestCase):
         self.assertTrue(form.is_valid(), form.errors.as_json())
         return form.save()
 
-    def test_al_sustituir_la_anterior_se_borra_en_el_momento(self):
+    def test_al_sustituir_las_anteriores_se_borran_en_el_momento(self):
         coleccion = self.guardar(formulario(archivo=foto()))
-        anterior = coleccion.imagen.name
+        anteriores = archivos_de(coleccion)
 
         self.guardar(formulario(coleccion, archivo=foto(color=OTRO_COLOR)))
 
-        guardada = Coleccion.objects.get(pk=coleccion.pk).imagen.name
-        self.assertNotEqual(guardada, anterior)
-        self.assertEqual(self.archivos(), [guardada])
+        guardadas = archivos_de(Coleccion.objects.get(pk=coleccion.pk))
+        self.assertEqual(len(guardadas), 2)
+        self.assertEqual(set(guardadas) & set(anteriores), set())
+        self.assertEqual(self.archivos(), guardadas)
 
-    def test_al_eliminar_la_coleccion_su_archivo_se_borra_en_el_momento(self):
+    def test_al_eliminar_la_coleccion_sus_archivos_se_borran_en_el_momento(self):
         coleccion = self.guardar(formulario(archivo=foto()))
+        self.assertEqual(len(self.archivos()), 2)
 
         coleccion.delete()
 
         self.assertEqual(self.archivos(), [])
 
-    def test_si_el_guardado_falla_el_archivo_nuevo_no_queda_en_el_disco(self):
+    def test_si_el_guardado_falla_los_archivos_nuevos_no_quedan_en_el_disco(self):
         Coleccion.objects.create(nombre="Repetida")
         form = formulario(archivo=foto(), nombre="Otra")
         self.assertTrue(form.is_valid(), form.errors.as_json())
@@ -685,10 +856,10 @@ class SinTransaccionAbiertaTests(TransactionTestCase):
             nueva.save()
 
         self.assertEqual(self.archivos(), [])
-        self.assertFalse(nueva.imagen)
+        self.assertEqual(archivos_de(nueva), [])
         self.assertEqual(Coleccion.objects.count(), 1)
 
-    def test_si_algo_falla_despues_de_guardar_la_fila_el_archivo_se_conserva(self):
+    def test_si_algo_falla_despues_de_guardar_la_fila_los_archivos_se_conservan(self):
         def receptor_que_falla(**kwargs):
             raise RuntimeError("falló después de guardar")
 
@@ -700,9 +871,58 @@ class SinTransaccionAbiertaTests(TransactionTestCase):
         with self.assertRaises(RuntimeError):
             form.save()
 
-        # La fila quedó guardada con su portada: borrar el archivo la dejaría rota.
-        guardada = Coleccion.objects.get().imagen.name
-        self.assertEqual(self.archivos(), [guardada])
+        # La fila quedó guardada con su portada: borrar sus archivos la dejaría rota.
+        guardadas = archivos_de(Coleccion.objects.get())
+        self.assertEqual(len(guardadas), 2)
+        self.assertEqual(self.archivos(), guardadas)
+        self.assertEqual(archivos_de(form.instance), guardadas)  # y el objeto dice lo mismo
+
+    def test_si_la_version_optimizada_no_se_puede_escribir_no_queda_nada_a_medias(self):
+        coleccion = self.guardar(formulario(archivo=foto()))
+        anteriores = archivos_de(coleccion)
+        almacenamiento = Coleccion._meta.get_field("imagen").storage
+        form = formulario(coleccion, archivo=foto(color=OTRO_COLOR))
+        self.assertTrue(form.is_valid(), form.errors.as_json())
+
+        with falla_solo_con(almacenamiento, "save", es_derivado, OSError(28, "Disco lleno")):
+            with self.assertRaises(OSError):
+                form.save()
+
+        self.assertEqual(self.archivos(), anteriores)  # el original nuevo se borró
+        self.assertEqual(archivos_de(Coleccion.objects.get(pk=coleccion.pk)), anteriores)
+        self.assertEqual(archivos_de(coleccion), anteriores)
+
+    def test_un_error_inesperado_al_borrar_las_anteriores_no_llega_a_quien_guarda(self):
+        coleccion = self.guardar(formulario(archivo=foto()))
+        anteriores = archivos_de(coleccion)
+        almacenamiento = Coleccion._meta.get_field("imagen").storage
+        inesperado = RuntimeError("el almacenamiento respondió algo que nadie previó")
+        form = formulario(coleccion, archivo=foto(color=OTRO_COLOR))
+        self.assertTrue(form.is_valid(), form.errors.as_json())
+
+        with falla_solo_con(almacenamiento, "delete", lambda nombre: True, inesperado):
+            with self.assertLogs("django.db.backends.base", level="ERROR"):
+                form.save()  # no debe lanzar: la portada nueva ya está guardada
+
+        guardadas = archivos_de(Coleccion.objects.get(pk=coleccion.pk))
+        self.assertEqual(set(guardadas) & set(anteriores), set())
+        self.assertEqual(self.archivos(), sorted(guardadas + anteriores))  # quedan sueltas
+
+    def test_eliminar_desde_la_pantalla_responde_bien_aunque_falle_la_limpieza(self):
+        coleccion = self.guardar(formulario(archivo=foto()))
+        almacenamiento = Coleccion._meta.get_field("imagen").storage
+        inesperado = RuntimeError("el almacenamiento respondió algo que nadie previó")
+        self.client.force_login(crear_usuario("administrador", "100000001", superusuario=True))
+
+        with falla_solo_con(almacenamiento, "delete", es_original, inesperado):
+            with self.assertLogs("django.db.backends.base", level="ERROR"):
+                respuesta = self.client.post(
+                    reverse("core:coleccion_eliminar", args=[coleccion.pk])
+                )
+
+        self.assertEqual(respuesta.status_code, 302)  # y no un error 500
+        self.assertFalse(Coleccion.objects.exists())
+        self.assertEqual(self.archivos(), [coleccion.imagen.name])  # el otro sí se borró
 
 
 # ---------------------------------------------------------------------------
@@ -756,7 +976,9 @@ class FormularioDeColeccionesTests(_BasePantallas):
 
         respuesta = self.client.get(self.url_editar(coleccion))
 
-        self.assertContains(respuesta, f'<img src="{coleccion.imagen.url}"')
+        # La vista previa usa la versión optimizada; el original no se descarga.
+        self.assertContains(respuesta, f'<img src="{coleccion.imagen_detalle.url}"')
+        self.assertNotContains(respuesta, coleccion.imagen.url)
         self.assertContains(
             respuesta, '<input type="checkbox" name="imagen-clear" id="imagen-clear_id">', html=True
         )
@@ -767,11 +989,12 @@ class FormularioDeColeccionesTests(_BasePantallas):
 
         self.assertRedirects(respuesta, self.url_lista)
         coleccion = Coleccion.objects.get(nombre="Luz Dorada")
-        self.assertEqual(self.archivos(), [coleccion.imagen.name])
+        self.assertEqual(len(archivos_de(coleccion)), 2)
+        self.assertEqual(self.archivos(), archivos_de(coleccion))
 
     def test_sustituir_la_portada(self):
         coleccion = self.con_portada()
-        anterior = coleccion.imagen.name
+        anteriores = archivos_de(coleccion)
 
         respuesta = self.enviar(
             self.url_editar(coleccion), {**datos(coleccion), "imagen": foto(color=OTRO_COLOR)}
@@ -779,8 +1002,9 @@ class FormularioDeColeccionesTests(_BasePantallas):
 
         self.assertRedirects(respuesta, self.url_lista)
         coleccion.refresh_from_db()
-        self.assertNotEqual(coleccion.imagen.name, anterior)
-        self.assertEqual(self.archivos(), [coleccion.imagen.name])
+        self.assertEqual(set(archivos_de(coleccion)) & set(anteriores), set())
+        self.assertEqual(len(archivos_de(coleccion)), 2)
+        self.assertEqual(self.archivos(), archivos_de(coleccion))
 
     def test_quitar_la_portada(self):
         coleccion = self.con_portada()
@@ -789,7 +1013,7 @@ class FormularioDeColeccionesTests(_BasePantallas):
 
         self.assertRedirects(respuesta, self.url_lista)
         coleccion.refresh_from_db()
-        self.assertFalse(coleccion.imagen)
+        self.assertEqual(archivos_de(coleccion), [])
         self.assertEqual(self.archivos(), [])
 
     def test_un_archivo_que_no_es_una_imagen_se_rechaza_con_su_motivo(self):
@@ -851,7 +1075,8 @@ class PanelTests(_BasePantallas):
         self.assertContains(
             respuesta, f'<input type="file" name="colecciones-{coleccion.pk}-imagen"'
         )
-        self.assertContains(respuesta, f'<img src="{coleccion.imagen.url}"')
+        self.assertContains(respuesta, f'<img src="{coleccion.imagen_detalle.url}"')
+        self.assertNotContains(respuesta, coleccion.imagen.url)  # el original no se descarga
         self.assertContains(respuesta, f'name="colecciones-{coleccion.pk}-imagen-clear"')
         self.assertContains(respuesta, 'id="id_colecciones-nuevo-imagen_helptext"')
 
@@ -867,18 +1092,20 @@ class PanelTests(_BasePantallas):
 
         self.assertEqual(respuesta.status_code, 302)
         coleccion = Coleccion.objects.get(nombre="Luz Dorada")
-        self.assertEqual(self.archivos(), [coleccion.imagen.name])
+        self.assertEqual(len(archivos_de(coleccion)), 2)
+        self.assertEqual(self.archivos(), archivos_de(coleccion))
 
     def test_sustituir_la_portada(self):
         coleccion = self.con_portada()
-        anterior = coleccion.imagen.name
+        anteriores = archivos_de(coleccion)
 
         respuesta = self.editar(coleccion, **datos(coleccion), imagen=foto(color=OTRO_COLOR))
 
         self.assertEqual(respuesta.status_code, 302)
         coleccion.refresh_from_db()
-        self.assertNotEqual(coleccion.imagen.name, anterior)
-        self.assertEqual(self.archivos(), [coleccion.imagen.name])
+        self.assertEqual(set(archivos_de(coleccion)) & set(anteriores), set())
+        self.assertEqual(len(archivos_de(coleccion)), 2)
+        self.assertEqual(self.archivos(), archivos_de(coleccion))
 
     def test_quitar_la_portada(self):
         coleccion = self.con_portada()
@@ -887,12 +1114,12 @@ class PanelTests(_BasePantallas):
 
         self.assertEqual(respuesta.status_code, 302)
         coleccion.refresh_from_db()
-        self.assertFalse(coleccion.imagen)
+        self.assertEqual(archivos_de(coleccion), [])
         self.assertEqual(self.archivos(), [])
 
     def test_un_error_en_la_portada_reabre_la_ficha_con_el_motivo(self):
         coleccion = self.con_portada()
-        anterior = coleccion.imagen.name
+        anteriores = archivos_de(coleccion)
 
         respuesta = self.editar(coleccion, **datos(coleccion, imagen_url=URL_EXTERNA))
 
@@ -900,7 +1127,7 @@ class PanelTests(_BasePantallas):
         self.assertContains(respuesta, MENSAJE_DIRECCION_CON_ARCHIVO)
         self.assertContains(respuesta, "data-dashboard-dialog-autoshow")
         coleccion.refresh_from_db()
-        self.assertEqual((coleccion.imagen.name, coleccion.imagen_url), (anterior, ""))
+        self.assertEqual((archivos_de(coleccion), coleccion.imagen_url), (anteriores, ""))
 
     def test_un_archivo_invalido_al_crear_se_rechaza_con_su_motivo(self):
         respuesta = self.crear(**datos(), imagen=archivo_que_no_es_imagen())
@@ -924,12 +1151,13 @@ class PanelTests(_BasePantallas):
 
 
 class TiendaTests(_Base):
-    def test_la_tarjeta_usa_la_portada_subida(self):
+    def test_la_tarjeta_usa_la_version_optimizada_de_la_portada(self):
         coleccion = self.con_portada("Alma Dorada")
 
         respuesta = self.client.get(reverse("core:inicio"))
 
-        self.assertContains(respuesta, f'<img src="{coleccion.imagen.url}"')
+        self.assertContains(respuesta, f'<img src="{coleccion.imagen_detalle.url}"')
+        self.assertNotContains(respuesta, coleccion.imagen.url)  # el original no se publica
 
     def test_la_tarjeta_sigue_usando_la_direccion_si_no_hay_archivo(self):
         Coleccion.objects.create(nombre="Alma Dorada", imagen_url=URL_EXTERNA)

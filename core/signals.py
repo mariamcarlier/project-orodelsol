@@ -39,9 +39,10 @@ def limpiar_galeria_de_producto(instance, **kwargs):
 
 @receiver(post_delete, sender=Coleccion, dispatch_uid="core.limpiar_portada_de_coleccion")
 def limpiar_portada_de_coleccion(sender, instance, **kwargs):
-    """Al eliminar una colección, borra su archivo de portada.
+    """Al eliminar una colección, borra los archivos de su portada.
 
-    Solo si ninguna otra colección lo usa, y solo al confirmarse la transacción.
-    Una colección con productos no llega aquí: Django se niega a eliminarla.
+    El original y la versión optimizada; cada uno solo si ninguna otra colección
+    lo usa, y solo al confirmarse la transacción. Una colección con productos
+    no llega aquí: Django se niega a eliminarla.
     """
-    portadas.programar_borrado(sender, instance.imagen.name)
+    portadas.programar_borrado(sender, *portadas.archivos_de(instance))

@@ -251,8 +251,10 @@ MENSAJE_DIRECCION_CON_ARCHIVO = (
 class ColeccionForm(forms.ModelForm):
     """Colección con su portada: un archivo propio O una dirección, nunca los dos.
 
-    El archivo se valida y se optimiza en `CampoPortada` (`core/portadas.py`);
-    este formulario solo decide qué pasa cuando llegan las dos fuentes.
+    El archivo se valida y se optimiza en `CampoPortada` (`core/portadas.py`),
+    que entrega el original limpio junto con su versión optimizada; al guardar,
+    `Coleccion.save()` escribe los dos (`imagen` e `imagen_detalle`). Este
+    formulario solo decide qué pasa cuando llegan las dos fuentes.
     """
 
     imagen = CampoPortada()
