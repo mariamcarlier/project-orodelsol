@@ -4,13 +4,14 @@ from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
 from django.db.models.deletion import ProtectedError
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_http_methods, require_POST
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
 from .dashboard import ColeccionForm, ProductoForm, admin_dashboard, admin_section
-from .models import Coleccion, Producto
+from .models import Coleccion, Piedra, Producto
 
 
 # ---------------------------------------------------------------------------
@@ -44,11 +45,40 @@ def inicio(request):
             filter=Q(productos__activo=True, productos__es_borrador=False),
         )
     )
-    productos = Producto.objects.publicos().select_related("coleccion")[:4]
+    productos = (
+        Producto.objects.publicos()
+        .select_related("coleccion")
+        .prefetch_related("piedras")[:4]
+    )
     return render(
         request,
         "core/index.html",
         {"colecciones": colecciones, "productos": productos},
+    )
+
+
+def producto_piedra_disponible(request, pk, ref):
+    """Guarda de servidor: ¿esta piedra puede agregarse al carrito?
+
+    La tienda guarda el carrito en el navegador, así que el servidor solo
+    confirma la regla de negocio antes de que el JS lo escriba: el producto
+    debe ser público y la piedra debe estar asignada al producto.
+    """
+    producto = get_object_or_404(Producto, pk=pk)
+    piedra = Piedra.objects.filter(ref__iexact=ref).first()
+    disponible = bool(
+        producto.es_publico
+        and piedra
+        and producto.piedras.filter(pk=piedra.pk).exists()
+    )
+    if disponible:
+        return JsonResponse({"disponible": True, "piedra": piedra.ref})
+    return JsonResponse(
+        {
+            "disponible": False,
+            "error": "Esta piedra ya no está disponible para este producto.",
+        },
+        status=400,
     )
 
 

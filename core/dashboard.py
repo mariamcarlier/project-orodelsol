@@ -103,8 +103,10 @@ class ProductoForm(forms.ModelForm):
             "destacado",
             "activo",
             "es_borrador",
+            "personalizable",
             "tallas",
             "materiales",
+            "piedras",
         )
         labels = {
             "codigo": "Código",
@@ -117,12 +119,15 @@ class ProductoForm(forms.ModelForm):
             "destacado": "Destacado",
             "activo": "Activo",
             "es_borrador": "Borrador",
+            "personalizable": "Personalizable (el cliente elige la piedra)",
             "tallas": "Tallas permitidas",
             "materiales": "Materiales permitidos",
+            "piedras": "Piedras disponibles",
         }
         help_texts = {
             "codigo": "Déjalo vacío para generarlo automáticamente. Una vez creado no se puede cambiar.",
             "es_borrador": "Un borrador no se muestra en la tienda aunque esté activo.",
+            "piedras": "Solo las marcadas se muestran al cliente. Desmarcar = desactivar para este producto.",
         }
         widgets = {
             "codigo": forms.TextInput(attrs={"class": "form-control"}),
@@ -137,8 +142,10 @@ class ProductoForm(forms.ModelForm):
             "destacado": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "activo": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "es_borrador": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "personalizable": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "tallas": forms.CheckboxSelectMultiple,
             "materiales": forms.CheckboxSelectMultiple,
+            "piedras": forms.CheckboxSelectMultiple,
         }
 
     def __init__(self, *args, **kwargs):
@@ -185,6 +192,12 @@ class ProductoForm(forms.ModelForm):
             errores["nombre"] = "El nombre es obligatorio para publicar."
         if precio is None or precio <= 0:
             errores["precio"] = "El precio debe ser mayor a cero para publicar."
+        # PROD-11: un producto personalizable necesita al menos una piedra.
+        if _marcado("personalizable") and not cleaned.get("piedras"):
+            errores["piedras"] = (
+                "Un producto personalizable necesita al menos una piedra "
+                "disponible."
+            )
         if errores:
             raise forms.ValidationError(errores)
         return cleaned
@@ -298,6 +311,7 @@ RECURSOS = (
             ("Nombre", "nombre"),
             ("Colección", "coleccion__nombre"),
             ("Precio", "precio"),
+            ("Personalizable", "personalizable"),
             ("Borrador", "es_borrador"),
             ("Activo", "activo"),
         ),
