@@ -345,7 +345,10 @@ class FallosParcialesTests(_Base):
         self.assertFalse((self.media / "productos" / str(self.producto_id)).exists())
 
     def test_un_fallo_en_los_derivados_no_impide_borrar_los_originales(self):
-        limpia, _ = self.limpiar_fallando_con(lambda nombre: "/derivados/" in nombre)
+        # En Windows la ruta llega con «\\»: se busca la pieza, no el separador.
+        limpia, _ = self.limpiar_fallando_con(
+            lambda nombre: "derivados" in str(nombre).replace("\\", "/").split("/")
+        )
 
         self.assertFalse(limpia)
         self.assertEqual(
