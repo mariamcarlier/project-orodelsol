@@ -1,9 +1,10 @@
 """El esquema de galería no debe abrir subidas de archivos sin validar.
 
-`Coleccion.imagen` existe desde la migración 0007, pero la validación de
-formato y tamaño llega en un paso posterior. Mientras tanto, el admin de
-Django no debe ofrecerla (un `ModelAdmin` sin `fields` muestra todos los
-campos editables, incluido el nuevo).
+`Coleccion.imagen` existe desde la migración 0007. Desde el Paso 04 la portada
+se sube, ya validada, desde el panel y el formulario de colecciones
+(`ColeccionForm`). El admin de Django genera su propio formulario, sin esa
+validación, así que NO debe ofrecerla (un `ModelAdmin` sin `fields` muestra
+todos los campos editables, incluido este).
 """
 
 import shutil
@@ -56,6 +57,7 @@ class AdminColeccionSinSubidaTests(TestCase):
 
         self.assertEqual(respuesta.status_code, 200)
         self.assertNotContains(respuesta, 'name="imagen"')
+        self.assertNotContains(respuesta, 'name="imagen_detalle"')
         self.assertNotContains(respuesta, 'type="file"')
 
     def test_el_formulario_de_edicion_no_ofrece_subir_archivo(self):
@@ -67,6 +69,8 @@ class AdminColeccionSinSubidaTests(TestCase):
 
         self.assertEqual(respuesta.status_code, 200)
         self.assertNotContains(respuesta, 'name="imagen"')
+        self.assertNotContains(respuesta, 'name="imagen_detalle"')
+        self.assertNotContains(respuesta, 'type="file"')
 
     def test_un_archivo_enviado_a_mano_se_ignora(self):
         self.client.post(
@@ -78,11 +82,13 @@ class AdminColeccionSinSubidaTests(TestCase):
                 "imagen_url": "",
                 "activa": "on",
                 "imagen": SimpleUploadedFile("x.gif", gif_real()),
+                "imagen_detalle": SimpleUploadedFile("y.gif", gif_real()),
             },
         )
 
         coleccion = Coleccion.objects.get(nombre="Con intento de subida")
         self.assertFalse(coleccion.imagen)
+        self.assertFalse(coleccion.imagen_detalle)
         self.assertEqual(self.archivos_en_media(), [])
 
     def test_la_portada_por_url_sigue_editable_en_el_admin(self):

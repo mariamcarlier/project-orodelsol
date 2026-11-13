@@ -1,9 +1,24 @@
 {% extends "admin_custom/base_dashboard.html" %}
+{% load static %}
 
 {% block title %}{{ recurso.title }} | Oro del Sol{% endblock %}
+
+{% block extra_css %}
+    {% if recurso.key == 'productos' %}
+        <link rel="stylesheet" href="{% static 'css/galeria-admin.css' %}?v=4">
+    {% elif recurso.key == 'colecciones' %}
+        <link rel="stylesheet" href="{% static 'css/portada-campo.css' %}?v=2">
+    {% endif %}
+{% endblock %}
 
 {% block content %}
 
     {% include "admin_custom/_resource.html" %}
 
+{% endblock %}
+
+{% block scripts %}
+    {% if recurso.key == 'productos' %}
+        <script src="{% static 'js/modulos/productos/galeria/carga.js' %}?v=3"></script>
+    {% endif %}
 {% endblock %}

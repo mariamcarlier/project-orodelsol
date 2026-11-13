@@ -1,10 +1,12 @@
 from decimal import Decimal
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import models
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Prefetch, Q
 
+from . import portadas
 from .upload_paths import (
+    ruta_derivado_coleccion,
     ruta_derivado_producto,
     ruta_imagen_coleccion,
     ruta_imagen_producto,
@@ -12,15 +14,40 @@ from .upload_paths import (
 
 PREFIJO_CODIGO = "AN-"
 
+# Donde `ProductoQuerySet.con_fotografia_principal()` deja la principal precargada.
+ATRIBUTO_PRINCIPAL_PRECARGADA = "principal_precargada"
+
+MENSAJE_SIN_IMAGEN = (
+    "La imagen es obligatoria para publicar. "
+    "Márcalo como borrador si aún no la tienes: las fotografías se suben "
+    "después de guardar el producto."
+)
+MENSAJE_SIN_FOTOGRAFIA_PRINCIPAL = (
+    "Para publicar el producto, su galería necesita una fotografía principal. "
+    "Sube al menos una fotografía o guárdalo como borrador."
+)
+MENSAJE_PORTADA_DOBLE = (
+    "Una colección usa una sola portada: un archivo o una dirección (URL), "
+    "nunca los dos. Quita uno de los dos antes de guardar."
+)
+
 
 class Coleccion(models.Model):
     nombre = models.CharField(max_length=100, unique=True)
     descripcion = models.TextField(blank=True)
     temporada = models.CharField(max_length=30, blank=True)
     imagen_url = models.URLField(blank=True)
-    # Portada propia. Convive con imagen_url (compatibilidad). La regla de
-    # «archivo O URL, nunca ambos» se aplicará en el formulario (Paso 7).
+    # Portada propia (Paso 04). Convive con imagen_url por compatibilidad, pero
+    # una colección usa archivo O URL, nunca ambos: lo exigen `clean()` y
+    # `ColeccionForm`. Son dos archivos, como en `ProductoImagen`: `imagen` es
+    # el ORIGINAL limpio (su formato, sus medidas, su perfil de color) e
+    # `imagen_detalle` la versión optimizada (WebP) que enseña la tienda.
+    # Llegan ya validados por `core.portadas`; quien los cuida en el disco y
+    # mantiene `imagen_detalle` al día es `save()`.
     imagen = models.ImageField(upload_to=ruta_imagen_coleccion, blank=True)
+    imagen_detalle = models.ImageField(
+        upload_to=ruta_derivado_coleccion, blank=True, editable=False
+    )
     activa = models.BooleanField(default=True)
 
     class Meta:
@@ -30,6 +57,46 @@ class Coleccion(models.Model):
 
     def __str__(self):
         return self.nombre
+
+    @property
+    def imagen_catalogo(self):
+        """Dirección de la portada que enseña la tienda; cadena vacía si no tiene.
+
+        Con archivo propio, su versión optimizada; si esa portada no la tiene
+        (se guardó antes de la migración 0010 o sin pasar por el formulario),
+        el propio archivo. Sin archivo, `imagen_url`. No consulta la base de
+        datos.
+        """
+        if self.imagen:
+            return (self.imagen_detalle or self.imagen).url
+        return (self.imagen_url or "").strip()
+
+    def clean(self):
+        """Como mucho una portada: un archivo o una dirección, nunca los dos.
+
+        Es la última barrera para cualquier formulario, también el del admin de
+        Django; `ColeccionForm` avisa antes, junto al campo que hay que corregir.
+        OJO: `save()` NO llama a `clean()`.
+        """
+        super().clean()
+        self.imagen_url = (self.imagen_url or "").strip()
+        if self.imagen and self.imagen_url:
+            raise ValidationError(MENSAJE_PORTADA_DOBLE, code="portada_doble")
+
+    def save(self, *args, **kwargs):
+        """Guarda sin dejar archivos de portada sueltos (ver `core/portadas.py`).
+
+        Vale para cualquier vía —formularios, panel, admin o consola—: si el
+        guardado falla, los archivos recién escritos se borran; si la portada
+        cambia, los anteriores se borran al confirmarse la transacción; y
+        `imagen_detalle` queda siempre acorde con `imagen`.
+        """
+        campos = kwargs.get("update_fields")
+        if campos is not None and portadas.CAMPO in campos:
+            # El original y su versión optimizada se guardan siempre juntos.
+            campos = kwargs["update_fields"] = {*campos, portadas.CAMPO_DETALLE}
+        with portadas.cuidar_archivos(self, campos):
+            super().save(*args, **kwargs)
 
 
 def _sin_ceros(valor):
@@ -133,17 +200,46 @@ class ProductoQuerySet(models.QuerySet):
         """Visibilidad pública = activo AND NOT es_borrador."""
         return self.filter(activo=True, es_borrador=False)
 
+    def con_imagen(self):
+        """Productos que tienen imagen para la tienda.
+
+        Es la misma regla que `Producto.tiene_imagen`, escrita como consulta:
+        con galería gestionada cuenta la fotografía principal; mientras no lo
+        esté, cuenta `imagen_url`.
+        """
+        principal = ProductoImagen.objects.filter(
+            producto=OuterRef("pk"), es_principal=True
+        )
+        return self.filter(
+            (Q(galeria_gestionada=True) & Exists(principal))
+            | (Q(galeria_gestionada=False) & ~Q(imagen_url=""))
+        )
+
     def completos(self):
         """Productos que cumplen los requisitos para publicarse."""
         return (
             self.exclude(nombre="")
             .exclude(codigo="")
-            .exclude(imagen_url="")
             .filter(precio__gt=0)
+            .con_imagen()
         )
 
     def incompletos(self):
         return self.exclude(pk__in=self.completos().values("pk"))
+
+    def con_fotografia_principal(self):
+        """Precarga la fotografía principal de cada producto (una consulta en total).
+
+        Para listados: así `fotografia_principal` e `imagen_catalogo` no
+        consultan la base de datos producto por producto.
+        """
+        return self.prefetch_related(
+            Prefetch(
+                "imagenes",
+                queryset=ProductoImagen.objects.filter(es_principal=True),
+                to_attr=ATRIBUTO_PRINCIPAL_PRECARGADA,
+            )
+        )
 
 
 class Producto(models.Model):
@@ -168,6 +264,7 @@ class Producto(models.Model):
     # imágenes de este producto. Mientras sea False, imagen_url sigue
     # sirviendo como respaldo de lectura. Lo gestionan el servicio de galería
     # y la migración de datos; por eso no es editable en formularios.
+    # Las reglas que dependen de él están en `tiene_imagen` y `con_imagen()`.
     galeria_gestionada = models.BooleanField(default=False, editable=False)
     tallas = models.ManyToManyField(
         Talla,
@@ -217,6 +314,61 @@ class Producto(models.Model):
     def es_publico(self):
         return self.activo and not self.es_borrador
 
+    @property
+    def fotografia_principal(self):
+        """La fotografía principal de la galería, o None si no tiene.
+
+        No guarda el resultado: siempre refleja lo que hay en la base de datos,
+        salvo que el listado la haya precargado con `con_fotografia_principal()`.
+        """
+        precargada = getattr(self, ATRIBUTO_PRINCIPAL_PRECARGADA, None)
+        if precargada is not None:
+            return precargada[0] if precargada else None
+        if self.pk is None:
+            return None
+        return self.imagenes.filter(es_principal=True).first()
+
+    @property
+    def tiene_imagen(self):
+        """¿Hay una imagen que mostrar en la tienda? (Paso 03d)
+
+        Con galería gestionada manda la galería: hace falta su fotografía
+        principal y `imagen_url` ya no cuenta. Mientras no lo esté, vale
+        `imagen_url`. Es la misma regla que `ProductoQuerySet.con_imagen()`.
+        """
+        if self.galeria_gestionada:
+            return self.fotografia_principal is not None
+        return bool((self.imagen_url or "").strip())
+
+    @property
+    def imagen_catalogo(self):
+        """Dirección de la imagen que representa al producto en la tienda ('' si no hay).
+
+        De la galería se usa la versión de detalle: las tarjetas del catálogo
+        son grandes y la miniatura se vería borrosa en pantallas de alta densidad.
+        """
+        if self.galeria_gestionada:
+            principal = self.fotografia_principal
+            return principal.src_detalle if principal else ""
+        return (self.imagen_url or "").strip()
+
+    @property
+    def fotografias_tienda(self):
+        """Fotografías de la galería en el orden en que las enseña la tienda.
+
+        Regla aprobada: primero la principal y después las demás, según su
+        posición. Elegir la principal no obliga a moverla al primer lugar de la
+        galería. La primera de esta lista es la de `imagen_catalogo`.
+
+        Lista vacía si el producto todavía no usa la galería (la tienda muestra
+        entonces `imagen_url`) o si su galería se quedó vacía.
+        """
+        if self.pk is None or not self.galeria_gestionada:
+            return []
+        # `imagenes` ya viene por posición y `sorted` es estable: las que no
+        # son la principal conservan ese orden entre sí.
+        return sorted(self.imagenes.all(), key=lambda imagen: not imagen.es_principal)
+
     @classmethod
     def siguiente_codigo(cls):
         """Siguiente AN-NNNN: arranca desde el mayor número ya usado."""
@@ -251,11 +403,12 @@ class Producto(models.Model):
             faltantes["nombre"] = "El nombre es obligatorio para publicar."
         if self.precio is None or self.precio <= 0:
             faltantes["precio"] = "El precio debe ser mayor a cero para publicar."
-        if not (self.imagen_url or "").strip():
-            faltantes["imagen_url"] = (
-                "La imagen es obligatoria para publicar. "
-                "Márcalo como borrador si aún no la tienes."
-            )
+        if not self.tiene_imagen:
+            if self.galeria_gestionada:
+                # La galería no es un campo del formulario: el aviso es general.
+                faltantes[NON_FIELD_ERRORS] = MENSAJE_SIN_FOTOGRAFIA_PRINCIPAL
+            else:
+                faltantes["imagen_url"] = MENSAJE_SIN_IMAGEN
         # Sin pk no se puede consultar la M2M: lo valida ProductoForm.
         if self.personalizable and self.pk and not self.piedras.exists():
             faltantes["personalizable"] = (
@@ -371,9 +524,11 @@ class ProductoImagen(models.Model):
     - `clean()`: mensaje legible para formularios y admin. OJO: `save()` NO
       llama a `clean()`; solo lo ejecutan `full_clean()`, los ModelForm y el
       admin.
-    - Servicio de galería (Paso 4): cantidad máxima, «exactamente una
-      principal si hay imágenes» y reglas de publicación. La base de datos no
-      puede exigir «al menos una principal», solo «a lo sumo una».
+    - Servicio de galería (Paso 03b, `core/servicio_galeria.py`): cantidad
+      máxima y «exactamente una principal si hay imágenes». La base de datos
+      no puede exigir «al menos una principal», solo «a lo sumo una».
+    - Reglas de publicación (Paso 03d): `Producto.tiene_imagen`,
+      `Producto.clean()` y `ProductoQuerySet.completos()`.
     """
 
     producto = models.ForeignKey(
@@ -457,7 +612,7 @@ class ProductoImagen(models.Model):
 
     @property
     def src_miniatura(self):
-        """Miniatura (~480 px) o, si no existe, original / URL."""
+        """Miniatura (~400 px) o, si no existe, original / URL."""
         return self._primera_fuente(self.archivo_miniatura, self.archivo)
 
     @property

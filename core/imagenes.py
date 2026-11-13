@@ -30,6 +30,8 @@ from io import BytesIO
 from django.core.exceptions import ValidationError
 from PIL import Image, ImageOps, UnidentifiedImageError
 
+from .mensajes_galeria import mensaje, texto_dimensiones
+
 MB = 1024 * 1024
 
 MAX_BYTES_POR_IMAGEN = 10 * MB
@@ -39,6 +41,9 @@ MAX_PIXELES = 40_000_000
 
 LADO_DETALLE_PX = 1200
 LADO_MINIATURA_PX = 400
+# Lado de la vista previa que el panel le muestra a quien sube una foto
+# (solo se dibuja en el navegador; no se guarda ningún archivo).
+MAX_ANCHO_VISTA_PREVIA = 320
 CALIDAD_DERIVADO = 82
 CALIDAD_ORIGINAL = 92
 
@@ -46,6 +51,9 @@ CALIDAD_ORIGINAL = 92
 # MPO (JPEG con varias fotos) queda FUERA de la lista aprobada: se rechaza.
 EXTENSION_POR_FORMATO = {"JPEG": ".jpg", "PNG": ".png", "WEBP": ".webp"}
 FORMATOS_PERMITIDOS = frozenset(EXTENSION_POR_FORMATO)
+# Extensiones que el selector de archivos ofrece por defecto (solo orienta: lo
+# que decide es el contenido del archivo).
+FORMATOS_POR_EXTENSION = frozenset(EXTENSION_POR_FORMATO.values())
 
 ERRORES_DE_LECTURA = (OSError, SyntaxError, ValueError, EOFError, Image.DecompressionBombError)
 
@@ -68,10 +76,12 @@ def _error(mensaje, codigo):
 
 
 def _tamano(archivo):
-    """Peso en bytes de un archivo subido, sin consumir su contenido."""
-    tamano = getattr(archivo, "size", None)
-    if tamano is not None:
-        return tamano
+    """Peso real en bytes de un archivo subido, sin consumir su contenido.
+
+    Se mide sobre el contenido (dónde termina el archivo) y no sobre
+    `archivo.size`, que es un dato declarado. Así el límite por envío se
+    comprueba igual que el de cada imagen: sobre los bytes reales.
+    """
     posicion = archivo.tell()
     archivo.seek(0, 2)
     total = archivo.tell()
@@ -80,11 +90,10 @@ def _tamano(archivo):
 
 
 def validar_envio(archivos):
-    """Comprueba que todas las imágenes de un mismo envío no superen 25 MB."""
+    """Comprueba que los bytes reales de todas las imágenes de un envío no superen 30 MB."""
     if sum(_tamano(archivo) for archivo in archivos) > MAX_BYTES_POR_ENVIO:
         raise _error(
-            f"Las imágenes seleccionadas pesan más de {MAX_BYTES_POR_ENVIO // MB} MB "
-            "en total. Envía menos fotografías a la vez.",
+            mensaje("envio_pesado", mb_por_envio=MAX_BYTES_POR_ENVIO // MB),
             "envio_pesado",
         )
 
@@ -95,22 +104,17 @@ def _leer_bytes(archivo):
     datos = archivo.read(MAX_BYTES_POR_IMAGEN + 1)
     archivo.seek(0)
     if not datos:
-        raise _error("El archivo está vacío. Selecciona otra imagen.", "vacio")
+        raise _error(mensaje("vacio"), "vacio")
     if len(datos) > MAX_BYTES_POR_IMAGEN:
         raise _error(
-            f"La imagen pesa más de {MAX_BYTES_POR_IMAGEN // MB} MB. "
-            "Reduce su tamaño y vuelve a intentarlo.",
+            mensaje("pesada", mb_por_imagen=MAX_BYTES_POR_IMAGEN // MB),
             "pesada",
         )
     return datos
 
 
 def _mensaje_dimensiones(ancho=None, alto=None):
-    medida = f"mide {ancho}×{alto} px y " if ancho else ""
-    return (
-        f"La imagen {medida}supera el máximo permitido: {MAX_LADO_PX} px por lado "
-        f"y {MAX_PIXELES // 1_000_000} megapíxeles."
-    )
+    return texto_dimensiones(ancho, alto, MAX_LADO_PX, MAX_PIXELES // 1_000_000)
 
 
 def _abrir_validada(datos):
@@ -125,35 +129,23 @@ def _abrir_validada(datos):
     except Image.DecompressionBombError as exc:
         raise _error(_mensaje_dimensiones(), "dimensiones") from exc
     except (UnidentifiedImageError, *ERRORES_DE_LECTURA) as exc:
-        raise _error(
-            "No pudimos reconocer el archivo como una imagen. Usa un archivo JPG, PNG o WebP.",
-            "no_imagen",
-        ) from exc
+        raise _error(mensaje("no_imagen"), "no_imagen") from exc
 
     formato = imagen.format
     if formato not in FORMATOS_PERMITIDOS:
-        raise _error(
-            f"El formato {formato} no está permitido. Usa un archivo JPG, PNG o WebP.",
-            "formato",
-        )
+        raise _error(mensaje("formato", formato=formato), "formato")
 
     ancho, alto = imagen.size
     if max(ancho, alto) > MAX_LADO_PX or ancho * alto > MAX_PIXELES:
         raise _error(_mensaje_dimensiones(ancho, alto), "dimensiones")
 
     if getattr(imagen, "n_frames", 1) > 1:
-        raise _error(
-            "Las imágenes animadas no están permitidas. Usa una fotografía fija.",
-            "animada",
-        )
+        raise _error(mensaje("animada"), "animada")
 
     try:
         imagen.load()  # decodifica todo: detecta archivos truncados o corruptos
     except ERRORES_DE_LECTURA as exc:
-        raise _error(
-            "La imagen está dañada o incompleta. Vuelve a exportarla e inténtalo de nuevo.",
-            "danada",
-        ) from exc
+        raise _error(mensaje("danada"), "danada") from exc
     return imagen, formato
 
 

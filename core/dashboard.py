@@ -15,6 +15,7 @@ from django.forms import inlineformset_factory
 from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.http import urlencode
 
 from configuracion.forms import (
     CostoEnvioForm,
@@ -39,7 +40,10 @@ from configuracion.models import (
 from usuarios.forms import AdministrarUsuarioForm, RegistroUsuarioForm
 from usuarios.models import Usuario
 
+from . import servicio_galeria
 from .models import Coleccion, Material, Producto, Talla, VarianteProducto
+from .portadas import CampoPortada
+from .vistas_galeria import contexto_galeria
 
 
 class GrupoPermisosForm(forms.ModelForm):
@@ -127,6 +131,9 @@ class ProductoForm(forms.ModelForm):
         help_texts = {
             "codigo": "Déjalo vacío para generarlo automáticamente. Una vez creado no se puede cambiar.",
             "es_borrador": "Un borrador no se muestra en la tienda aunque esté activo.",
+            "imagen_url": (
+                "Solo se usa mientras el producto no tenga fotografías en su galería."
+            ),
             "piedras": "Solo las marcadas se muestran al cliente. Desmarcar = desactivar para este producto.",
         }
         widgets = {
@@ -152,6 +159,10 @@ class ProductoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance.pk and self.instance.codigo:
             self.fields["codigo"].disabled = True
+        if self.instance.pk and self.instance.galeria_gestionada:
+            # La galería ya es la fuente de las imágenes (Paso 03d): la URL
+            # antigua no se muestra ni se puede cambiar, pero su valor se conserva.
+            del self.fields["imagen_url"]
         # PROD-12: nombre y precio solo son obligatorios al publicar.
         # En borrador (o inactivo) se permite guardar incompleto; la
         # validación de publicación vive en clean() y en Producto.clean().
@@ -227,16 +238,42 @@ VarianteFormSet = inlineformset_factory(
 )
 
 
+MENSAJE_ARCHIVO_CON_DIRECCION = (
+    "Una colección usa un archivo o una dirección (URL), nunca los dos. "
+    "Borra la dirección y vuelve a elegir la fotografía, o guarda sin subir archivo."
+)
+MENSAJE_DIRECCION_CON_ARCHIVO = (
+    "Esta colección ya tiene una portada subida como archivo. "
+    "Marca «Quitar la portada actual» para usar una dirección, o deja este campo vacío."
+)
+
+
 class ColeccionForm(forms.ModelForm):
+    """Colección con su portada: un archivo propio O una dirección, nunca los dos.
+
+    El archivo se valida y se optimiza en `CampoPortada` (`core/portadas.py`),
+    que entrega el original limpio junto con su versión optimizada; al guardar,
+    `Coleccion.save()` escribe los dos (`imagen` e `imagen_detalle`). Este
+    formulario solo decide qué pasa cuando llegan las dos fuentes.
+    """
+
+    imagen = CampoPortada()
+
     class Meta:
         model = Coleccion
-        fields = ("nombre", "descripcion", "temporada", "imagen_url", "activa")
+        fields = ("nombre", "descripcion", "temporada", "imagen_url", "imagen", "activa")
         labels = {
             "nombre": "Nombre",
             "descripcion": "Descripción",
             "temporada": "Temporada",
             "imagen_url": "URL de imagen",
             "activa": "Activa",
+        }
+        help_texts = {
+            "imagen_url": (
+                "Dirección de una imagen ya publicada en internet. "
+                "Déjala vacía si subes un archivo."
+            ),
         }
         widgets = {
             "nombre": forms.TextInput(attrs={"class": "form-control"}),
@@ -245,6 +282,19 @@ class ColeccionForm(forms.ModelForm):
             "imagen_url": forms.URLInput(attrs={"class": "form-control"}),
             "activa": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
+
+    def clean(self):
+        datos = super().clean()
+        if "imagen" not in datos or "imagen_url" not in datos:
+            return datos  # alguno de los dos campos ya tiene su propio error
+        # `imagen` trae la portada que quedaría: la nueva, la que ya había, o nada
+        # (None si no hay; False si se pidió quitarla).
+        if datos["imagen"] and datos["imagen_url"]:
+            if "imagen" in self.changed_data:
+                self.add_error("imagen", MENSAJE_ARCHIVO_CON_DIRECCION)
+            else:
+                self.add_error("imagen_url", MENSAJE_DIRECCION_CON_ARCHIVO)
+        return datos
 
 
 GRUPOS_MENU = {
@@ -590,6 +640,39 @@ def preparar_formulario(formulario, usuario):
     return formulario
 
 
+# Al volver de una acción de la galería, la dirección lleva `?galeria=<id>`:
+# con eso el panel reabre la ficha de ese producto con sus fotografías a la vista.
+PARAMETRO_GALERIA = "galeria"
+
+
+def direccion_de_galeria(request, producto):
+    """Dirección de esta misma página del panel con la ficha del producto abierta."""
+    parametros = {}
+    for nombre in ("q", "page"):
+        valor = request.GET.get(nombre, "").strip()
+        if valor:
+            parametros[nombre] = valor
+    parametros[PARAMETRO_GALERIA] = producto.pk
+    return f"{request.path}?{urlencode(parametros)}#registros"
+
+
+def adjuntar_galerias(request, filas):
+    """Añade a cada fila de producto los datos de su bloque de fotografías.
+
+    Las galerías de toda la página se leen con una sola consulta.
+    """
+    galerias = servicio_galeria.listar_por_producto([fila["objeto"] for fila in filas])
+    abierta = request.GET.get(PARAMETRO_GALERIA)
+    for fila in filas:
+        producto = fila["objeto"]
+        fila["galeria"] = contexto_galeria(
+            producto,
+            galerias[producto.pk],
+            siguiente=direccion_de_galeria(request, producto),
+        )
+        fila["abrir_galeria"] = abierta == str(producto.pk)
+
+
 def crear_contexto(request, clave, formularios=None, formulario_abierto=None):
     formularios = formularios or {}
     menu = recursos_visibles(request.user)
@@ -696,6 +779,7 @@ def crear_contexto(request, clave, formularios=None, formulario_abierto=None):
                     instance=fila["objeto"], 
                     prefix=f"variantes-{fila['objeto'].pk}"
                 )
+        adjuntar_galerias(request, filas)
 
     return {
         "recursos": menu, 
@@ -870,6 +954,8 @@ def admin_section(request, seccion):
     elif request.method == "GET":
         formularios = {}
         formulario_abierto = None
+        if configuracion["model"] is Producto and request.GET.get(PARAMETRO_GALERIA):
+            formulario_abierto = (seccion, "edit", request.GET[PARAMETRO_GALERIA])
     else:
         return HttpResponseNotAllowed(["GET", "POST"])
 

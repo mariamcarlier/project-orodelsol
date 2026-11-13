@@ -2,6 +2,11 @@
 
 > Objetivo: trabajar historia por historia, con código simple y sin reescribir
 > lo que ya funciona. Este documento es la fuente de verdad del sprint.
+>
+> Las **decisiones de negocio** de la dueña (tallas y cartabón, tipos de
+> personalización, imágenes) están en `docs/estrategia-negocio.md` y mandan
+> sobre lo que aquí se describa como pendiente. El reparto de responsabilidad
+> sobre las piedras está en `docs/decisiones/0002-piedras-por-producto.md`.
 
 ## 1. Negocio (lo que muestran las referencias)
 
