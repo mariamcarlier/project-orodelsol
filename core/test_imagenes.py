@@ -187,6 +187,22 @@ class LimitesTests(_Base):
     def test_validar_envio_sin_archivos_no_falla(self):
         validar_envio([])
 
+    def test_el_peso_del_envio_se_mide_sobre_los_bytes_reales_no_sobre_lo_declarado(self):
+        # Dos archivos que juntos pasan el máximo por un byte cada uno.
+        archivo = SimpleUploadedFile("a.jpg", b"0" * (MAX_BYTES_POR_ENVIO // 2 + 1))
+        archivo.size = 10  # un cliente mentiroso
+        with self.assertRaises(ValidationError) as ctx:
+            validar_envio([archivo, archivo])
+        self.assertEqual(ctx.exception.code, "envio_pesado")
+
+    def test_validar_envio_no_mueve_la_posicion_de_lectura(self):
+        archivo = SimpleUploadedFile("a.jpg", b"0123456789")
+        archivo.seek(4)
+
+        validar_envio([archivo])
+
+        self.assertEqual(archivo.tell(), 4)
+
 
 class LimpiezaTests(_Base):
     def test_elimina_el_exif_incluida_la_ubicacion_gps(self):

@@ -1,0 +1,60 @@
+/* ═══════════════════════════════════════════════════════
+   portada-campo.css
+   Campo «Portada (archivo)» del formulario de colecciones (Paso 04).
+   Su HTML lo arma `SelectorDePortada` en core/portadas.py.
+
+   Se usa en dos pantallas con hojas de estilo distintas (el panel y el
+   formulario de colecciones). Por eso fija lo suyo y solo toma colores de
+   tokens.css, que cargan las dos.
+   ═══════════════════════════════════════════════════════ */
+
+.portada-campo {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  white-space: normal;   /* en el panel, la celda de acciones impone `nowrap` */
+}
+
+.portada-campo__actual {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #6f5a4a;        /* 6.4:1 sobre blanco */
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* Mismo encuadre que la tarjeta de la tienda (.collection-card: 3 / 4, recortada). */
+.portada-campo__actual img {
+  display: block;
+  flex: 0 0 auto;
+  width: 96px;
+  height: 128px;
+  border: 1px solid #dcd2c5;
+  border-radius: var(--radius-lg, 6px);
+  background: #f4efe7;
+  object-fit: cover;
+}
+
+.portada-campo label.portada-campo__quitar {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 8px;
+  margin: 0;
+  color: var(--color-text-dark, #2c1a10);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.portada-campo__quitar input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--color-cacao, #785041);
+}

@@ -10,8 +10,10 @@ from django.urls import reverse_lazy
 from django.views.decorators.http import require_http_methods, require_POST
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
+from . import servicio_galeria
 from .dashboard import ColeccionForm, ProductoForm, admin_dashboard, admin_section
 from .models import Coleccion, Piedra, Producto
+from .vistas_galeria import contexto_galeria
 
 
 # ---------------------------------------------------------------------------
@@ -48,7 +50,8 @@ def inicio(request):
     productos = (
         Producto.objects.publicos()
         .select_related("coleccion")
-        .prefetch_related("piedras")[:4]
+        .prefetch_related("piedras")
+        .con_fotografia_principal()[:4]
     )
     return render(
         request,
@@ -90,7 +93,9 @@ def producto_piedra_disponible(request, pk, ref):
 def producto_listar(request):
     if not request.user.has_perm("core.view_producto"):
         raise PermissionDenied
-    productos = Producto.objects.select_related("coleccion").all()
+    # La cabecera del sitio pinta la imagen de los primeros productos de la
+    # página (buscador): se precarga para no consultar uno por uno.
+    productos = Producto.objects.select_related("coleccion").con_fotografia_principal()
     return render(request, "core/productos/listar.html", {"productos": productos})
 
 
@@ -121,11 +126,13 @@ def producto_guardar(request, pk=None):
         return redirect("core:producto_listar")
 
     titulo = "Editar producto" if instancia else "Nuevo producto"
-    return render(
-        request,
-        "core/productos/form.html",
-        {"form": form, "titulo": titulo},
-    )
+    contexto = {"form": form, "titulo": titulo}
+    if instancia:
+        # La galería necesita un producto ya guardado: solo aparece al editar.
+        contexto["galeria"] = contexto_galeria(
+            instancia, servicio_galeria.listar(instancia)
+        )
+    return render(request, "core/productos/form.html", contexto)
 
 
 @require_POST
