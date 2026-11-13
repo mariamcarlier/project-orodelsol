@@ -122,12 +122,25 @@ def falla_solo_con(almacenamiento, operacion, condicion, error):
     return mock.patch.object(almacenamiento, operacion, side_effect=operar)
 
 
+def _piezas(nombre):
+    """Las partes de la ruta, sin depender del separador del sistema.
+
+    En Windows, `os.path.join` y `os.path.normpath` usan «\\»: Django entrega
+    `colecciones\\derivados\\<id>.webp` al almacenamiento. Comparar con
+    `startswith("colecciones/derivados/")` funcionaba solo en Linux y macOS, y en
+    Windows las pruebas de fallo parcial nunca llegaban a provocar el error.
+    """
+    return str(nombre or "").replace("\\", "/").split("/")
+
+
 def es_derivado(nombre):
-    return nombre.startswith("colecciones/derivados/")
+    piezas = _piezas(nombre)
+    return piezas[:2] == ["colecciones", "derivados"]
 
 
 def es_original(nombre):
-    return nombre.startswith("colecciones/") and not es_derivado(nombre)
+    piezas = _piezas(nombre)
+    return bool(piezas) and piezas[0] == "colecciones" and not es_derivado(nombre)
 
 
 def media_temporal(prueba):

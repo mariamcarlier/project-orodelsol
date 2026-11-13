@@ -525,11 +525,11 @@ class OrdenEnLaTiendaTests(_Base):
 
         respuesta = self.client.get(reverse("core:producto_editar", args=[self.producto.pk]))
 
-        self.assertContains(
-            respuesta,
-            "En la tienda va primero la principal y después las demás, "
-            "en el orden de sus posiciones.",
-        )
+        # El rediseño puso esa explicación en la cabecera y junto a la lista;
+        # la frase que importa (el orden de la tienda) sigue dicha en la pantalla.
+        self.assertContains(respuesta, "La primera es la que")
+        self.assertContains(respuesta, "se ve en la tienda")
+        self.assertContains(respuesta, "La principal va primero")
 
 
 class TarjetasDeColeccionTests(_Base):

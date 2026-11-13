@@ -43,6 +43,7 @@ from django.core.validators import URLValidator
 from django.db import DatabaseError, transaction
 
 from .imagenes import procesar_imagen, validar_envio
+from .mensajes_galeria import mensaje as _texto
 from .models import Producto, ProductoImagen
 
 logger = logging.getLogger(__name__)
@@ -63,9 +64,11 @@ def _error(mensaje, codigo):
 
 
 def _mensaje_limite(actuales, nuevas):
-    return (
-        f"Una galería admite como máximo {MAX_IMAGENES_POR_PRODUCTO} fotografías. "
-        f"Este producto ya tiene {actuales} y quieres añadir {nuevas}."
+    return _texto(
+        "limite",
+        maximo=MAX_IMAGENES_POR_PRODUCTO,
+        actuales=actuales,
+        nuevas=nuevas,
     )
 
 

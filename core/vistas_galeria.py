@@ -28,7 +28,16 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from . import servicio_galeria
-from .imagenes import MAX_BYTES_POR_ENVIO, MAX_BYTES_POR_IMAGEN, MB
+from .imagenes import (
+    FORMATOS_POR_EXTENSION,
+    MAX_ANCHO_VISTA_PREVIA,
+    MAX_BYTES_POR_ENVIO,
+    MAX_BYTES_POR_IMAGEN,
+    MAX_LADO_PX,
+    MAX_PIXELES,
+    MB,
+)
+from .mensajes_galeria import ETIQUETA_ARCHIVO, MENSAJES, mensaje
 from .models import Producto
 
 logger = logging.getLogger(__name__)
@@ -45,7 +54,12 @@ MENSAJE_ULTIMA_FOTOGRAFIA = (
 
 
 def etiqueta_de_mensajes(producto_id):
-    """Marca los mensajes de una galería para pintarlos dentro de su bloque."""
+    """Marca los mensajes de una galería para pintarlos dentro de su bloque.
+
+    El mismo valor numera los dos avisos que lleva el bloque: el de la última
+    acción (mensajes de Django) y el de «cambios sin guardar», que escribe
+    `static/js/modulos/productos/galeria/carga.js`.
+    """
     return f"galeria-{producto_id}"
 
 
@@ -69,6 +83,36 @@ def contexto_galeria(producto, imagenes, siguiente=""):
         # Paso 03d: qué muestra hoy la tienda y qué falta para publicar.
         "gestionada": producto.galeria_gestionada,
         "usa_url_antigua": not producto.galeria_gestionada and bool(producto.imagen_url),
+        # Lo que necesita el navegador para validar antes de enviar. Son los
+        # mismos números y los mismos textos que usa el servidor: ver
+        # `configuracion_para_el_navegador`.
+        "configuracion": configuracion_para_el_navegador(imagenes),
+        # Id del <script type="application/json"> que lee `carga.js`. Lleva el
+        # producto porque el panel pinta una galería por fila.
+        "configuracion_id": f"galeria-config-{producto.pk}",
+    }
+
+
+def configuracion_para_el_navegador(imagenes):
+    """Límites y mensajes que `carga.js` repite en el navegador.
+
+    No sustituye a la validación del servidor, que sigue siendo la única que
+    decide: aquí solo se evita un viaje inútil al servidor y se avisa antes.
+    Los mensajes salen de `core.mensajes_galeria`, los mismos que el servidor.
+    """
+    return {
+        "maximo": servicio_galeria.MAX_IMAGENES_POR_PRODUCTO,
+        "libres": max(servicio_galeria.MAX_IMAGENES_POR_PRODUCTO - len(imagenes), 0),
+        "maximoPorImagen": MAX_BYTES_POR_IMAGEN,
+        "maximoPorEnvio": MAX_BYTES_POR_ENVIO,
+        "mbPorImagen": MAX_BYTES_POR_IMAGEN // MB,
+        "mbPorEnvio": MAX_BYTES_POR_ENVIO // MB,
+        "ladoMaximo": MAX_LADO_PX,
+        "megapixelesMaximos": MAX_PIXELES // 1_000_000,
+        "anchoVistaPrevia": MAX_ANCHO_VISTA_PREVIA,
+        "tipos": sorted(FORMATOS_POR_EXTENSION),
+        "mensajes": MENSAJES,
+        "etiquetaArchivo": ETIQUETA_ARCHIVO,
     }
 
 
@@ -80,9 +124,7 @@ def contexto_galeria(producto, imagenes, siguiente=""):
 def _subir(request, producto):
     archivos = request.FILES.getlist("fotografias")
     if not archivos:
-        raise ValidationError(
-            "Selecciona al menos una fotografía de tu equipo.", code="sin_archivos"
-        )
+        raise ValidationError(mensaje("sin_archivos"), code="sin_archivos")
     creadas = servicio_galeria.agregar_archivos(producto, archivos)
     if len(creadas) == 1:
         return "Se añadió 1 fotografía."
@@ -109,7 +151,13 @@ def _posicion(valor, total):
 
 
 def _organizar(request, producto):
-    """Guarda en un solo envío la fotografía principal y las posiciones."""
+    """Guarda en un solo envío la fotografía principal y las posiciones.
+
+    La pantalla no pinta un número por fotografía (son diez campos de texto para
+    hacer el mismo trabajo): manda `posicion-<pk>` calculado por sus botones
+    «subir» y «bajar», con los mismos valores 1..N que espera el servicio. Aquí
+    no cambia nada: si un valor falta, esa fotografía se queda donde está.
+    """
     imagenes = servicio_galeria.listar(producto)
     movidas = {}
     for lugar, imagen in enumerate(imagenes):

@@ -5,7 +5,7 @@
 
 {% block extra_css %}
     {% if recurso.key == 'productos' %}
-        <link rel="stylesheet" href="{% static 'css/galeria-admin.css' %}?v=1">
+        <link rel="stylesheet" href="{% static 'css/galeria-admin.css' %}?v=4">
     {% elif recurso.key == 'colecciones' %}
         <link rel="stylesheet" href="{% static 'css/portada-campo.css' %}?v=2">
     {% endif %}
@@ -15,4 +15,10 @@
 
     {% include "admin_custom/_resource.html" %}
 
+{% endblock %}
+
+{% block scripts %}
+    {% if recurso.key == 'productos' %}
+        <script src="{% static 'js/modulos/productos/galeria/carga.js' %}?v=3"></script>
+    {% endif %}
 {% endblock %}
