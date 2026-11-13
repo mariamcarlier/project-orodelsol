@@ -138,20 +138,39 @@ class ControlesDelRedisenoTests(_BasePantalla):
     def test_la_cabecera_explica_para_que_sirve(self):
         respuesta = self.client.get(self.url_editar)
 
-        self.assertContains(respuesta, "Cargar imágenes")
+        self.assertContains(respuesta, "Cargar imágenes del producto")
         self.assertContains(
             respuesta,
-            "Agrega fotografías de tus productos para que tus clientes puedan "
-            "apreciar cada detalle de las piezas.",
+            "Agrega fotografías para mostrar los detalles de tus piezas.",
         )
 
     def test_la_zona_de_carga_anuncia_el_arrastre_y_el_boton(self):
         respuesta = self.client.get(self.url_editar)
 
         self.assertContains(respuesta, "Arrastra tus imágenes aquí")
-        self.assertContains(respuesta, "o selecciona los archivos desde tu dispositivo.")
+        self.assertContains(respuesta, "O selecciona archivos desde tu dispositivo")
         self.assertContains(respuesta, "Seleccionar imágenes")
         self.assertContains(respuesta, "data-zona")
+        # La anatomía del rediseño: un icono arriba y el botón dentro de la zona.
+        self.assertContains(respuesta, "galeria-admin__zona-icono")
+
+    def test_los_limites_se_leen_de_un_vistazo_y_son_los_del_servidor(self):
+        respuesta = self.client.get(self.url_editar)
+
+        self.assertContains(respuesta, "galeria-admin__limites")
+        self.assertContains(respuesta, "Formatos</span> JPG, PNG o WebP")
+        self.assertContains(
+            respuesta,
+            "Tamaño</span> Hasta 10 MB por fotografía y 30 MB por envío",
+        )
+        self.assertContains(respuesta, "Cantidad</span> 10 fotografías por producto")
+
+    def test_la_vista_previa_tiene_su_titulo_y_su_contador(self):
+        respuesta = self.client.get(self.url_editar)
+
+        self.assertContains(respuesta, "Vista previa")
+        self.assertContains(respuesta, "data-contador")
+        self.assertContains(respuesta, "data-previa")
 
     def test_el_campo_de_archivo_es_accesible_pese_a_estar_visualmente_oculto(self):
         respuesta = self.client.get(self.url_editar)
@@ -201,6 +220,24 @@ class ControlesDelRedisenoTests(_BasePantalla):
         self.assertContains(respuesta, 'role="status"')
         self.assertContains(respuesta, "data-estado-guardado")
 
+    def test_la_galeria_guardada_ofrece_agregar_otra_tarjeta(self):
+        galeria.agregar_archivos(self.producto, fotos(2))
+
+        respuesta = self.client.get(self.url_editar)
+
+        self.assertContains(respuesta, "galeria-admin__agregar")
+        self.assertContains(respuesta, "Agregar otra")
+        # Es una etiqueta del campo real: abre el selector sin JavaScript.
+        etiqueta = respuesta.content.decode().split("galeria-admin__agregar-etiqueta", 1)[1]
+        self.assertIn(f'for="galeria-archivos-{self.producto.pk}"', etiqueta.split(">", 1)[0])
+
+    def test_con_la_galeria_llena_no_hay_tarjeta_de_agregar(self):
+        galeria.agregar_archivos(self.producto, fotos(MAX_IMAGENES_POR_PRODUCTO))
+
+        respuesta = self.client.get(self.url_editar)
+
+        self.assertNotContains(respuesta, "Agregar otra")
+
     def test_eliminar_pide_confirmacion_sin_el_dialogo_del_navegador(self):
         galeria.agregar_archivos(self.producto, [foto()])
 
@@ -235,10 +272,16 @@ class ControlesDelRedisenoTests(_BasePantalla):
         galeria.agregar_archivos(self.producto, fotos(2))
 
         html = self.client.get(self.url_editar).content.decode()
-        etiqueta = html.split(f'id="galeria-{self.producto.pk}"', 1)[0].rsplit("<div", 1)[1]
+        # La etiqueta de apertura completa del bloque, con todos sus atributos.
+        desde = html.rindex("<div", 0, html.index(f'id="galeria-{self.producto.pk}"'))
+        etiqueta = html[desde:html.index(">", desde)]
         self.assertNotIn("hidden", etiqueta)
         self.assertNotIn("data-mensajes-id", etiqueta)
         self.assertEqual(html.count(f'id="galeria-{self.producto.pk}"'), 1)
+        # El aviso de cambios tiene SU id: nunca el del bloque, o al ocultarlo
+        # se llevaría por delante la galería entera.
+        self.assertIn(f'data-aviso-id="galeria-cambios-{self.producto.pk}"', etiqueta)
+        self.assertNotEqual(f"galeria-cambios-{self.producto.pk}", f"galeria-{self.producto.pk}")
 
     def test_el_bloque_carga_su_script_solo_en_productos(self):
         respuesta = self.client.get(self.url_editar)

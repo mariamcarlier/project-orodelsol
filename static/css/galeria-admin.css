@@ -122,7 +122,7 @@
 .galeria-admin__foto {
   display: grid;
   align-content: start;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
   padding: 8px;
   border: 1px solid var(--galeria-borde);
@@ -178,6 +178,66 @@
   text-align: center;
 }
 
+/* Nombre de la tarjeta guardada: «Foto principal» o «Fotografía 3». */
+.galeria-admin p.galeria-admin__nombre {
+  overflow: hidden;
+  color: var(--galeria-texto);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galeria-admin__datos {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* «Agregar otra»: ocupa el hueco de la siguiente foto y abre el selector.
+   Es una etiqueta del campo real, así que funciona con y sin JavaScript. */
+.galeria-admin__agregar {
+  display: grid;
+}
+
+.galeria-admin .galeria-admin__agregar-etiqueta {
+  display: grid;
+  place-content: center;
+  gap: 6px;
+  justify-items: center;
+  min-height: 100%;
+  padding: 14px;
+  border: 1.5px dashed var(--galeria-borde);
+  border-radius: var(--galeria-radio);
+  background: #fbf9f5;
+  color: var(--galeria-tenue);
+  font-size: 12.5px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.galeria-admin .galeria-admin__agregar-etiqueta:hover {
+  border-color: var(--galeria-acento);
+  background: #f7f1e8;
+  color: var(--galeria-acento);
+}
+
+.galeria-admin__agregar-simbolo {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--galeria-borde);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.galeria-admin .galeria-admin__agregar-etiqueta:focus-within {
+  box-shadow: var(--focus-ring, 0 0 0 3px rgba(201, 168, 76, .45));
+}
+
 .galeria-admin__principal {
   display: flex;
   align-items: center;
@@ -204,7 +264,7 @@
   gap: 6px;
 }
 
-.galeria-admin button.galeria-admin__mover {
+.galeria-admin button.galeria-admin__icono-boton {
   display: grid;
   place-items: center;
   width: 30px;
@@ -214,25 +274,32 @@
   border-radius: var(--radius, 3px);
   background: #fff;
   color: var(--galeria-acento);
-  font: inherit;
-  font-size: 14px;
-  line-height: 1;
   cursor: pointer;
 }
 
-.galeria-admin button.galeria-admin__mover svg {
+.galeria-admin button.galeria-admin__icono-boton svg {
   width: 16px;
   height: 16px;
 }
 
-.galeria-admin button.galeria-admin__mover:hover:not(:disabled) {
+.galeria-admin button.galeria-admin__icono-boton:hover:not(:disabled) {
   border-color: var(--galeria-acento);
   background: #f7f1e8;
 }
 
-.galeria-admin button.galeria-admin__mover:disabled {
+.galeria-admin button.galeria-admin__icono-boton:disabled {
   opacity: .4;
   cursor: not-allowed;
+}
+
+.galeria-admin button.galeria-admin__icono-boton--peligro {
+  margin-left: auto;
+  color: var(--galeria-peligro);
+}
+
+.galeria-admin button.galeria-admin__icono-boton--peligro:hover:not(:disabled) {
+  border-color: var(--galeria-peligro);
+  background: #fdf6f6;
 }
 
 .galeria-admin__oculto {
@@ -272,18 +339,6 @@
 .galeria-admin__confirmar-si {
   border-color: var(--galeria-peligro);
   color: var(--galeria-peligro);
-}
-
-.galeria-admin button.galeria-admin__eliminar {
-  justify-self: start;
-  padding: 2px 0;
-  border: 0;
-  background: none;
-  color: var(--galeria-peligro);
-  font: inherit;
-  font-size: 13px;
-  text-decoration: underline;
-  cursor: pointer;
 }
 
 /* ── Botones ──────────────────────────────────────────── */
@@ -368,16 +423,81 @@
   background: #faf8f4;
 }
 
+.galeria-admin__zona-icono {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 2px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--galeria-borde);
+  color: var(--galeria-acento);
+}
+
+.galeria-admin__zona-icono svg {
+  width: 22px;
+  height: 22px;
+}
+
+.galeria-admin__zona[data-llena] .galeria-admin__zona-icono {
+  color: var(--galeria-tenue);
+}
+
 .galeria-admin__zona-titulo {
   margin: 0;
   color: var(--galeria-texto);
+  font-size: 15px;
   font-weight: 600;
 }
 
 .galeria-admin__zona-texto {
-  margin: 0 0 6px;
+  margin: 0 0 10px;
   color: var(--galeria-tenue);
   font-size: 13px;
+}
+
+/* Límites reales, en tres pares clave/valor. No es texto suelto: se lee de un
+   vistazo y el mismo contenido describe el campo para lectores de pantalla. */
+.galeria-admin ul.galeria-admin__limites {
+  display: grid;
+  gap: 4px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--galeria-tenue);
+  font-size: 12.5px;
+}
+
+.galeria-admin__limite-clave {
+  display: inline-block;
+  min-width: 74px;
+  color: var(--galeria-texto);
+  font-weight: 600;
+}
+
+/* ── Cabeceras de sección (vista previa y galería guardada) ── */
+.galeria-admin__vista-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin-bottom: 8px;
+}
+
+.galeria-admin h4.galeria-admin__subtitulo {
+  margin: 0;
+  color: var(--galeria-texto);
+  font-family: var(--font-body, inherit);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.galeria-admin__vista-ayuda {
+  color: var(--galeria-tenue);
+  font-size: 12px;
 }
 
 /* El campo de archivos se ve por defecto (sin JavaScript es la única entrada).
@@ -453,16 +573,16 @@
 /* ── Selección antes de subir ─────────────────────────── */
 .galeria-admin__seleccion {
   display: grid;
-  gap: 8px;
-  padding: 12px;
+  gap: 10px;
+  padding: 14px;
   border: 1px solid var(--galeria-borde);
   border-radius: var(--galeria-radio);
-  background: #fff;
+  background: #fffefa;
 }
 
 .galeria-admin__seleccion-titulo {
   color: var(--galeria-tenue);
-  font-size: 13px;
+  font-size: 12.5px;
 }
 
 .galeria-admin p.galeria-admin__seleccion-error {
@@ -474,38 +594,39 @@
   font-size: 13px;
 }
 
+/* Tres o cuatro por fila en escritorio; en móvil, dos. */
 .galeria-admin ul.galeria-admin__previa {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  align-items: start;
+  gap: 10px;
   list-style: none;
 }
 
+/* `align-content: start`: el marco y los datos quedan pegados arriba aunque la
+   tarjeta de al lado tenga un mensaje de error y crezca. */
 .galeria-admin__previa-foto {
+  position: relative;
   display: grid;
-  grid-template-columns: 56px 1fr auto;
-  align-items: center;
-  gap: 10px;
+  align-content: start;
+  gap: 6px;
   min-width: 0;
-  padding: 8px;
-  border: 1px solid var(--galeria-borde);
-  border-radius: var(--radius-lg, 6px);
-  background: #fffefa;
-}
-
-.galeria-admin__previa-foto.tiene-error {
-  border-color: #e3b5b5;
-  background: #fdf6f6;
 }
 
 .galeria-admin__previa-marco {
+  position: relative;
   display: grid;
   place-items: center;
   overflow: hidden;
-  width: 56px;
-  height: 56px;
-  border-radius: var(--radius, 3px);
+  aspect-ratio: 1;
+  border: 1px solid var(--galeria-borde);
+  border-radius: var(--radius-lg, 6px);
   background: var(--color-ivory, #f3f0e9);
+}
+
+.galeria-admin__previa-foto.tiene-error .galeria-admin__previa-marco {
+  border-color: #e3b5b5;
+  background: #fdf6f6;
 }
 
 .galeria-admin__previa-marco img {
@@ -516,46 +637,100 @@
 
 .galeria-admin__previa-icono {
   color: var(--galeria-peligro);
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
 }
 
 .galeria-admin__previa-datos {
   display: grid;
-  gap: 1px;
+  gap: 2px;
   min-width: 0;
   font-size: 12.5px;
 }
 
 .galeria-admin__previa-nombre {
   overflow: hidden;
-  color: var(--galeria-texto);
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.galeria-admin__previa-tamano,
-.galeria-admin__previa-estado {
+.galeria-admin__previa-tamano {
   color: var(--galeria-tenue);
   font-size: 12px;
 }
 
+/* Estado: misma forma que la etiqueta «Principal», con su propio color. */
+.galeria-admin .galeria-admin__estado {
+  justify-self: start;
+  margin-top: 2px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.galeria-admin__estado--lista {
+  background: #e8f3e8;
+  color: #1f6b2a;
+}
+
+.galeria-admin__estado--error {
+  background: #fbe9e9;
+  color: var(--galeria-peligro);
+}
+
 .galeria-admin__previa-error {
   color: var(--galeria-peligro);
-  font-size: 12px;
+  font-size: 11.5px;
   line-height: 1.35;
 }
 
+/* Quitar: una «x» sobre la esquina, como en las galerías de referencia. */
 .galeria-admin button.galeria-admin__previa-quitar {
-  align-self: start;
-  padding: 2px 0;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
   border: 0;
-  background: none;
-  color: var(--galeria-acento);
-  font: inherit;
-  font-size: 12.5px;
-  text-decoration: underline;
+  border-radius: 50%;
+  background: rgba(44, 26, 16, .62);
+  color: #fff;
   cursor: pointer;
+}
+
+.galeria-admin button.galeria-admin__previa-quitar svg {
+  width: 12px;
+  height: 12px;
+}
+
+.galeria-admin button.galeria-admin__previa-quitar:hover {
+  background: var(--galeria-peligro);
+}
+
+/* Pie de la vista previa: contador a la izquierda, envío a la derecha. */
+.galeria-admin__previas-pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 4px;
+  border-top: 1px solid var(--galeria-borde);
+}
+
+.galeria-admin__contador {
+  color: #1f6b2a;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.galeria-admin__contador.tiene-error {
+  color: var(--galeria-peligro);
 }
 
 .galeria-admin__guardar {
@@ -655,31 +830,33 @@
     grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
   }
 
-  /* En una tarjeta estrecha los dos botones y «Eliminar» no caben en una
-     línea: quedan uno al lado del otro y «Eliminar» debajo, sin salirse. */
+  /* Tres iconos caben en una tarjeta estrecha si se aprieta un poco. */
   .galeria-admin__acciones {
-    display: grid;
-    grid-template-columns: repeat(2, max-content);
-    justify-content: start;
     gap: 4px;
   }
 
-  .galeria-admin button.galeria-admin__mover {
+  .galeria-admin button.galeria-admin__icono-boton {
     width: 28px;
     height: 28px;
   }
 
-  .galeria-admin button.galeria-admin__eliminar {
-    grid-column: 1 / -1;
-    justify-self: start;
+  .galeria-admin button.galeria-admin__icono-boton--peligro {
+    margin-left: 0;
   }
 
   .galeria-admin__zona {
     padding: 18px 12px;
   }
 
+  /* Dos por fila también en el móvil: una imagen por fila ocupaba media
+     pantalla de alto por cada foto seleccionada. */
   .galeria-admin ul.galeria-admin__previa {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .galeria-admin__previas-pie .galeria-admin__boton {
+    width: 100%;
   }
 
   .galeria-admin__guardar .galeria-admin__boton {

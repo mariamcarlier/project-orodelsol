@@ -105,9 +105,19 @@
     const lista = formulario.querySelector('[data-previa]');
     const titulo = formulario.querySelector('[data-seleccion-titulo]');
     const aviso = formulario.querySelector('[data-previa-error]');
+    const contador = formulario.querySelector('[data-contador]');
     const enviar = formulario.querySelector('[data-enviar]');
     const enviarSinJs = formulario.querySelector('[data-enviar-sin-js]');
     if (!entrada || !seleccion || !lista) return;
+
+    // «Agregar otra» es una etiqueta del campo real: funciona con o sin
+    // JavaScript. Con él se lleva el foco al selector para que el teclado y el
+    // lector de pantalla no se queden en una tarjeta que ya no hace nada.
+    bloque.querySelectorAll('.galeria-admin__agregar-etiqueta').forEach((etiqueta) => {
+      etiqueta.addEventListener('click', () => {
+        window.setTimeout(() => entrada.focus(), 0);
+      });
+    });
 
     // A partir de aquí el bloque puede usar el aspecto «con JavaScript»: el
     // campo real se oculta visualmente y el botón de envío es el de la
@@ -186,23 +196,28 @@
     function pintar() {
       lista.replaceChildren();
       const conError = elegidos.filter((item) => item.error).length;
+      const listas = elegidos.length - conError;
       const peso = elegidos.reduce((total, item) => total + item.archivo.size, 0);
 
       elegidos.forEach((item, posicion) => {
-        const fila = document.createElement('li');
-        fila.className = 'galeria-admin__previa-foto';
-        if (item.error) fila.classList.add('tiene-error');
+        const tarjeta = document.createElement('li');
+        tarjeta.className = 'galeria-admin__previa-foto';
+        if (item.error) tarjeta.classList.add('tiene-error');
+        tarjeta.dataset.indice = String(posicion);
 
         const marco = document.createElement('div');
         marco.className = 'galeria-admin__previa-marco';
+        const datos = document.createElement('div');
+        datos.className = 'galeria-admin__previa-datos';
+
         if (item.url) {
           const imagen = document.createElement('img');
           imagen.src = item.url;
           imagen.alt = '';
           imagen.loading = 'lazy';
-          // Un archivo que el navegador no puede pintar deja el hueco con un
-          // icono roto: mejor un marcador neutro. No se dice que sea inválido
-          // porque aquí todavía no se sabe; el servidor lo dirá al enviar.
+          // Un archivo que el navegador no puede pintar dejaría un icono roto:
+          // mejor un marcador neutro. No se dice que sea inválido porque aquí
+          // todavía no se sabe; el servidor lo dirá al enviar.
           imagen.addEventListener('error', () => {
             imagen.remove();
             const sinPrevia = document.createElement('span');
@@ -224,33 +239,38 @@
           marco.append(icono);
         }
 
-        const datos = document.createElement('div');
-        datos.className = 'galeria-admin__previa-datos';
+        // El nombre del archivo puede ser larguísimo: se corta en pantalla y se
+        // deja entero en el `title` y en el aria-label del botón de quitar.
         const nombre = document.createElement('span');
         nombre.className = 'galeria-admin__previa-nombre';
         nombre.textContent = item.archivo.name;
+        nombre.title = item.archivo.name;
+
         const tamano = document.createElement('span');
         tamano.className = 'galeria-admin__previa-tamano';
         tamano.textContent = formatoDePeso(item.archivo.size);
-        datos.append(nombre, tamano);
 
         const estado = document.createElement('span');
-        estado.className = 'galeria-admin__previa-estado';
-        estado.textContent = item.error ? 'No válida' : 'Lista para subir';
+        estado.className = item.error
+          ? 'galeria-admin__estado galeria-admin__estado--error'
+          : 'galeria-admin__estado galeria-admin__estado--lista';
+        estado.textContent = item.error ? 'No válida' : 'Lista';
+
+        datos.append(nombre, tamano, estado);
         if (item.error) {
           const detalle = document.createElement('span');
           detalle.className = 'galeria-admin__previa-error';
           detalle.textContent = item.error;
-          datos.append(estado, detalle);
-        } else {
-          datos.append(estado);
+          datos.append(detalle);
         }
 
         const quitar = document.createElement('button');
         quitar.type = 'button';
         quitar.className = 'galeria-admin__previa-quitar';
-        quitar.textContent = 'Quitar';
         quitar.setAttribute('aria-label', `Quitar «${item.archivo.name}» de la selección`);
+        quitar.innerHTML =
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+          'stroke-linecap="round" aria-hidden="true"><path d="m18 6-12 12M6 6l12 12"/></svg>';
         quitar.addEventListener('click', () => {
           liberar(item);
           elegidos = elegidos.filter((otro) => otro !== item);
@@ -258,11 +278,19 @@
           if (!elegidos.length) reiniciar();
         });
 
-        fila.append(marco, datos, quitar);
-        lista.append(fila);
-        // Se conserva un orden estable aunque el usuario reordene la lista.
-        fila.dataset.indice = String(posicion);
+        tarjeta.append(marco, datos, quitar);
+        lista.append(tarjeta);
       });
+
+      // «2 imágenes listas · 1 pendiente»: el mismo resumen que se ve en la
+      // cabecera de la vista previa. Nunca hay porcentajes: no se simula nada.
+      if (contador) {
+        const partes = [];
+        if (listas) partes.push(`${listas} ${listas === 1 ? 'imagen lista' : 'imágenes listas'}`);
+        if (conError) partes.push(`${conError} ${conError === 1 ? 'pendiente' : 'pendientes'}`);
+        contador.textContent = partes.join(' · ');
+        contador.classList.toggle('tiene-error', conError > 0);
+      }
 
       const valido = elegidos.length > 0 && conError === 0;
       seleccion.hidden = elegidos.length === 0;
@@ -277,8 +305,6 @@
       }
       // El resumen de la selección es una región viva: al elegir archivos se
       // anuncia cuántos entraron y cuántos no, sin mover el foco.
-      titulo.setAttribute('role', 'status');
-      titulo.setAttribute('aria-live', 'polite');
       titulo.textContent = elegidos.length
         ? `${elegidos.length} ${elegidos.length === 1 ? 'imagen seleccionada' : 'imágenes seleccionadas'} · ${formatoDePeso(peso)}`
         : '';
@@ -446,7 +472,12 @@
     const lista = formulario.querySelector('[data-lista]');
     const guardar = formulario.querySelector('[data-guardar]');
     const estado = formulario.querySelector('[data-estado-guardado]');
-    const pendiente = document.getElementById(bloque.dataset.mensajesId);
+    // Ojo: este id NO puede ser el del bloque. Si lo fuera, «ocultar el aviso»
+    // ocultaría la galería entera (fue un fallo real: la galería desaparecía).
+    const avisoId = bloque.dataset.avisoId;
+    const pendiente = avisoId && avisoId !== bloque.id
+      ? document.getElementById(avisoId)
+      : null;
     if (!lista || !guardar) return;
 
     // Mientras se envía, el navegador no debe preguntar si abandonar la página:
