@@ -180,13 +180,15 @@
             {% for producto in productos|default:""|slice:":4" %}
               <button class="search-spotlight__card" type="button"
                       data-search-suggestion="{{ producto.nombre }}">
-                {% if producto.imagen_url %}
-                  <img src="{{ producto.imagen_url }}"
+                {% with imagen=producto.imagen_catalogo %}
+                {% if imagen %}
+                  <img src="{{ imagen }}"
                        data-image-fallback="{% static 'img/coleccion-almadorada.webp' %}"
                        alt="" loading="lazy">
                 {% else %}
                   <img src="{% static 'img/coleccion-almadorada.webp' %}" alt="" loading="lazy">
                 {% endif %}
+                {% endwith %}
                 <span>{{ producto.nombre }}</span>
               </button>
             {% empty %}

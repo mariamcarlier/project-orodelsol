@@ -18,13 +18,14 @@ RUTAS_ESTABLES = (
     "core.upload_paths.ruta_imagen_producto",
     "core.upload_paths.ruta_derivado_producto",
     "core.upload_paths.ruta_imagen_coleccion",
+    "core.upload_paths.ruta_derivado_coleccion",
 )
 UUID_HEX = r"[0-9a-f]{32}"
 
 
 class RutasEstablesTests(SimpleTestCase):
     def test_las_funciones_son_importables_por_su_ruta_de_modulo(self):
-        # Esta es la ruta exacta que Django escribe en la migración 0007.
+        # Estas son las rutas exactas que Django escribe en las migraciones 0007 y 0010.
         for ruta in RUTAS_ESTABLES:
             with self.subTest(ruta=ruta):
                 self.assertTrue(callable(import_string(ruta)))
@@ -96,3 +97,19 @@ class RutaImagenColeccionTests(SimpleTestCase):
         ruta = upload_paths.ruta_imagen_coleccion(SimpleNamespace(), "portada.gif")
 
         self.assertTrue(ruta.endswith(".bin"))
+
+
+class RutaDerivadoColeccionTests(SimpleTestCase):
+    def test_siempre_webp_y_en_la_subcarpeta_derivados(self):
+        for nombre in ("x.png", "x.jpg", "x.webp", "x.exe", "../../x.png", ""):
+            with self.subTest(nombre=nombre):
+                self.assertRegex(
+                    upload_paths.ruta_derivado_coleccion(SimpleNamespace(), nombre),
+                    rf"^colecciones/derivados/{UUID_HEX}\.webp$",
+                )
+
+    def test_dos_cargas_no_repiten_nombre(self):
+        self.assertNotEqual(
+            upload_paths.ruta_derivado_coleccion(SimpleNamespace(), "a.webp"),
+            upload_paths.ruta_derivado_coleccion(SimpleNamespace(), "a.webp"),
+        )
