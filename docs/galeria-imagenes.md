@@ -146,7 +146,44 @@ salida de errores del servidor: en producción conviene guardarla en un archivo.
 Un fallo que nadie previó lo anota Django, y en producción solo se ve si se
 definió `LOGGING` (punto 3).
 
-## 7. Límites conocidos
+## 7. La pantalla de carga (rediseño)
+
+El bloque de la galería (`templates/core/productos/_galeria.html`) es el mismo en
+el formulario del producto y en la ficha del panel. Sus tres piezas:
+
+| Pieza | Dónde | Qué hace |
+|---|---|---|
+| Aspecto | `static/css/galeria-admin.css` | Un solo archivo para las dos pantallas |
+| Comportamiento | `static/js/modulos/productos/galeria/carga.js` | Opcional: sin él todo sigue funcionando |
+| Límites y textos | `core/mensajes_galeria.py` + `configuracion_para_el_navegador` | Una sola copia de cada número y de cada frase |
+
+**La validación del navegador no sustituye a la del servidor.** El servidor
+sigue siendo el único que decide: si el script está desactivado o modificado,
+rechaza lo mismo con el mismo texto. Al revés, el navegador avisa antes de
+enviar (peso, tipo, archivo vacío, dimensiones, duplicados, huecos libres,
+firma de los bytes) para no hacer esperar a nadie por un envío que se va a
+rechazar.
+
+Consecuencias prácticas:
+
+- **Sin JavaScript** el campo de archivos se ve y funciona, y hay un botón de
+  envío clásico; el orden y el borrado usan los formularios POST de siempre. El
+  CSS solo oculta el campo cuando el bloque lleva la clase `js-galeria`, que pone
+  el script al arrancar.
+- **Con la galería llena** el campo no desaparece: queda deshabilitado, con el
+  aviso de que hay que eliminar una foto para añadir otra.
+- **Las posiciones no se escriben a mano.** Los campos `posicion-<pk>` existen
+  (ocultos) y los renumera el script con los botones ↑ ↓; el envío es el mismo
+  que ya esperaba `_organizar`.
+- **No hay subida asíncrona ni porcentaje de progreso**: el envío es un POST
+  normal del formulario y el botón dice «Subiendo…» mientras tanto.
+
+Si cambia un límite o una frase, se cambia en `core/mensajes_galeria.py` y en
+`core/imagenes.py`; la pantalla lo recibe sola. Las pruebas de
+`core/test_galeria_carga.py` comprueban que el navegador recibe exactamente los
+números y los textos del servidor.
+
+## 8. Límites conocidos
 
 - **Una transacción que se revierte después de guardar.** Django no avisa: los
   archivos nuevos ya están en el disco y quedan sin fila que los use. Ninguna
@@ -162,7 +199,7 @@ definió `LOGGING` (punto 3).
   segundo; no se ha añadido bloqueo para ese caso.
 - **Restaurar la base de datos sin `media/`** (o al revés): ver el punto 3.
 
-## 8. Pendientes
+## 9. Pendientes
 
 - **Migración de datos de `imagen_url`** (pasar las imágenes históricas de los
   productos a la galería): no está hecha ni autorizada. Sería la `0011`.

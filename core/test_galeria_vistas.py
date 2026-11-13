@@ -498,13 +498,25 @@ class BloqueEnElFormularioTests(_BasePantalla):
         cierre = html.index("</form>", inicio)
         self.assertGreater(html.index('id="galeria"'), cierre)
 
-    def test_con_la_galeria_llena_ya_no_ofrece_subir(self):
+    def test_con_la_galeria_llena_el_selector_sigue_visible_pero_deshabilitado(self):
+        """Decisión de la revisión: el campo no desaparece, se deshabilita.
+
+        Quien administra tiene que ver que el límite existe y por qué no puede
+        subir más. El servidor sigue rechazando igual un envío forzado; eso lo
+        prueban las pruebas del servicio y las de la pantalla.
+        """
         galeria.agregar_archivos(self.producto, fotos(MAX_IMAGENES_POR_PRODUCTO))
 
         respuesta = self.client.get(self.url_editar)
 
         self.assertContains(respuesta, "La galería está completa.")
-        self.assertNotContains(respuesta, 'name="fotografias"')
+        self.assertContains(respuesta, "Elimina una fotografía para poder añadir otra.")
+        self.assertContains(respuesta, "El selector está deshabilitado")
+        self.assertContains(respuesta, 'name="fotografias"', count=1)
+        # El atributo `disabled` va en el propio campo, no en otro control.
+        campo = respuesta.content.decode().split('name="fotografias"', 1)[1].split(">", 1)[0]
+        self.assertIn("disabled", campo)
+        # Añadir una dirección tampoco está disponible con la galería llena.
         self.assertNotContains(respuesta, 'name="accion" value="url"')
 
     def test_al_crear_un_producto_explica_que_las_fotografias_van_despues(self):
