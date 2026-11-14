@@ -7,6 +7,29 @@
 'use strict';
 
 (function () {
+
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('dashboardOverlay');
+  const toggle = document.getElementById('menuToggle');
+
+  if (sidebar && overlay && toggle) {
+    const pantallaMovil = window.matchMedia('(max-width: 768px)');
+
+    function setMenu(abierto, devolverFoco) {
+      sidebar.classList.toggle('is-open', abierto);
+      overlay.classList.toggle('is-open', abierto);
+      document.body.classList.toggle('menu-open', abierto);
+      toggle.setAttribute('aria-expanded', String(abierto));
+      toggle.setAttribute('aria-label', abierto ? 'Cerrar menú' : 'Abrir menú');
+
+      if (abierto) {
+        const primero = sidebar.querySelector('a, summary, button');
+        if (primero) primero.focus();
+      } else if (devolverFoco) {
+        toggle.focus();
+      }
+    }
+
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('dashboardOverlay');
     const toggle = document.getElementById('menuToggle');
@@ -65,6 +88,7 @@
         const dialog = document.getElementById(
             opener.dataset.dashboardDialogOpen
         );
+
 
         if (dialog && typeof dialog.showModal === 'function') {
             dialog.showModal();

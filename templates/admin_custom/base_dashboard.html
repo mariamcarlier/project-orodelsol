@@ -71,6 +71,20 @@
         <!-- Menú de la cuenta. Solo lo renderizan las vistas del panel, que ya exigen is_staff:
              no se repite aquí «Panel de administración» (sería el «Resumen» del menú). -->
         <div class="sidebar-footer">
+
+            <a href="{% url 'core:catalogo' %}" class="btn-site">
+                <i class='bx bx-grid-alt'></i> <span>Ver catálogo público</span>
+            </a>
+            <a href="{% url 'core:inicio' %}" class="btn-site">
+                <i class='bx bx-store-alt'></i> <span>Ir a la tienda</span>
+            </a>
+            <form method="post" action="{% url 'admin:logout' %}" class="logout-form">
+                {% csrf_token %}
+                <button type="submit" class="btn-logout">
+                    <i class='bx bx-log-out'></i><span>Cerrar sesión</span>
+                </button>
+            </form>
+
             <details class="sidebar-user">
                 <summary class="sidebar-user__summary">
                     <span class="sidebar-user__avatar" aria-hidden="true">
@@ -103,6 +117,7 @@
                     </li>
                 </ul>
             </details>
+
         </div>
     </aside>
 

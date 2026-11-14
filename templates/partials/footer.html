@@ -8,35 +8,54 @@
         <p class="footer__tagline">Joyería fina en oro 18K · Colombia</p>
         <nav class="footer__social" id="redes" aria-label="Redes sociales">
           <a class="footer__social-btn" href="#redes" data-social-link data-social-name="Instagram" data-social-url=""
-             aria-label="Instagram, enlace oficial por configurar" title="Enlace oficial por configurar">Instagram</a>
+             aria-label="Instagram, enlace oficial por configurar" title="Enlace oficial por configurar">
+            <svg class="footer__social-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="3.5" y="3.5" width="17" height="17" rx="5" stroke="currentColor" stroke-width="1.7"/>
+              <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.7"/>
+              <circle cx="17.5" cy="6.8" r="1" fill="currentColor"/>
+            </svg>
+          </a>
           <a class="footer__social-btn" href="#redes" data-social-link data-social-name="Facebook" data-social-url=""
-             aria-label="Facebook, enlace oficial por configurar" title="Enlace oficial por configurar">Facebook</a>
+             aria-label="Facebook, enlace oficial por configurar" title="Enlace oficial por configurar">
+            <svg class="footer__social-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M14.2 21v-8h2.7l.4-3h-3.1V8.1c0-.9.3-1.6 1.6-1.6h1.7V3.8c-.3 0-1.3-.1-2.5-.1-2.5 0-4.1 1.5-4.1 4.2V10H8.2v3h2.7v8z" fill="currentColor"/>
+            </svg>
+          </a>
           <a class="footer__social-btn" href="#redes" data-social-link data-social-name="TikTok" data-social-url=""
-             aria-label="TikTok, enlace oficial por configurar" title="Enlace oficial por configurar">TikTok</a>
+             aria-label="TikTok, enlace oficial por configurar" title="Enlace oficial por configurar">
+            <svg class="footer__social-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M14 4v10.2a3.2 3.2 0 1 1-2-3V7.5c2.1 2.2 4.4 3.2 7 3.3V8.2c-2.2-.2-4.1-1.7-5-4.2z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
           <a class="footer__social-btn" href="#redes" data-social-link data-social-name="WhatsApp" data-social-url=""
-             aria-label="WhatsApp, enlace oficial por configurar" title="Enlace oficial por configurar">WhatsApp</a>
+             aria-label="WhatsApp, enlace oficial por configurar" title="Enlace oficial por configurar">
+            <svg class="footer__social-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M20 11.7a8 8 0 0 1-11.8 7L4 20l1.3-4A8 8 0 1 1 20 11.7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M9 8.5c.3-.4.7-.4.9 0l.7 1.5c.1.3 0 .5-.3.8l-.4.4c.5 1 1.3 1.8 2.3 2.3l.4-.5c.2-.3.5-.4.8-.2l1.4.7c.4.2.4.6.1.9-.5.6-1.2.9-2 .8-2.5-.4-4.8-2.7-5.2-5.2-.1-.6.3-1.2.8-1.5z" fill="currentColor"/>
+            </svg>
+          </a>
         </nav>
       </div>
-      <div class="footer__col">
-        <h4 class="footer__col-title">Colecciones</h4>
+      <details class="footer__col">
+        <summary class="footer__col-title" role="heading" aria-level="2">Colecciones</summary>
         <ul>
           <li><a href="{% url 'core:inicio' %}#colecciones">Ver colecciones</a></li>
-          <li><a href="{% url 'core:inicio' %}#productos">Ver productos</a></li>
+          <li><a href="{% url 'core:catalogo' %}">Catálogo de productos</a></li>
         </ul>
-      </div>
-      <div class="footer__col">
-        <h4 class="footer__col-title">Información</h4>
+      </details>
+      <details class="footer__col">
+        <summary class="footer__col-title" role="heading" aria-level="2">Información</summary>
         <ul>
           <li><a href="{% url 'core:inicio' %}#nosotros">Nuestra filosofía</a></li>
           <li><a href="{% url 'core:inicio' %}#proceso">Nuestro proceso</a></li>
         </ul>
-      </div>
-      <div class="footer__col">
-        <h4 class="footer__col-title">Empresa</h4>
+      </details>
+      <details class="footer__col">
+        <summary class="footer__col-title" role="heading" aria-level="2">Empresa</summary>
         <ul>
           <li><a href="{% url 'core:inicio' %}#mayoristas">Información para mayoristas</a></li>
         </ul>
-      </div>
+      </details>
     </div>
     <div class="footer__bottom">
       <span>© 2026 Joyas Oro del Sol — Todos los derechos reservados</span>

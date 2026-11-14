@@ -57,7 +57,8 @@
             <input type="hidden" name="recurso" value="{{ recurso.key }}">
             <input type="hidden" name="accion" value="bulk">
             <label for="estado-{{ recurso.key }}">Cambiar estado de los seleccionados:</label>
-            <select id="estado-{{ recurso.key }}" name="estado">
+            <select id="estado-{{ recurso.key }}" name="estado" required>
+                <option value="" selected disabled>Selecciona una acción</option>
                 <option value="1">Activar</option>
                 <option value="0">Desactivar</option>
             </select>

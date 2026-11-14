@@ -1,0 +1,209 @@
+.catalog-body #searchToggle,
+.catalog-body #siteSearch {
+  display: none;
+}
+
+.catalog-page {
+  width: min(var(--container-lg), calc(100% - 2 * var(--gutter)));
+  margin: 0 auto;
+  padding-block: var(--space-page-top) var(--space-page-bottom);
+}
+
+.catalog-heading {
+  margin-bottom: 36px;
+  text-align: center;
+}
+
+.catalog-heading .eyebrow {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--color-cacao);
+}
+
+.catalog-heading .heading {
+  margin-bottom: 8px;
+}
+
+.catalog-heading .body-text {
+  margin: 0 auto;
+  color: var(--color-text-muted);
+}
+
+.catalog-search {
+  max-width: 460px;
+  margin: 0 auto 28px;
+}
+
+.catalog-search__label {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--color-text-dark);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.catalog-search__controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.catalog-search__field {
+  position: relative;
+  min-width: 0;
+  flex: 1;
+  border: 1px solid var(--color-oro-borde);
+  border-radius: var(--radius);
+  background: var(--color-white);
+  transition: border-color var(--ease-fast), box-shadow var(--ease-fast);
+}
+
+.catalog-search__field:focus-within {
+  border-color: var(--color-cacao);
+  box-shadow: var(--focus-ring);
+}
+
+.catalog-search__icon {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-muted);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.catalog-search input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 12px 8px 40px;
+  border: 0;
+  border-radius: inherit;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text-dark);
+  font: inherit;
+}
+
+.catalog-search input:focus-visible {
+  box-shadow: none;
+}
+
+.catalog-search__controls > button,
+.catalog-pagination a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid var(--color-cacao);
+  border-radius: var(--radius);
+  background: var(--color-cacao);
+  color: var(--color-text-on-dark);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--ease-fast), color var(--ease-fast);
+}
+
+.catalog-search__controls > button svg {
+  width: 17px;
+  height: 17px;
+}
+
+.catalog-search__controls > button:hover,
+.catalog-pagination a:hover {
+  background: var(--color-cacao-hover);
+}
+
+.catalog-search__clear {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: var(--color-cacao);
+  font-size: 13px;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+
+.catalog-search__clear:hover {
+  color: var(--color-cacao-hover);
+}
+
+.catalog-search__controls > button:focus-visible,
+.catalog-search__clear:focus-visible {
+  outline: 0;
+  box-shadow: var(--focus-ring);
+}
+
+.catalog-results__count {
+  margin: 0 0 18px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.catalog-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  row-gap: 36px;
+}
+
+.catalog-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 40px 20px;
+  background: var(--color-offwhite);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.catalog-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 40px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .catalog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .catalog-search__controls {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .catalog-search__controls > button {
+    min-width: 48px;
+    padding-inline: 14px;
+  }
+
+  .catalog-search__controls > button svg {
+    display: none;
+  }
+
+  .catalog-search__clear {
+    flex-basis: 100%;
+    min-height: 44px;
+  }
+
+  .catalog-grid {
+    grid-template-columns: 1fr;
+    max-width: 340px;
+    margin-inline: auto;
+  }
+
+  .catalog-pagination {
+    flex-wrap: wrap;
+  }
+}
