@@ -91,7 +91,7 @@ def catalogo(request):
 
 
 @login_required
-=======
+
 def producto_piedra_disponible(request, pk, ref):
     """Guarda de servidor: ¿esta piedra puede agregarse al carrito?
 
