@@ -21,10 +21,12 @@ const DOM = {
   menuToggle:      document.getElementById('menuToggle'),
   sidebarClose:    document.getElementById('sidebarClose'),
   searchToggle:    document.getElementById('searchToggle'),
-  siteSearch:      document.getElementById('siteSearch'),
+  searchDialog:    document.getElementById('searchDialog'),
+  searchClose:     document.getElementById('searchClose'),
+  searchForm:      document.getElementById('siteSearch'),
   searchInput:     document.getElementById('siteSearchInput'),
   searchStatus:    document.getElementById('searchStatus'),
-  clearSearch:     document.getElementById('clearSearch'),
+  searchViewResults: document.getElementById('searchViewResults'),
   favoritesToggle: document.getElementById('favoritesToggle'),
   cartToggle:      document.getElementById('cartToggle'),
   cartDialog:      document.getElementById('cartDialog'),
@@ -49,6 +51,7 @@ const currencyFormatter = new Intl.NumberFormat('es-CO', {
 let favoriteIds = new Set(loadFavoriteIds());
 let cart = loadCart();
 let showingFavorites = false;
+let productQuery = '';
 let noticeTimeout;
 
 function readStoredValue(key, fallback) {
@@ -223,25 +226,26 @@ function initImageFallbacks() {
 
 function updateProductFilters() {
   let visibleCount = 0;
-  const query = DOM.searchInput ? normalizeSearchText(DOM.searchInput.value) : '';
-
   DOM.productCards.forEach((card) => {
-    const matchesQuery = !query || normalizeSearchText(card.textContent).includes(query);
+    const matchesQuery = !productQuery || normalizeSearchText(card.textContent).includes(productQuery);
     const matchesFavorites = !showingFavorites || favoriteIds.has(card.dataset.productId);
     card.hidden = !(matchesQuery && matchesFavorites);
     if (!card.hidden) visibleCount += 1;
   });
 
+  if (DOM.searchDialog) DOM.searchDialog.classList.toggle('has-query', Boolean(productQuery));
   if (DOM.searchStatus) {
     if (showingFavorites && favoriteIds.size === 0) {
       DOM.searchStatus.textContent = 'Aún no tienes productos favoritos. Marca una joya con el corazón para guardarla.';
-    } else if (query || showingFavorites) {
+    } else if (productQuery || showingFavorites) {
       DOM.searchStatus.textContent = `${visibleCount} ${visibleCount === 1 ? 'producto encontrado' : 'productos encontrados'}.`;
     } else {
       DOM.searchStatus.textContent = '';
     }
-    DOM.searchStatus.hidden = !query && !showingFavorites;
+    DOM.searchStatus.hidden =
+      (!productQuery && !showingFavorites) || (Boolean(productQuery) && DOM.productCards.length === 0);
   }
+  if (DOM.searchViewResults) DOM.searchViewResults.hidden = !productQuery;
 }
 
 function normalizeSearchText(value) {
@@ -300,7 +304,8 @@ function renderCart() {
 
     const detail = document.createElement('span');
     detail.className = 'cart-item__detail';
-    detail.textContent = `${item.quantity} × ${currencyFormatter.format(item.price)}`;
+    const piedra = item.stoneName ? ` · Piedra ${item.stoneName}` : '';
+    detail.textContent = `${item.quantity} × ${currencyFormatter.format(item.price)}${piedra}`;
 
     const remove = document.createElement('button');
     remove.className = 'cart-item__remove';
@@ -317,13 +322,6 @@ function renderCart() {
   DOM.cartTotal.textContent = currencyFormatter.format(total);
 }
 
-function toggleSearch(open) {
-  if (!DOM.siteSearch || !DOM.searchToggle) return;
-  DOM.siteSearch.hidden = !open;
-  DOM.searchToggle.setAttribute('aria-expanded', String(open));
-  if (open && DOM.searchInput) DOM.searchInput.focus();
-}
-
 function openDialog(dialog) {
   if (!dialog) return;
   if (typeof dialog.showModal === 'function') {
@@ -333,47 +331,100 @@ function openDialog(dialog) {
   }
 }
 
-function initStoreControls() {
-  if (!DOM.siteSearch) return;
+function openSearchDialog() {
+  if (!DOM.searchDialog || DOM.searchDialog.open) return;
+  if (typeof DOM.searchDialog.showModal === 'function') {
+    DOM.searchDialog.showModal();
+  } else {
+    DOM.searchDialog.setAttribute('open', '');
+  }
+  DOM.searchToggle?.setAttribute('aria-expanded', 'true');
+  DOM.searchInput?.focus();
+}
 
+function closeSearchDialog() {
+  if (!DOM.searchDialog) return;
+  if (typeof DOM.searchDialog.close === 'function' && DOM.searchDialog.open) {
+    DOM.searchDialog.close();
+  } else {
+    DOM.searchDialog.removeAttribute('open');
+  }
+  DOM.searchToggle?.setAttribute('aria-expanded', 'false');
+}
+
+function setProductQuery(query) {
+  productQuery = normalizeSearchText(query);
+  showingFavorites = false;
+  if (DOM.searchInput) DOM.searchInput.value = query;
+  DOM.favoritesToggle?.classList.remove('is-active');
+  DOM.favoritesToggle?.setAttribute('aria-pressed', 'false');
+  updateProductFilters();
+}
+
+function showFilteredProducts() {
+  const productsSection = document.getElementById('productos');
+  if (!productsSection) {
+    const query = DOM.searchInput?.value.trim();
+    const homeUrl = DOM.searchToggle?.dataset.homeUrl;
+    if (query && homeUrl) {
+      window.location.assign(`${homeUrl}?q=${encodeURIComponent(query)}#productos`);
+      return;
+    }
+  }
+
+  closeSearchDialog();
+  productsSection?.scrollIntoView({ behavior: 'smooth' });
+}
+
+function initSearchDialog() {
+  if (!DOM.searchDialog) return;
+
+  DOM.searchToggle?.addEventListener('click', openSearchDialog);
+  DOM.searchClose?.addEventListener('click', closeSearchDialog);
+  DOM.searchDialog.addEventListener('close', () => {
+    DOM.searchToggle?.setAttribute('aria-expanded', 'false');
+  });
+  DOM.searchDialog.addEventListener('click', (event) => {
+    if (event.target === DOM.searchDialog) closeSearchDialog();
+  });
+
+  DOM.searchInput?.addEventListener('input', () => {
+    setProductQuery(DOM.searchInput.value);
+  });
+  DOM.searchForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    setProductQuery(DOM.searchInput.value);
+    showFilteredProducts();
+  });
+  DOM.searchViewResults?.addEventListener('click', showFilteredProducts);
+
+  DOM.searchDialog.querySelectorAll('[data-search-query], [data-search-suggestion]').forEach((suggestion) => {
+    suggestion.addEventListener('click', () => {
+      const query = suggestion.dataset.searchQuery || suggestion.dataset.searchSuggestion;
+      setProductQuery(query);
+      if (suggestion.hasAttribute('data-search-suggestion')) {
+        showFilteredProducts();
+      } else {
+        DOM.searchInput?.focus();
+      }
+    });
+  });
+
+  const params = new URLSearchParams(window.location.search);
+  const initialQuery = params.get('q');
+  if (initialQuery) {
+    setProductQuery(initialQuery);
+  }
+  if (initialQuery || params.get('openSearch') === '1') {
+    openSearchDialog();
+  }
+}
+
+function initStoreControls() {
   renderFavoriteButtons();
   renderCart();
   updateProductFilters();
-
-  if (DOM.searchToggle) {
-    DOM.searchToggle.addEventListener('click', () => {
-      if (!document.getElementById('productos')) {
-        window.location.assign(`${DOM.searchToggle.dataset.homeUrl}?openSearch=1#productos`);
-        return;
-      }
-      toggleSearch(DOM.siteSearch.hidden);
-    });
-  }
-
-  if (DOM.searchInput) {
-    DOM.searchInput.addEventListener('input', updateProductFilters);
-    DOM.searchInput.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        DOM.searchInput.value = '';
-        updateProductFilters();
-        toggleSearch(false);
-        DOM.searchToggle.focus();
-      }
-    });
-  }
-
-  DOM.siteSearch.addEventListener('submit', (event) => {
-    event.preventDefault();
-    updateProductFilters();
-  });
-
-  if (DOM.clearSearch) {
-    DOM.clearSearch.addEventListener('click', () => {
-      DOM.searchInput.value = '';
-      updateProductFilters();
-      DOM.searchInput.focus();
-    });
-  }
+  initSearchDialog();
 
   if (DOM.favoritesToggle) {
     DOM.favoritesToggle.addEventListener('click', () => {
@@ -386,7 +437,6 @@ function initStoreControls() {
       DOM.favoritesToggle.classList.toggle('is-active', showingFavorites);
       updateProductFilters();
       document.getElementById('productos')?.scrollIntoView({ behavior: 'smooth' });
-      if (showingFavorites && DOM.siteSearch.hidden) toggleSearch(true);
     });
   }
 
@@ -400,6 +450,70 @@ function initStoreControls() {
     DOM.cartDialog.addEventListener('click', (event) => {
       if (event.target === DOM.cartDialog) DOM.cartDialog.close();
     });
+  }
+
+  // PROD-11: el cliente elige la piedra; el servidor confirma que sigue
+  // disponible antes de escribirla en el carrito del navegador.
+  document.addEventListener('click', (event) => {
+    const piedra = event.target.closest('[data-stone-ref]');
+    if (!piedra) return;
+    event.preventDefault();
+    const card = piedra.closest('[data-product-id]');
+    if (!card) return;
+    card.querySelectorAll('[data-stone-ref]').forEach((otra) => {
+      const activa = otra === piedra;
+      otra.classList.toggle('is-selected', activa);
+      otra.setAttribute('aria-pressed', activa ? 'true' : 'false');
+    });
+  });
+
+  function addToStoreCart(card, button) {
+    const id = card.dataset.productId;
+    const elegida = card.querySelector('[data-stone-ref].is-selected');
+
+    if (card.querySelector('[data-stone-ref]') && !elegida) {
+      showStoreNotice('Elige una piedra antes de añadir al carrito.');
+      return;
+    }
+
+    const guardar = (piedra) => {
+      const clave = piedra ? `${id}-${piedra.ref}` : id;
+      const item = cart[clave] || {
+        name: button.dataset.productName,
+        price: Number(button.dataset.productPrice),
+        quantity: 0,
+        stone: piedra ? piedra.ref : '',
+        stoneName: piedra ? piedra.nombre : '',
+      };
+      item.quantity += 1;
+      cart[clave] = item;
+      const saved = saveStoredValue(STORE_KEYS.cart, cart);
+      renderCart();
+      if (saved) {
+        const detalle = piedra ? ` (${piedra.nombre})` : '';
+        showStoreNotice(`${item.name}${detalle} añadido al carrito.`);
+      }
+    };
+
+    if (!elegida) {
+      guardar(null);
+      return;
+    }
+
+    const ref = elegida.dataset.stoneRef;
+    const url = (button.dataset.stoneCheckUrl || '').replace('REF', encodeURIComponent(ref));
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then((respuesta) => respuesta.json())
+      .then((datos) => {
+        if (!datos.disponible) {
+          showStoreNotice(datos.error || 'Esta piedra ya no está disponible.');
+          return;
+        }
+        guardar({ ref, nombre: elegida.dataset.stoneName || ref });
+      })
+      .catch(() => {
+        showStoreNotice('No pudimos verificar la piedra. Intenta de nuevo.');
+      });
   }
 
   document.addEventListener('click', (event) => {
@@ -419,17 +533,7 @@ function initStoreControls() {
     } else if (button && button.dataset.action === 'add-to-cart') {
       const card = button.closest('[data-product-id]');
       if (!card) return;
-      const id = card.dataset.productId;
-      const item = cart[id] || {
-        name: button.dataset.productName,
-        price: Number(button.dataset.productPrice),
-        quantity: 0,
-      };
-      item.quantity += 1;
-      cart[id] = item;
-      const saved = saveStoredValue(STORE_KEYS.cart, cart);
-      renderCart();
-      if (saved) showStoreNotice(`${item.name} añadido al carrito.`);
+      addToStoreCart(card, button);
     } else if (button && button.dataset.action === 'remove-from-cart') {
       delete cart[button.dataset.productId];
       saveStoredValue(STORE_KEYS.cart, cart);
@@ -445,12 +549,7 @@ function initStoreControls() {
         return;
       }
 
-      showingFavorites = false;
-      DOM.searchInput.value = query;
-      DOM.favoritesToggle?.classList.remove('is-active');
-      DOM.favoritesToggle?.setAttribute('aria-pressed', 'false');
-      toggleSearch(true);
-      updateProductFilters();
+      setProductQuery(query);
       window.history.replaceState(null, '', '#productos');
       document.getElementById('productos').scrollIntoView({ behavior: 'smooth' });
     }
@@ -478,18 +577,10 @@ function initStoreControls() {
   });
 
   const params = new URLSearchParams(window.location.search);
-  if (params.get('openSearch') === '1') toggleSearch(true);
   if (params.get('showFavorites') === '1' && DOM.favoritesToggle) {
     showingFavorites = true;
     DOM.favoritesToggle.setAttribute('aria-pressed', 'true');
     DOM.favoritesToggle.classList.add('is-active');
-    toggleSearch(true);
-    updateProductFilters();
-  }
-  const initialQuery = params.get('q');
-  if (initialQuery && DOM.searchInput) {
-    DOM.searchInput.value = initialQuery;
-    toggleSearch(true);
     updateProductFilters();
   }
 }

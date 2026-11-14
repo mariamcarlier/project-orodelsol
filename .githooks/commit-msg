@@ -1,0 +1,24 @@
+#!/bin/sh
+# ---------------------------------------------------------------------------
+# Hook versionado: elimina los trailers "Co-authored-by" de IA en los commits.
+#
+# Activar en cada clon (una sola vez por máquina/usuario):
+#     git config core.hooksPath .githooks
+#
+# Cubre los flujos locales (git CLI, VS Code, etc.). Los commits hechos desde
+# la web de GitHub no pasan por aquí: para ellos está el workflow de GitHub
+# Actions ".github/workflows/bloquear-coautores-ia.yml".
+# ---------------------------------------------------------------------------
+MSG_FILE="$1"
+[ -f "$MSG_FILE" ] || exit 0
+
+# Identidades IA que no queremos como coautor. Amplía la lista si hace falta.
+AI_PATTERN='copilot|claude|anthropic|openai|codex|arena-agent|antigravity|gemini|cursor|tabnine|codeium|codium|qwen|deepseek|aider|chatgpt'
+
+TMP="$MSG_FILE.ai-scrub.$$"
+# -i: también captura "Co-Authored-By" (como lo escribe Claude).
+# Solo toca líneas que EMPIECEN por co-authored-by: el resto del mensaje
+# (incluso texto que mencione estos nombres) queda intacto.
+grep -Eiv "^co-authored-by:[[:space:]]*($AI_PATTERN)" "$MSG_FILE" > "$TMP" 2>/dev/null || true
+mv "$TMP" "$MSG_FILE"
+exit 0

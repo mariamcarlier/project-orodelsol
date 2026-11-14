@@ -1,3 +1,5 @@
+{% load static %}
+
 <!-- ── BARRA DE ANUNCIOS ── -->
   <div class="announce-bar" id="announceBar" role="status" aria-live="polite">
     ✦ Certificado de autenticidad en Oro 18K incluido en cada compra ✦
@@ -83,8 +85,8 @@
             <line x1="3" y1="17" x2="21" y2="17"/>
           </svg>
         </button>
-        <button class="header__icon" id="searchToggle" type="button"
-                aria-label="Buscar productos" aria-expanded="false" aria-controls="siteSearch"
+        <button class="header__icon header__search-toggle" id="searchToggle" type="button"
+                aria-label="Buscar productos" aria-expanded="false" aria-controls="searchDialog"
                 data-home-url="{% url 'core:inicio' %}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
             <circle cx="11" cy="11" r="7"/>
@@ -137,12 +139,66 @@
     </div>
   </header>
 
-  <form class="site-search" id="siteSearch" role="search" hidden>
-    <label class="site-search__label" for="siteSearchInput">Buscar en productos</label>
-    <input id="siteSearchInput" name="q" type="search" placeholder="Nombre, colección o detalle">
-    <button class="site-search__clear" id="clearSearch" type="button">Limpiar</button>
-    <p class="site-search__status" id="searchStatus" aria-live="polite" hidden></p>
-  </form>
+  <dialog class="search-dialog" id="searchDialog" aria-labelledby="searchTitle">
+    <button class="search-dialog__close" id="searchClose" type="button" aria-label="Cerrar búsqueda">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path d="m18 6-12 12M6 6l12 12"/>
+      </svg>
+    </button>
+    <div class="search-dialog__content">
+      <h2 class="search-dialog__title" id="searchTitle">Buscar en Oro del Sol</h2>
+      <form class="search-dialog__form" id="siteSearch" role="search">
+        <label class="sr-only" for="siteSearchInput">Buscar productos</label>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input id="siteSearchInput" name="q" type="search" autocomplete="off"
+               placeholder="Busca anillos, colecciones y más...">
+      </form>
+
+      <p class="search-dialog__status" id="searchStatus" aria-live="polite" hidden></p>
+      <button class="search-dialog__results" id="searchViewResults" type="button" hidden>
+        Ver productos
+      </button>
+
+      <div class="search-dialog__suggestions" id="searchSuggestions">
+        <section class="search-popular" aria-labelledby="searchPopularTitle">
+          <h3 class="search-dialog__section-title" id="searchPopularTitle">Búsquedas populares</h3>
+          <div class="search-popular__terms">
+            <button type="button" data-search-query="anillos">Anillos</button>
+            <button type="button" data-search-query="pulseras">Pulseras</button>
+            <button type="button" data-search-query="collares">Collares</button>
+            <button type="button" data-search-query="pendientes">Pendientes</button>
+            <button type="button" data-search-query="compromiso">Anillo de compromiso</button>
+          </div>
+        </section>
+
+        <section class="search-spotlight" aria-labelledby="searchSpotlightTitle">
+          <h3 class="search-dialog__section-title" id="searchSpotlightTitle">Descubre nuestras joyas</h3>
+          <div class="search-spotlight__grid">
+            {% for producto in productos|default:""|slice:":4" %}
+              <button class="search-spotlight__card" type="button"
+                      data-search-suggestion="{{ producto.nombre }}">
+                {% with imagen=producto.imagen_catalogo %}
+                {% if imagen %}
+                  <img src="{{ imagen }}"
+                       data-image-fallback="{% static 'img/coleccion-almadorada.webp' %}"
+                       alt="" loading="lazy">
+                {% else %}
+                  <img src="{% static 'img/coleccion-almadorada.webp' %}" alt="" loading="lazy">
+                {% endif %}
+                {% endwith %}
+                <span>{{ producto.nombre }}</span>
+              </button>
+            {% empty %}
+              <p class="search-spotlight__empty">Pronto encontrarás nuevas joyas para descubrir.</p>
+            {% endfor %}
+          </div>
+        </section>
+      </div>
+    </div>
+  </dialog>
 
   <dialog class="store-dialog cart-dialog" id="cartDialog" aria-labelledby="cartTitle">
     <header class="store-dialog__header">

@@ -1,5 +1,5 @@
 from django.contrib import admin, messages
-from .models import Coleccion, Material, Producto, Talla, VarianteProducto
+from .models import Coleccion, Material, Piedra, Producto, Talla, VarianteProducto
 
 
 @admin.register(Coleccion)
@@ -7,6 +7,13 @@ class ColeccionAdmin(admin.ModelAdmin):
     list_display = ("nombre", "temporada", "activa")
     list_filter = ("activa", "temporada")
     search_fields = ("nombre", "descripcion")
+    # La portada por archivo (`imagen`) se sube desde el panel y desde el
+    # formulario de colecciones, que la validan y la optimizan (`ColeccionForm`,
+    # Paso 04). Este admin genera su propio formulario, sin esa validación: sin
+    # esta línea mostraría un campo de subida abierto que acepta cualquier
+    # imagen, sin límite de peso. (`imagen_detalle` no hace falta excluirlo: no
+    # es editable y ningún formulario lo ofrece.)
+    exclude = ("imagen",)
     actions = ("activar_colecciones", "desactivar_colecciones")
 
     @admin.action(description="Activar colecciones seleccionadas")
@@ -25,17 +32,18 @@ class VarianteProductoInline(admin.TabularInline):
 
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ("codigo", "nombre", "coleccion", "precio", "destacado", "activo", "es_borrador")
-    list_filter = ("coleccion", "destacado", "activo", "es_borrador")
+    list_display = ("codigo", "nombre", "coleccion", "precio", "personalizable", "destacado", "activo", "es_borrador")
+    list_filter = ("coleccion", "personalizable", "destacado", "activo", "es_borrador")
     search_fields = ("codigo", "nombre", "detalle", "descripcion")
-    filter_horizontal = ("tallas", "materiales")
+    filter_horizontal = ("tallas", "materiales", "piedras")
     inlines = (VarianteProductoInline,)
     actions = ("activar_productos", "desactivar_productos")
 
     @admin.action(description="Activar productos seleccionados")
     def activar_productos(self, request, queryset):
         omitidos = queryset.incompletos().count()
-        queryset.completos().update(activo=True)
+        # Publicar un borrador completo también lo saca de borrador.
+        queryset.completos().update(activo=True, es_borrador=False)
         if omitidos:
             self.message_user(
                 request,
@@ -59,6 +67,13 @@ class TallaAdmin(admin.ModelAdmin):
 class MaterialAdmin(admin.ModelAdmin):
     list_display = ("nombre",)
     search_fields = ("nombre",)
+
+
+@admin.register(Piedra)
+class PiedraAdmin(admin.ModelAdmin):
+    list_display = ("ref", "nombre", "imagen", "orden")
+    list_editable = ("nombre", "orden")
+    search_fields = ("ref", "nombre")
 
 
 @admin.register(VarianteProducto)

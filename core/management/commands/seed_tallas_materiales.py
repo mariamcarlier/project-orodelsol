@@ -1,9 +1,10 @@
-"""Carga las tallas y materiales base. Idempotente: puede correrse N veces.
+"""Carga tallas, materiales y piedras base. Idempotente: puede correrse N veces.
 
 Solo crea lo que no existe (get_or_create); nunca modifica ni borra filas ya
 editadas desde el admin.
 
 - Materiales: solo los confirmados por el negocio (hoy, oro amarillo 18K).
+- Piedras: las 9 referencias de la tabla de colores de la empresa (A–I).
 - Tallas: numeración US de 4 a 13 en pasos de media talla. El rango es un
   supuesto por confirmar: edita TALLAS_US y vuelve a correr el comando.
 - Diámetro interior: NO se carga. Queda vacío y sin verificar hasta que se
@@ -14,9 +15,22 @@ from decimal import Decimal
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from core.models import Material, Talla
+from core.models import Material, Piedra, Talla
 
 MATERIALES = ["Oro amarillo 18K"]
+
+# Tabla de referencias de colores de la empresa.
+PIEDRAS = [
+    {"ref": "A", "nombre": "Cristal", "imagen": "img/piedras/A-Cristal.webp"},
+    {"ref": "B", "nombre": "Azul Hielo", "imagen": "img/piedras/B-Azul-Hielo.webp"},
+    {"ref": "C", "nombre": "Verde", "imagen": "img/piedras/C-Verde.webp"},
+    {"ref": "D", "nombre": "Verde oscuro", "imagen": "img/piedras/D-Verde-Oscuro.webp"},
+    {"ref": "E", "nombre": "Verde oliva", "imagen": "img/piedras/E-Verde-Oliva.webp"},
+    {"ref": "F", "nombre": "Rosado claro", "imagen": "img/piedras/F-RosaClaro.webp"},
+    {"ref": "G", "nombre": "Rosado", "imagen": "img/piedras/G-Rosado.webp"},
+    {"ref": "H", "nombre": "Fucsia", "imagen": "img/piedras/H-Fucsia.webp"},
+    {"ref": "I", "nombre": "Naranja", "imagen": "img/piedras/I-Naranja.webp"},
+]
 
 # Diccionario con diámetros de referencia (GLAMIRA) y talla nacional (CO)
 TALLAS_DATA = {
@@ -42,7 +56,7 @@ TALLAS_DATA = {
 }
 
 class Command(BaseCommand):
-    help = "Carga tallas US y materiales base (idempotente)."
+    help = "Carga tallas US, materiales y piedras base (idempotente)."
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -50,6 +64,18 @@ class Command(BaseCommand):
         for nombre in MATERIALES:
             _, creado = Material.objects.get_or_create(nombre=nombre)
             materiales_nuevos += creado
+
+        piedras_nuevas = 0
+        for orden, piedra in enumerate(PIEDRAS, start=1):
+            _, creada = Piedra.objects.get_or_create(
+                ref=piedra["ref"],
+                defaults={
+                    "nombre": piedra["nombre"],
+                    "imagen": piedra["imagen"],
+                    "orden": orden,
+                },
+            )
+            piedras_nuevas += creada
 
         tallas_nuevas = 0
         for talla_us, data in TALLAS_DATA.items():
@@ -65,6 +91,7 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(
                 f"Materiales: {materiales_nuevos} nuevos de {len(MATERIALES)}. "
+                f"Piedras: {piedras_nuevas} nuevas de {len(PIEDRAS)}. "
                 f"Tallas: {tallas_nuevas} nuevas de {len(TALLAS_DATA)}."
             )
         )

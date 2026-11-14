@@ -6,6 +6,7 @@
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
 <link rel="stylesheet" href="{% static 'css/producto-form.css' %}">
+<link rel="stylesheet" href="{% static 'css/galeria-admin.css' %}?v=5">
 {% endblock %}
 
 {% block content %}
@@ -46,7 +47,6 @@
                   <span class="producto-form__toggle-copy">
                     <span class="producto-form__label">{{ field.label }}</span>
                     <span class="producto-form__help">{{ field.help_text|default:"Activa esta opción para mostrarla en el catálogo."|striptags }}</span>
-                    <span class="producto-form__help">Activa esta opción para mostrarla en el catálogo.</span>
                   </span>
                 </label>
                 {% for error in field.errors %}<span class="producto-form__error">{{ error }}</span>{% endfor %}
@@ -77,6 +77,24 @@
     </div>
 
     <p class="producto-form-note"><span aria-hidden="true">i</span> El precio debe ser mayor que cero. Los cambios se guardan al confirmar el formulario.</p>
+
+    {% if galeria %}
+      {# La galería tiene sus propios formularios: por eso va en una tarjeta aparte y no dentro del formulario de arriba. #}
+      <section class="producto-form-card producto-form-card--galeria" id="galeria" aria-labelledby="galeria-titulo">
+        <div class="producto-form-card__top">
+          <div>
+            <span class="producto-form-card__eyebrow">Galería</span>
+            <h2 id="galeria-titulo">Fotografías del producto</h2>
+          </div>
+        </div>
+        <div class="producto-form-galeria">
+          {% include "core/productos/_galeria.html" %}
+        </div>
+      </section>
+      <p class="producto-form-note"><span aria-hidden="true">i</span> Cada cambio en las fotografías se guarda al instante, sin pulsar «Guardar producto».</p>
+    {% else %}
+      <p class="producto-form-note"><span aria-hidden="true">i</span> Las fotografías se añaden después de guardar el producto: ábrelo con «Editar» y verás su galería.</p>
+    {% endif %}
   </div>
 </section>
 {% endblock %}
@@ -85,4 +103,5 @@
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="{% static 'js/modulos/formularios/select2/init.js' %}"></script>
+<script src="{% static 'js/modulos/productos/galeria/carga.js' %}?v=4"></script>
 {% endblock %}

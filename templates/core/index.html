@@ -99,8 +99,10 @@
         {% for coleccion in colecciones %}
         <article class="collection-card">
           <div class="collection-card__media">
-            {% if coleccion.imagen_url %}
-              <img src="{{ coleccion.imagen_url }}" data-image-fallback="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ coleccion.nombre }}" loading="lazy">
+            {# Portada propia: el archivo subido o, si no hay, su URL (Paso 04). Sin portada, la imagen de siempre. #}
+            {% with portada=coleccion.imagen_catalogo %}
+            {% if portada %}
+              <img src="{{ portada }}" data-image-fallback="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ coleccion.nombre }}" loading="lazy">
             {% elif coleccion.nombre|slugify == "alma-dorada" %}
               <img src="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ coleccion.nombre }}" loading="lazy">
             {% elif coleccion.nombre|slugify == "luna-de-miel" %}
@@ -110,11 +112,12 @@
             {% else %}
               <img src="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ coleccion.nombre }}" loading="lazy">
             {% endif %}
+            {% endwith %}
           </div>
           <div class="collection-card__info">
             <span class="collection-card__season">Colección{% if coleccion.temporada %} · {{ coleccion.temporada }}{% endif %}</span>
             <h3 class="collection-card__name">{{ coleccion.nombre }}</h3>
-            <span class="collection-card__desc">{{ coleccion.producto_count }} productos{% if coleccion.descripcion %} · {{ coleccion.descripcion }}{% endif %}</span>
+            <span class="collection-card__desc">{{ coleccion.producto_count }} producto{{ coleccion.producto_count|pluralize }}{% if coleccion.descripcion %} · {{ coleccion.descripcion }}{% endif %}</span>
             <a href="{% url 'core:inicio' %}#productos" class="collection-card__cta">Explorar productos</a>
           </div>
         </article>
@@ -136,11 +139,14 @@
         {% for producto in productos %}
         <article class="product-card reveal" data-product-id="{{ producto.pk }}">
           <div class="product-card__media">
-            {% if producto.imagen_url %}
-              <img src="{{ producto.imagen_url }}" data-image-fallback="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ producto.nombre }}" loading="lazy">
+            {# Fotografía principal de la galería o, si el producto aún no la usa, su URL (Paso 03d). #}
+            {% with imagen=producto.imagen_catalogo %}
+            {% if imagen %}
+              <img src="{{ imagen }}" data-image-fallback="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ producto.nombre }}" loading="lazy">
             {% else %}
               <img src="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ producto.nombre }}" loading="lazy">
             {% endif %}
+            {% endwith %}
             {% if producto.destacado %}<span class="product-card__badge product-card__badge--fav">Destacado</span>{% endif %}
             <div class="product-card__actions">
               <button class="product-card__btn" type="button" data-action="favorite"
@@ -148,7 +154,8 @@
             </div>
             <button class="product-card__bar" type="button" data-action="add-to-cart"
                     data-product-name="{{ producto.nombre }}"
-                    data-product-price="{{ producto.precio|floatformat:0 }}">
+                    data-product-price="{{ producto.precio|floatformat:0 }}"
+                    data-stone-check-url="{% url 'core:producto_piedra_disponible' producto.pk 'REF' %}">
               Añadir al carrito
             </button>
           </div>
@@ -156,6 +163,26 @@
             <span class="product-card__label">{{ producto.detalle }} · {{ producto.coleccion.nombre }}</span>
             <h3 class="product-card__name">{{ producto.nombre }}</h3>
             <p class="product-card__price"><strong>COP ${{ producto.precio|floatformat:0 }}</strong></p>
+            {% if producto.codigo %}<span class="product-card__label">Ref. {{ producto.codigo }}</span>{% endif %}
+            {% if producto.personalizable %}
+              {% with piedras=producto.piedras.all %}
+                {% if piedras %}
+                <div class="product-card__stones" role="group"
+                     aria-label="Elige la piedra de {{ producto.nombre }}">
+                  <span class="product-card__stones-label">Piedra:</span>
+                  {% for piedra in piedras %}
+                  <button type="button" class="product-card__stone"
+                          data-stone-ref="{{ piedra.ref }}"
+                          data-stone-name="{{ piedra.nombre }}"
+                          title="{{ piedra.nombre }}"
+                          aria-label="{{ piedra.nombre }}"
+                          aria-pressed="false"
+                          {% if piedra.imagen %}style="background-image:url('{% static piedra.imagen %}')"{% endif %}></button>
+                  {% endfor %}
+                </div>
+                {% endif %}
+              {% endwith %}
+            {% endif %}
           </div>
         </article>
         {% empty %}

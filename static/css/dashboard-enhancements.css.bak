@@ -1,0 +1,267 @@
+
+/* ==========================================================
+   ORO DEL SOL — MEJORAS DEL PANEL ADMINISTRATIVO
+   Archivo: static/css/dashboard-enhancements.css
+
+   Contiene:
+   - Tarjetas del resumen.
+   - Formularios de usuarios y grupos.
+   - Selección de permisos y grupos.
+   - Estados activos de navegación.
+   - Accesibilidad y adaptación a móviles.
+   ========================================================== */
+
+
+/* ==========================================================
+   1. TARJETAS DEL RESUMEN
+   ========================================================== */
+
+.dashboard-home-card {
+    min-height: 96px;
+}
+
+.dashboard-home-card__content {
+    display: grid;
+    gap: 0.3rem;
+    min-width: 0;
+}
+
+.dashboard-home-card__content strong {
+    font-weight: 600;
+}
+
+.dashboard-home-card__content small {
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+
+/* ==========================================================
+   2. FORMULARIOS DE GRUPOS
+   ========================================================== */
+
+.dashboard-form--groups {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.dashboard-section__heading--groups {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.dashboard-create--groups {
+    width: 100%;
+}
+
+.dashboard-create--groups .dashboard-form {
+    width: 100%;
+}
+
+
+/* ==========================================================
+   3. FORMULARIOS DE USUARIOS
+   ========================================================== */
+
+.dashboard-section__heading--users {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.dashboard-create--users {
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.dashboard-create--users .dashboard-form {
+    gap: 1rem 1.25rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dashboard-create--users .dashboard-field--groups {
+    grid-column: 1 / -1;
+}
+
+
+/* ==========================================================
+   4. ESTADO VACÍO DE GRUPOS
+   ========================================================== */
+
+.dashboard-empty-groups {
+    background: rgba(197, 160, 89, 0.1);
+    border-left: 3px solid var(--primary-gold);
+    border-radius: 0 5px 5px 0;
+    padding: 0.65rem 0.75rem;
+}
+
+.dashboard-empty-groups a {
+    color: var(--accent-brown);
+    font-weight: 600;
+    text-underline-offset: 2px;
+}
+
+.dashboard-empty-groups a:hover {
+    color: var(--primary-gold-hover);
+}
+
+
+/* ==========================================================
+   5. CONTENEDORES DE PERMISOS Y GRUPOS
+   ========================================================== */
+
+.dashboard-field--permissions .dashboard-permissions,
+.dashboard-field--groups .dashboard-permissions {
+    box-sizing: border-box;
+    background: linear-gradient(
+        145deg,
+        #fff 0%,
+        #fcf8f0 100%
+    );
+    border: 1px solid rgba(197, 160, 89, 0.38);
+    border-radius: 8px;
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(
+        auto-fill,
+        minmax(min(100%, 220px), 1fr)
+    );
+    max-height: 260px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 0.65rem;
+    position: static;
+    width: 100%;
+}
+
+
+/* ==========================================================
+   6. OPCIONES INDIVIDUALES DE PERMISOS Y GRUPOS
+   ========================================================== */
+
+.dashboard-field--permissions .dashboard-permissions > div,
+.dashboard-field--groups .dashboard-permissions > div {
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid #e6dbc5;
+    border-radius: 6px;
+    min-width: 0;
+    padding: 0.6rem 0.7rem;
+    position: static;
+    transition:
+        background-color 140ms ease,
+        border-color 140ms ease,
+        box-shadow 140ms ease;
+}
+
+
+/* Estado al pasar el cursor */
+
+.dashboard-field--permissions .dashboard-permissions > div:hover,
+.dashboard-field--groups .dashboard-permissions > div:hover {
+    background: #fff;
+    border-color: var(--primary-gold);
+}
+
+
+/* Estado de la opción seleccionada */
+
+.dashboard-field--permissions
+.dashboard-permissions > div:has(input:checked),
+.dashboard-field--groups
+.dashboard-permissions > div:has(input:checked) {
+    background: rgba(197, 160, 89, 0.12);
+    border-color: var(--primary-gold);
+    box-shadow: inset 3px 0 0 var(--primary-gold);
+}
+
+
+/* Etiquetas de las opciones */
+
+.dashboard-field--permissions .dashboard-permissions > div > label,
+.dashboard-field--groups .dashboard-permissions > div > label {
+    align-items: center;
+    display: flex;
+    font-weight: 400;
+    gap: 0.6rem;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+
+/* Casillas de verificación */
+
+.dashboard-field--permissions .dashboard-permissions input[type="checkbox"],
+.dashboard-field--groups .dashboard-permissions input[type="checkbox"] {
+    accent-color: var(--primary-gold-hover);
+    flex: 0 0 auto;
+    height: 1.05rem;
+    margin: 0;
+    width: 1.05rem;
+}
+
+
+/* ==========================================================
+   7. NAVEGACIÓN ACTIVA
+   ========================================================== */
+
+.menu-item a[aria-current="page"] {
+    background-color: rgba(197, 160, 89, 0.15);
+    border-left: 4px solid var(--primary-gold);
+    color: var(--primary-gold);
+}
+
+
+/* ==========================================================
+   8. ACCESIBILIDAD: FOCO VISIBLE
+   ========================================================== */
+
+.dashboard-home-card:focus-visible,
+.sidebar-menu a:focus-visible,
+.sidebar-footer a:focus-visible,
+.sidebar-footer button:focus-visible,
+.dashboard-content a:focus-visible,
+.dashboard-content button:focus-visible,
+.dashboard-content input:focus-visible,
+.dashboard-content select:focus-visible,
+.dashboard-content textarea:focus-visible,
+.dashboard-content summary:focus-visible {
+    outline: 3px solid var(--primary-gold);
+    outline-offset: 3px;
+    position: relative;
+    z-index: 1;
+}
+
+
+/* ==========================================================
+   9. DISEÑO ADAPTABLE A MÓVILES
+   ========================================================== */
+
+@media (max-width: 640px) {
+    /* Formulario de usuarios a una columna */
+
+    .dashboard-create--users .dashboard-form {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .dashboard-create--users .dashboard-field--groups {
+        grid-column: auto;
+    }
+
+    /* Permisos y grupos a una columna */
+
+    .dashboard-field--permissions .dashboard-permissions,
+    .dashboard-field--groups .dashboard-permissions {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+
+/* ==========================================================
+   10. PREFERENCIAS DE MOVIMIENTO DEL USUARIO
+   ========================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    .dashboard-field--permissions .dashboard-permissions > div,
+    .dashboard-field--groups .dashboard-permissions > div {
+        transition: none;
+    }
+}

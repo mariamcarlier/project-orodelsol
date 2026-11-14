@@ -5,6 +5,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -73,7 +74,7 @@ class InicioCatalogoTests(TestCase):
             "Estamos preparando el catálogo. Vuelve pronto para descubrir nuestros diseños.",
         )
 
-    def test_inicio_conserva_busqueda_favoritos_carrito_y_redes(self):
+    def test_inicio_muestra_busqueda_favoritos_carrito_y_redes(self):
         coleccion = Coleccion.objects.create(nombre="Alma dorada")
         Producto.objects.create(
             coleccion=coleccion,
@@ -85,6 +86,12 @@ class InicioCatalogoTests(TestCase):
         response = self.client.get("/")
 
         self.assertContains(response, 'id="searchToggle"')
+        self.assertContains(response, 'id="searchDialog"')
+        self.assertContains(response, 'id="siteSearch"')
+        self.assertContains(response, "data-home-url=\"/\"")
+        self.assertNotContains(response, 'class="search-dialog__submit"')
+        self.assertContains(response, 'data-search-query="anillos"')
+        self.assertContains(response, 'data-search-suggestion="Anillo de prueba"')
         self.assertContains(response, 'id="favoritesToggle"')
         self.assertContains(response, 'id="cartToggle"')
         self.assertContains(response, 'id="cartDialog"')
@@ -292,7 +299,9 @@ class PanelAdministracionTests(TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertTemplateUsed(response, "admin_custom/section.html")
                 self.assertContains(response, recurso["title"])
-                self.assertContains(response, "Ir a la tienda")
+                # El menú de la cuenta aparece una sola vez y lleva a la tienda.
+                self.assertContains(response, "Ver tienda", count=1)
+                self.assertContains(response, f'href="{reverse("core:inicio")}"')
 
     def test_panel_enlaza_al_catalogo_publico(self):
         response = self.client.get(reverse("core:admin_dashboard"))
@@ -364,7 +373,13 @@ class PanelAdministracionTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Saltar al contenido principal")
-        self.assertContains(response, "Ir al perfil de Admin")
+        # El acceso al perfil vive ahora en el menú de la cuenta, con el nombre real.
+        self.assertContains(
+            response,
+            '<span class="sidebar-user__name">Admin</span>',
+            html=True,
+        )
+        self.assertContains(response, f'href="{reverse("usuarios:perfil")}"')
         for recurso in RECURSOS:
             with self.subTest(recurso=recurso["key"]):
                 self.assertContains(
@@ -875,7 +890,7 @@ class MenuLateralTests(TestCase):
                     self.client.get(self.url_seccion(clave)).status_code, 200
                 )
         self.assertContains(response, "Resumen")
-        self.assertContains(response, "Ir a la tienda")
+        self.assertContains(response, "Ver tienda", count=1)
 
     def test_construir_menu_ignora_recursos_sin_grupo_conocido(self):
         recursos = [
@@ -979,7 +994,12 @@ class ColeccionCBVTests(TestCase):
             documento="987654321",
             fecha_nacimiento=date(1995, 5, 10),
             telefono="3007654321",
+            is_staff=True,
         )
+        # Permisos de colección necesarios para las operaciones CRUD.
+        ct = ContentType.objects.get_for_model(Coleccion)
+        for codename in ("view_coleccion", "add_coleccion", "change_coleccion", "delete_coleccion"):
+            usuario.user_permissions.add(Permission.objects.get(codename=codename, content_type=ct))
         self.client.force_login(usuario)
 
     def test_listado_muestra_titulo_y_colecciones(self):
