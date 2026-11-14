@@ -694,8 +694,13 @@ def procesar_accion(request, clave, configuracion):
         campo = configuracion.get("bulk_field")
         estado = request.POST.get("estado")
         ids = request.POST.getlist("registros")
-        if not campo or estado not in {"0", "1"} or not ids:
-            messages.warning(request, "No seleccionaste ningún registro para cambiar de estado.")
+        if not campo:
+            raise PermissionDenied("Este módulo no permite cambios masivos.")
+        if estado not in {"0", "1"}:
+            messages.warning(request, "Selecciona si deseas activar o desactivar.")
+            return redirect(f"{request.path}#registros")
+        if not ids:
+            messages.warning(request, "Selecciona al menos un registro para cambiar su estado.")
             return redirect(f"{request.path}#registros")
         if not request.user.has_perm(permiso(modelo, "change")):
             raise PermissionDenied

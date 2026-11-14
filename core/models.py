@@ -89,8 +89,8 @@ class Material(models.Model):
 
 class ProductoQuerySet(models.QuerySet):
     def publicos(self):
-        """Visibilidad pública = activo AND NOT es_borrador."""
-        return self.filter(activo=True, es_borrador=False)
+        """Visibilidad pública = activo, publicado y dentro de colección activa."""
+        return self.filter(activo=True, es_borrador=False, coleccion__activa=True)
 
     def completos(self):
         """Productos que cumplen los requisitos para publicarse."""

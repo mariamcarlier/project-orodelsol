@@ -39,7 +39,6 @@
         <div class="producto-form__grid">
           {% for field in form %}
             {% if field.field.widget.input_type == "checkbox" and not field.field.widget.allow_multiple_selected %}
-            {% if field.field.widget.input_type == "checkbox" %}
               <div class="producto-form__field producto-form__field--toggle">
                 <label class="producto-form__toggle" for="{{ field.id_for_label }}">
                   {{ field }}

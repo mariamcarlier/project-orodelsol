@@ -38,8 +38,16 @@ class InicioCatalogoTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content.decode().count("<main"), 1)
-        self.assertNotContains(response, 'href="/catalogo')
+        self.assertContains(response, reverse("core:catalogo"))
         self.assertNotContains(response, 'href="#"')
+
+    def test_pie_de_pagina_tiene_secciones_accesibles_desplegables(self):
+        response = self.client.get("/")
+
+        self.assertContains(response, '<details class="footer__col">', count=3)
+        self.assertContains(response, 'role="heading" aria-level="2">Colecciones</summary>')
+        self.assertContains(response, 'role="heading" aria-level="2">Información</summary>')
+        self.assertContains(response, 'role="heading" aria-level="2">Empresa</summary>')
 
     def test_banner_principal_no_usa_fotografia_con_marca_de_agua(self):
         response = self.client.get("/")
@@ -97,6 +105,96 @@ class InicioCatalogoTests(TestCase):
         self.assertContains(response, 'data-category-query="hombre"')
 
 
+class CatalogoPublicoTests(TestCase):
+    def setUp(self):
+        self.coleccion = Coleccion.objects.create(nombre="Luz Dorada")
+
+    def test_catalogo_muestra_productos_publicados_y_oculta_borradores_e_inactivos(self):
+        Producto.objects.create(
+            coleccion=self.coleccion,
+            nombre="Anillo Ámbar",
+            precio="1250000.00",
+        )
+        Producto.objects.create(
+            coleccion=self.coleccion,
+            nombre="Diseño en borrador",
+            precio="500000.00",
+            es_borrador=True,
+        )
+        Producto.objects.create(
+            coleccion=self.coleccion,
+            nombre="Diseño inactivo",
+            precio="500000.00",
+            activo=False,
+        )
+
+        response = self.client.get(reverse("core:catalogo"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "core/catalogo/listar.html")
+        self.assertContains(response, "Anillo Ámbar")
+        self.assertNotContains(response, "Diseño en borrador")
+        self.assertNotContains(response, "Diseño inactivo")
+        self.assertEqual(response.context["total_productos"], 1)
+
+    def test_producto_activo_de_coleccion_inactiva_no_se_publica(self):
+        coleccion_inactiva = Coleccion.objects.create(
+            nombre="Colección fuera de temporada",
+            activa=False,
+        )
+        Producto.objects.create(
+            coleccion=coleccion_inactiva,
+            nombre="Anillo de colección inactiva",
+            precio="850000.00",
+            activo=True,
+        )
+
+        catalogo = self.client.get(reverse("core:catalogo"))
+        inicio = self.client.get(reverse("core:inicio"))
+
+        self.assertNotContains(catalogo, "Anillo de colección inactiva")
+        self.assertEqual(catalogo.context["total_productos"], 0)
+        self.assertNotContains(inicio, "Anillo de colección inactiva")
+
+    def test_catalogo_busca_por_producto_o_coleccion(self):
+        Producto.objects.create(
+            coleccion=self.coleccion,
+            nombre="Anillo Ámbar",
+            precio="1250000.00",
+        )
+        Producto.objects.create(
+            coleccion=self.coleccion,
+            nombre="Aro clásico",
+            precio="750000.00",
+        )
+
+        respuesta_por_nombre = self.client.get(
+            reverse("core:catalogo"),
+            {"q": "Ámbar"},
+        )
+        respuesta_por_coleccion = self.client.get(
+            reverse("core:catalogo"),
+            {"q": "Luz Dorada"},
+        )
+
+        self.assertContains(respuesta_por_nombre, "Anillo Ámbar")
+        self.assertNotContains(respuesta_por_nombre, "Aro clásico")
+        self.assertEqual(respuesta_por_coleccion.context["total_productos"], 2)
+
+    def test_catalogo_pagina_resultados(self):
+        for numero in range(13):
+            Producto.objects.create(
+                coleccion=self.coleccion,
+                nombre=f"Anillo {numero}",
+                precio="500000.00",
+            )
+
+        response = self.client.get(reverse("core:catalogo"))
+
+        self.assertEqual(response.context["productos"].paginator.num_pages, 2)
+        self.assertEqual(len(response.context["productos"]), 12)
+
+
 class PanelAdministracionTests(TestCase):
     def setUp(self):
         usuario = get_user_model().objects.create_superuser(
@@ -110,6 +208,76 @@ class PanelAdministracionTests(TestCase):
             telefono="3001234567",
         )
         self.client.force_login(usuario)
+
+    def test_desactivar_producto_desde_seleccion_masiva(self):
+        coleccion = Coleccion.objects.create(nombre="Colección masiva")
+        producto = Producto.objects.create(
+            coleccion=coleccion,
+            nombre="Anillo para desactivar",
+            precio="250000.00",
+            activo=True,
+        )
+        url = reverse("core:admin_section", kwargs={"seccion": "productos"})
+
+        listado = self.client.get(url)
+        self.assertContains(listado, 'id="bulk-productos"')
+        self.assertContains(listado, f'value="{producto.pk}"')
+        self.assertContains(listado, 'form="bulk-productos"')
+
+        response = self.client.post(
+            url,
+            {
+                "recurso": "productos",
+                "accion": "bulk",
+                "estado": "0",
+                "registros": [str(producto.pk)],
+            },
+        )
+
+        self.assertRedirects(response, f"{url}#registros")
+        producto.refresh_from_db()
+        self.assertFalse(producto.activo)
+
+    def test_desactivar_coleccion_desde_seleccion_masiva(self):
+        coleccion = Coleccion.objects.create(nombre="Colección inactiva")
+        url = reverse("core:admin_section", kwargs={"seccion": "colecciones"})
+
+        response = self.client.post(
+            url,
+            {
+                "recurso": "colecciones",
+                "accion": "bulk",
+                "estado": "0",
+                "registros": [str(coleccion.pk)],
+            },
+        )
+
+        self.assertRedirects(response, f"{url}#registros")
+        coleccion.refresh_from_db()
+        self.assertFalse(coleccion.activa)
+
+    def test_accion_masiva_exige_elegir_activar_o_desactivar(self):
+        coleccion = Coleccion.objects.create(nombre="Colección sin acción")
+        url = reverse("core:admin_section", kwargs={"seccion": "colecciones"})
+
+        listado = self.client.get(url)
+        self.assertContains(listado, 'name="estado" required')
+        self.assertContains(listado, "Selecciona una acción")
+
+        response = self.client.post(
+            url,
+            {
+                "recurso": "colecciones",
+                "accion": "bulk",
+                "estado": "",
+                "registros": [str(coleccion.pk)],
+            },
+            follow=True,
+        )
+
+        self.assertContains(response, "Selecciona si deseas activar o desactivar.")
+        coleccion.refresh_from_db()
+        self.assertTrue(coleccion.activa)
 
     def test_cada_recurso_usa_la_plantilla_compartida(self):
         for recurso in RECURSOS:
@@ -125,6 +293,13 @@ class PanelAdministracionTests(TestCase):
                 self.assertTemplateUsed(response, "admin_custom/section.html")
                 self.assertContains(response, recurso["title"])
                 self.assertContains(response, "Ir a la tienda")
+
+    def test_panel_enlaza_al_catalogo_publico(self):
+        response = self.client.get(reverse("core:admin_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse("core:catalogo"))
+        self.assertContains(response, "Ver catálogo público")
 
     def test_editar_usuario_se_abre_en_dialogo_accesible(self):
         response = self.client.get(

@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
@@ -23,6 +24,29 @@ def inicio(request):
         request,
         "core/index.html",
         {"colecciones": colecciones, "productos": productos},
+    )
+
+
+def catalogo(request):
+    busqueda = request.GET.get("q", "").strip()
+    productos = Producto.objects.publicos().select_related("coleccion")
+    if busqueda:
+        productos = productos.filter(
+            Q(nombre__icontains=busqueda)
+            | Q(detalle__icontains=busqueda)
+            | Q(descripcion__icontains=busqueda)
+            | Q(coleccion__nombre__icontains=busqueda)
+        )
+
+    pagina = Paginator(productos, 12).get_page(request.GET.get("page"))
+    return render(
+        request,
+        "core/catalogo/listar.html",
+        {
+            "productos": pagina,
+            "total_productos": pagina.paginator.count,
+            "busqueda": busqueda,
+        },
     )
 
 

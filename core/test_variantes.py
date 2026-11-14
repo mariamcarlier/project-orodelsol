@@ -291,6 +291,17 @@ class PanelProductosVariantesTests(TestCase):
         self.client.force_login(administrador)
         self.url = reverse("core:admin_section", kwargs={"seccion": "productos"})
 
+    def test_formulario_legacy_producto_se_renderiza(self):
+        Talla.objects.create(talla_us=Decimal("7.0"))
+        Material.objects.create(nombre="Oro amarillo 18K")
+        response = self.client.get(reverse("core:producto_crear"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="nombre"', html=False)
+        self.assertContains(response, 'name="activo"', html=False)
+        self.assertContains(response, 'name="tallas"', html=False)
+        self.assertContains(response, "Guardar producto")
+
     def datos_creacion(self, coleccion, **extra):
         datos = {
             "recurso": "productos",

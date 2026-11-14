@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Catálogo | Oro del Sol{% endblock %}
+{% block body_class %}catalog-body{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/catalogo.css' %}?v=4">
+{% endblock %}
+
+{% block content %}
+<section class="catalog-page" aria-labelledby="catalog-title">
+  <header class="catalog-heading">
+    <span class="eyebrow">Joyería fina en oro 18K</span>
+    <h1 class="heading" id="catalog-title">Nuestro <em>catálogo</em></h1>
+    <p class="body-text">Explora los diseños disponibles de Oro del Sol.</p>
+  </header>
+
+  <form class="catalog-search" method="get" action="{% url 'core:catalogo' %}">
+    <label class="catalog-search__label" for="catalog-query">Buscar en el catálogo</label>
+    <div class="catalog-search__controls">
+      <div class="catalog-search__field">
+        <svg class="catalog-search__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6"/>
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <input
+          id="catalog-query"
+          name="q"
+          type="search"
+          value="{{ busqueda }}"
+          placeholder="Nombre, colección o detalle"
+        >
+      </div>
+      <button type="submit">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6"/>
+          <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <span>Buscar</span>
+      </button>
+      {% if busqueda %}
+        <a class="catalog-search__clear" href="{% url 'core:catalogo' %}">Limpiar búsqueda</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <div class="catalog-results">
+    <p class="catalog-results__count" aria-live="polite">
+      {{ total_productos }} producto{{ total_productos|pluralize:"s" }}
+      {% if busqueda %}para “{{ busqueda }}”{% endif %}
+    </p>
+
+    <div class="products-grid catalog-grid" id="productos">
+      {% for producto in productos %}
+        <article class="product-card" data-product-id="{{ producto.pk }}">
+          <div class="product-card__media">
+            {% if producto.imagen_url %}
+              <img src="{{ producto.imagen_url }}" data-image-fallback="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ producto.nombre }}" loading="lazy">
+            {% else %}
+              <img src="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ producto.nombre }}" loading="lazy">
+            {% endif %}
+            {% if producto.destacado %}<span class="product-card__badge product-card__badge--fav">Destacado</span>{% endif %}
+            <div class="product-card__actions">
+              <button class="product-card__btn" type="button" data-action="favorite"
+                      aria-label="Añadir {{ producto.nombre }} a favoritos" aria-pressed="false">♡</button>
+            </div>
+            <button class="product-card__bar" type="button" data-action="add-to-cart"
+                    data-product-name="{{ producto.nombre }}"
+                    data-product-price="{{ producto.precio|floatformat:0 }}">
+              Añadir al carrito
+            </button>
+          </div>
+          <div class="product-card__info">
+            <span class="product-card__label">{{ producto.detalle }} · {{ producto.coleccion.nombre }}</span>
+            <h2 class="product-card__name">{{ producto.nombre }}</h2>
+            <p class="product-card__price"><strong>COP ${{ producto.precio|floatformat:0 }}</strong></p>
+          </div>
+        </article>
+      {% empty %}
+        <p class="catalog-empty">
+          {% if busqueda %}
+            No encontramos productos con esa búsqueda. Prueba con otro nombre o colección.
+          {% else %}
+            Aún no hay productos publicados. Vuelve pronto para descubrir nuestros diseños.
+          {% endif %}
+        </p>
+      {% endfor %}
+    </div>
+
+    {% if productos.has_other_pages %}
+      <nav class="catalog-pagination" aria-label="Paginación del catálogo">
+        {% if productos.has_previous %}
+          <a href="?{% if busqueda %}q={{ busqueda|urlencode }}&amp;{% endif %}page={{ productos.previous_page_number }}">Anterior</a>
+        {% endif %}
+        <span>Página {{ productos.number }} de {{ productos.paginator.num_pages }}</span>
+        {% if productos.has_next %}
+          <a href="?{% if busqueda %}q={{ busqueda|urlencode }}&amp;{% endif %}page={{ productos.next_page_number }}">Siguiente</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
