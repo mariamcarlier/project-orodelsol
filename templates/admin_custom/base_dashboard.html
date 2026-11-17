@@ -72,10 +72,6 @@
              no se repite aquí «Panel de administración» (sería el «Resumen» del menú). -->
         <div class="sidebar-footer">
 
-            <a href="{% url 'core:catalogo' %}" class="btn-site">
-                <i class='bx bx-grid-alt'></i> <span>Ver catálogo público</span>
-            </a>
-
             <details class="sidebar-user">
                 <summary class="sidebar-user__summary">
                     <span class="sidebar-user__avatar" aria-hidden="true">
@@ -91,6 +87,11 @@
                     <li>
                         <a href="{% url 'core:inicio' %}">
                             <i class="bx bx-store-alt" aria-hidden="true"></i><span>Ver tienda</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'core:catalogo' %}">
+                            <i class="bx bx-grid-alt" aria-hidden="true"></i><span>Ver catálogo público</span>
                         </a>
                     </li>
                     <li>
