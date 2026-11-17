@@ -1,9 +1,6 @@
 from django.contrib import messages
 
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
-
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
@@ -89,8 +86,6 @@ def catalogo(request):
         },
     )
 
-
-@login_required
 
 def producto_piedra_disponible(request, pk, ref):
     """Guarda de servidor: ¿esta piedra puede agregarse al carrito?

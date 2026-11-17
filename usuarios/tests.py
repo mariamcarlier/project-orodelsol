@@ -324,7 +324,7 @@ class ConsultarPerfilTests(TestCase):
         )
         self.assertContains(response, "Continuar con Google")
 
-    @override_settings(GOOGLE_OAUTH_ENABLED=False)
+    @override_settings(GOOGLE_OAUTH_ENABLED=False, SOCIALACCOUNT_PROVIDERS={})
     def test_registro_habilita_google_configurado_en_admin(self):
         site, _ = Site.objects.update_or_create(
             pk=settings.SITE_ID,
