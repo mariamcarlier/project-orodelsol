@@ -24,35 +24,41 @@
     </div>
 
     <div class="sidebar__body">
-      <span class="sidebar__label">Navegar</span>
+      <span class="sidebar__label">Explorar</span>
       <a class="sidebar__link" href="{% url 'core:inicio' %}">Inicio</a>
-      <a class="sidebar__link" href="{% url 'core:inicio' %}#colecciones">Colecciones</a>
       <a class="sidebar__link" href="{% url 'core:catalogo' %}">Catálogo de productos</a>
+      <a class="sidebar__link" href="{% url 'core:inicio' %}#colecciones">Colecciones</a>
+
       <span class="sidebar__label">Categorías</span>
       <a class="sidebar__link" href="{% url 'core:inicio' %}#productos" data-category-query="quince" data-home-url="{% url 'core:inicio' %}">XV años</a>
       <a class="sidebar__link" href="{% url 'core:inicio' %}#productos" data-category-query="boda" data-home-url="{% url 'core:inicio' %}">Bodas</a>
       <a class="sidebar__link" href="{% url 'core:inicio' %}#productos" data-category-query="solitario" data-home-url="{% url 'core:inicio' %}">Solitario</a>
       <a class="sidebar__link" href="{% url 'core:inicio' %}#productos" data-category-query="hombre" data-home-url="{% url 'core:inicio' %}">Hombre</a>
+
+      <span class="sidebar__label">La marca</span>
       <a class="sidebar__link" href="{% url 'core:inicio' %}#nosotros">Nosotros</a>
       <a class="sidebar__link" href="{% url 'core:inicio' %}#proceso">Nuestro proceso</a>
-
-      <span class="sidebar__label">Mi cuenta</span>
-      {% if request.user.is_authenticated %}
-        <p class="sidebar__user">
-          Hola, <strong>{{ request.user.first_name|default:request.user.username }}</strong>
-        </p>
-        <a class="sidebar__link" href="{% url 'usuarios:perfil' %}">Mi perfil</a>
-        {% if request.user.is_staff %}
-          <a class="sidebar__link" href="{% url 'core:admin_dashboard' %}">Panel de administración</a>
-        {% endif %}
-        <form class="sidebar__logout-form" method="post" action="{% url 'core:cerrar_sesion' %}">
-          {% csrf_token %}
-          <button class="sidebar__link sidebar__logout" type="submit">Cerrar sesión</button>
-        </form>
-      {% else %}
-        <a class="sidebar__link" href="{% url 'core:iniciar_sesion' %}">Iniciar sesión</a>
-      {% endif %}
       <a class="sidebar__link" href="{% url 'core:inicio' %}#mayoristas">Mayoristas</a>
+
+      <!-- Bloque de cuenta: queda anclado al fondo del panel (margin-top: auto). -->
+      <div class="sidebar__account">
+        <span class="sidebar__label">Mi cuenta</span>
+        {% if request.user.is_authenticated %}
+          <p class="sidebar__user">
+            Hola, <strong>{{ request.user.first_name|default:request.user.username }}</strong>
+          </p>
+          <a class="sidebar__link" href="{% url 'usuarios:perfil' %}">Mi perfil</a>
+          {% if request.user.is_staff %}
+            <a class="sidebar__link" href="{% url 'core:admin_dashboard' %}">Panel de administración</a>
+          {% endif %}
+          <form class="sidebar__logout-form" method="post" action="{% url 'core:cerrar_sesion' %}">
+            {% csrf_token %}
+            <button class="sidebar__link sidebar__logout" type="submit">Cerrar sesión</button>
+          </form>
+        {% else %}
+          <a class="sidebar__link" href="{% url 'core:iniciar_sesion' %}">Iniciar sesión</a>
+        {% endif %}
+      </div>
     </div>
     <div class="sidebar__footer">
       <span class="sidebar__label">Síguenos</span>

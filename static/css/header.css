@@ -669,8 +669,10 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 300px;
+  width: 340px;           /* ancho suficiente para que la marca quepa en una línea */
+  max-width: 88vw;        /* en pantallas pequeñas deja ver un borde del sitio */
   height: 100vh;
+  height: 100dvh;         /* altura real en móviles (la barra del navegador no la tapa) */
   background: var(--color-tierra);
   z-index: 600;
   transform: translateX(-100%);
@@ -697,7 +699,8 @@
 .sidebar__brand {
   font-family: var(--font-display);
   font-size: 16px;
-  letter-spacing: 4px;
+  letter-spacing: 3px;
+  white-space: nowrap;
   text-transform: uppercase;
   color: var(--color-text-on-dark);
 }
@@ -723,14 +726,31 @@
 
 /* Cuerpo del sidebar */
 .sidebar__body {
-  padding: 28px 0;
+  padding: 28px 0 0;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar__body > .sidebar__label:first-child {
+  margin-top: 0;
+}
+
+/* Bloque de cuenta anclado al fondo, con aire debajo */
+.sidebar__account {
+  margin-top: auto;
+  padding: 8px 0 24px;
+  border-top: 1px solid rgba(217,199,163,.1);
+}
+
+.sidebar__account .sidebar__label {
+  margin-top: 20px;
 }
 
 .sidebar__label {
   display: block;
-  font-size: 9px;
-  letter-spacing: 3.5px;
+  font-size: 11px;
+  letter-spacing: 3px;
   text-transform: uppercase;
   color: var(--color-oro);
   padding: 0 32px;
@@ -756,9 +776,10 @@
 .sidebar__logout {
   width: 100%;
   border: 0;
-  background: none;
+  background: transparent;
   text-align: left;
   cursor: pointer;
+  color: var(--color-caramel);   /* distingue la acción de salir de los enlaces de navegación */
 }
 
 .sidebar__link::before {
@@ -784,24 +805,15 @@
 
 .sidebar__user {
   padding: 0 32px 14px;
-  color: rgba(246,237,210,.58);
-  font-size: 11px;
-  letter-spacing: 1px;
+  color: rgba(246,237,210,.7);
+  font-size: 14px;
+  letter-spacing: .5px;
 }
 
 .sidebar__user strong {
   color: var(--color-oro);
-  font-weight: 400;
-}
-
-.sidebar__logout-form {
-  margin: 0;
-}
-
-.sidebar__logout {
-  width: 100%;
-  background: transparent;
-  text-align: left;
+  font-size: 16px;
+  font-weight: 400;   /* Questrial solo tiene un peso; el tamaño y el color marcan el nombre */
 }
 
 /* Footer del sidebar */
@@ -894,7 +906,8 @@
     flex-shrink: 0;
   }
 
-  .sidebar { width: 280px; }
+  .sidebar { width: min(320px, 88vw); }
+  .sidebar__head { padding: 24px; }
 
   .search-dialog__content {
     width: calc(100% - 40px);
