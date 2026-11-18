@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "usuarios",
     "core",
     "configuracion",
+    "mayoristas",
 ]
 
 

@@ -41,6 +41,7 @@ urlpatterns = [
     path("register/", allauth_signup, name="register"),
     path("accounts/", include("allauth.urls")),
     path("profile/", perfil, name="profile"),
+    path("mayoristas/", include ("mayoristas.urls"))
 ]
 
 if settings.DEBUG:
