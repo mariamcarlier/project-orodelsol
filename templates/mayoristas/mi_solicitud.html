@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% comment %}
+  VM-01 · Estado de la solicitud de acceso mayorista (JODS-95, DEC-05).
+
+  Página propia de la app `mayoristas`: es la que resuelve el 404 de la deuda
+  del día 1. Muestra SOLO la solicitud de quien está autenticado (la vista no
+  recibe identificador por URL).
+
+  Estados posibles:
+    - Sin solicitud      → invitación a solicitarla.
+    - PENDIENTE          → en revisión, con lo que se envió.
+    - APROBADA           → acceso al catálogo (el enlace llega con VM-03).
+    - RECHAZADA          → motivo + posibilidad de volver a solicitar.
+
+  La etiqueta de estado NUNCA es solo color: lleva texto y un icono con
+  `aria-hidden`, para que se entienda sin distinguir colores.
+{% endcomment %}
+
+{% block title %}Estado de mi solicitud | Joyas Oro del Sol{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/registrar.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'css/mayoristas.css' %}?v=1">
+{% endblock %}
+
+{% block content %}
+<section class="b2b-page" aria-labelledby="b2b-estado-title">
+
+  <div class="b2b-page__intro">
+    <span class="eyebrow">Ventas al por mayor</span>
+    <h1 id="b2b-estado-title" class="heading">Estado de mi <em>solicitud</em></h1>
+    <p class="body-text">Aquí puedes consultar en qué punto está tu acceso al catálogo mayorista.</p>
+  </div>
+
+  {% include "mayoristas/_migas.html" %}
+
+  {% if messages %}
+    <div class="register-alerts" aria-live="polite">
+      {% for message in messages %}
+        <div class="register-alert register-alert--{{ message.tags }}" role="alert">
+          <span class="register-alert__icon" aria-hidden="true">{% if message.tags == 'success' %}✓{% else %}!{% endif %}</span>
+          <span>{{ message }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if not solicitud %}
+    {# ── Sin solicitud registrada ── #}
+    <div class="b2b-card b2b-card--empty">
+      <h2 class="b2b-card__title">Todavía no has enviado una solicitud</h2>
+      <p class="b2b-card__text">
+        Si tienes una joyería o distribuyes nuestras piezas, puedes pedir acceso al
+        catálogo mayorista. Revisamos cada solicitud antes de aprobarla.
+      </p>
+      {% if request.user.rol_efectivo == 'CLIENTE' %}
+        <a class="btn btn--primary" href="{% url 'mayoristas:solicitar_acceso' %}">Solicitar acceso</a>
+      {% else %}
+        <p class="b2b-card__text">
+          Tu cuenta figura como <strong>{{ request.user.tipo_cuenta }}</strong>, así que no
+          necesitas solicitud de acceso mayorista.
+        </p>
+      {% endif %}
+    </div>
+
+  {% else %}
+    {# ── Con solicitud: ficha + estado ── #}
+    <div class="b2b-card">
+      <header class="b2b-card__header">
+        <div>
+          <h2 class="b2b-card__title">{{ solicitud.nombre_comercial }}</h2>
+          <p class="b2b-card__meta">Enviada el {{ solicitud.creado_en|date:"d/m/Y" }}</p>
+        </div>
+        {% include "mayoristas/_etiqueta_estado.html" with estado=solicitud.estado %}
+      </header>
+
+      {% if solicitud.estado == 'PENDIENTE' %}
+        <p class="b2b-card__text">
+          Estamos revisando tu información. Te escribiremos a
+          <strong>{{ request.user.email }}</strong> en cuanto tomemos una decisión.
+        </p>
+      {% elif solicitud.estado == 'APROBADA' %}
+        <p class="b2b-card__text">
+          ¡Bienvenida al canal mayorista! Tu cuenta ya tiene el rol
+          <strong>Mayorista</strong>.
+        </p>
+        <p class="b2b-card__note">
+          El catálogo mayorista con precios de referencia se habilita en la siguiente
+          entrega (VM-03). Mientras tanto, tu cuenta sigue funcionando con normalidad.
+        </p>
+      {% elif solicitud.estado == 'RECHAZADA' %}
+        <p class="b2b-card__text">No pudimos aprobar esta solicitud.</p>
+        {% if solicitud.motivo_rechazo %}
+          <div class="b2b-aviso b2b-aviso--rechazo" role="note">
+            <span class="b2b-aviso__label">Motivo</span>
+            <p>{{ solicitud.motivo_rechazo|linebreaksbr }}</p>
+          </div>
+        {% endif %}
+        <p class="b2b-card__note">
+          Puedes corregir la información y volver a enviar tu solicitud cuando quieras.
+        </p>
+      {% endif %}
+
+      {% if puede_volver_a_solicitar %}
+        <a class="btn btn--primary b2b-card__action" href="{% url 'mayoristas:solicitar_acceso' %}">
+          Volver a solicitar <span aria-hidden="true">→</span>
+        </a>
+      {% endif %}
+    </div>
+
+    {# ── Datos enviados: verificación de lo que registramos ── #}
+    <div class="b2b-card b2b-card--datos">
+      <h2 class="b2b-card__title">Datos de la solicitud</h2>
+      <dl class="b2b-datos">
+        <div class="b2b-datos__item">
+          <dt>Tipo de persona</dt>
+          <dd>{{ solicitud.get_tipo_persona_display }}</dd>
+        </div>
+        <div class="b2b-datos__item">
+          <dt>NIT o cédula</dt>
+          <dd>{{ solicitud.nit }}</dd>
+        </div>
+        <div class="b2b-datos__item">
+          <dt>Nombre comercial</dt>
+          <dd>{{ solicitud.nombre_comercial }}</dd>
+        </div>
+        <div class="b2b-datos__item">
+          <dt>Representante legal</dt>
+          <dd>{{ solicitud.representante_legal }}</dd>
+        </div>
+        <div class="b2b-datos__item">
+          <dt>Ciudad</dt>
+          <dd>{{ solicitud.ciudad }}</dd>
+        </div>
+        <div class="b2b-datos__item">
+          <dt>Teléfono</dt>
+          <dd>{{ solicitud.telefono }}</dd>
+        </div>
+        <div class="b2b-datos__item">
+          <dt>Correo de contacto</dt>
+          <dd>{{ solicitud.correo }}</dd>
+        </div>
+        {% if solicitud.canal_venta %}
+          <div class="b2b-datos__item">
+            <dt>Dónde vende</dt>
+            <dd>{{ solicitud.canal_venta }}</dd>
+          </div>
+        {% endif %}
+        {% if solicitud.referido %}
+          <div class="b2b-datos__item">
+            <dt>Referido por</dt>
+            <dd>{{ solicitud.referido }}</dd>
+          </div>
+        {% endif %}
+        {% if solicitud.revisado_en %}
+          <div class="b2b-datos__item">
+            <dt>Revisada el</dt>
+            <dd>{{ solicitud.revisado_en|date:"d/m/Y" }}</dd>
+          </div>
+        {% endif %}
+      </dl>
+      <p class="b2b-card__note">
+        ¿Algo está mal? Escríbenos antes de que revisemos la solicitud; después de la
+        revisión, los datos quedan registrados como historial.
+      </p>
+    </div>
+  {% endif %}
+
+  <p class="b2b-page__back">
+    <a href="{% url 'usuarios:perfil' %}">Volver a mi cuenta</a>
+  </p>
+</section>
+{% endblock %}

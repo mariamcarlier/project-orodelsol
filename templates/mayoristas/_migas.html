@@ -1,0 +1,11 @@
+{% comment %}
+  Migas de pan de las pantallas de `mayoristas`.
+
+  Reutiliza el parcial global `partials/breadcrumbs.html`, que ya conoce el
+  formato ``(texto, url)`` y marca la página actual con aria-current="page".
+{% endcomment %}
+{% if breadcrumbs %}
+  <div class="b2b-crumbs">
+    {% include "partials/breadcrumbs.html" %}
+  </div>
+{% endif %}
