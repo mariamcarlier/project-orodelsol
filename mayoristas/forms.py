@@ -64,3 +64,54 @@ class SolicitudMayoristaForm(forms.ModelForm):
         if not PATRON_NIT.match(valor):
             raise forms.ValidationError(MENSAJE_NIT, code="nit_invalido")
         return valor
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# VM-02 (JODS-96) · Rechazo con motivo
+# ═══════════════════════════════════════════════════════════════════════
+
+class RechazoSolicitudForm(forms.Form):
+    """Motivo del rechazo, obligatorio.
+
+    Es un `forms.Form` y no un `ModelForm` a propósito: el rechazo no «edita»
+    la solicitud, la decide. Que el formulario no conozca el modelo impide que
+    alguien envíe campos extra y termine cambiando otra cosa que no sea el
+    motivo (el estado y el revisor los pone el servicio).
+    """
+
+    motivo = forms.CharField(
+        label="Motivo del rechazo",
+        max_length=500,
+        # Mensaje propio: «Este campo es obligatorio» no explica que el texto
+        # lo va a leer el cliente y por eso se exige.
+        error_messages={
+            "required": (
+                "Escribe el motivo del rechazo: el cliente lo verá y podrá "
+                "corregir lo que haga falta."
+            )
+        },
+        widget=forms.Textarea(
+            attrs={
+                "rows": 4,
+                "maxlength": 500,
+                "placeholder": (
+                    "Explica qué debe corregir la persona para volver a solicitar. "
+                    "Este texto le llega por correo."
+                ),
+            }
+        ),
+        help_text=(
+            "Lo que escribas aquí lo va a leer quien solicitó. Sé concreto: "
+            "qué falta o qué debe corregir."
+        ),
+    )
+
+    def clean_motivo(self):
+        """El motivo no puede ser solo espacios en blanco."""
+        valor = (self.cleaned_data.get("motivo") or "").strip()
+        if not valor:
+            raise forms.ValidationError(
+                "Escribe el motivo del rechazo: el cliente lo verá.",
+                code="motivo_vacio",
+            )
+        return valor
