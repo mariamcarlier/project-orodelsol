@@ -121,6 +121,22 @@ class SolicitudMayorista(models.Model):
         ordering = ("-creado_en",)
         verbose_name = "solicitud de mayorista"
         verbose_name_plural = "solicitudes de mayoristas"
+        # Permisos propios (Q-03). NO se reutilizan los permisos automáticos
+        # `change_solicitudmayorista`, porque tendrían el mismo efecto que
+        # editar cualquier campo a mano y no distinguen «mirar» de «decidir».
+        # Se asignan por grupo de Django: no se crea un rol nuevo (DEC-15) ni
+        # se toca `is_staff` (DEC-07), así que quien revisa puede ser una
+        # cuenta normal con este permiso y nada más.
+        permissions = [
+            (
+                "ver_bandeja_solicitudesmayoristas",
+                "Puede ver la bandeja de solicitudes de mayoristas",
+            ),
+            (
+                "gestionar_solicitudesmayoristas",
+                "Puede aprobar y rechazar solicitudes de mayoristas",
+            ),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=["usuario"], condition=Q(estado__in=ESTADOS_ACTIVOS),
