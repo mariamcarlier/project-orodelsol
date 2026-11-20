@@ -1,0 +1,532 @@
+/* ═══════════════════════════════════════════════════════════════
+   mayoristas.css — pantallas del canal B2B (épica JODS-6).
+
+   Solo contiene lo que no existe ya en otra hoja:
+     - Fichas de estado de la solicitud (.b2b-card, .b2b-datos).
+     - Etiquetas de estado (.b2b-estado).
+     - Aviso de motivo de rechazo (.b2b-aviso).
+     - Bandeja de verificación y acciones de decisión (VM-02): .b2b-bandeja,
+       .b2b-filtros, .b2b-buscar, .b2b-acciones.
+
+   Todo lo demás se hereda de registrar.css (formulario) y de styles.css
+   (.heading, .eyebrow, .body-text, .btn). No se define una paleta nueva:
+   se usan las variables de tokens.css.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Contenedor de página de estado ───────────────────────────── */
+.b2b-page {
+  width: min(100%, 860px);
+  margin: 0 auto;
+  padding: clamp(32px, 6vw, 56px) clamp(16px, 4vw, 32px) clamp(48px, 8vw, 88px);
+}
+
+.b2b-page__intro {
+  max-width: 620px;
+  margin-bottom: 26px;
+}
+
+.b2b-page__intro .heading {
+  margin-bottom: 12px;
+}
+
+.b2b-crumbs {
+  margin-bottom: 22px;
+  font-size: 12px;
+}
+
+.b2b-page__back {
+  margin-top: 28px;
+  font-size: 13px;
+}
+
+.b2b-page__back a {
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.b2b-page__back a:hover {
+  color: var(--color-cacao);
+}
+
+/* ── Ficha ────────────────────────────────────────────────────── */
+.b2b-card {
+  position: relative;
+  margin-bottom: 20px;
+  padding: clamp(20px, 4vw, 30px);
+  border: 1px solid rgba(196, 174, 136, .7);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(145deg, var(--color-white) 20%, #fbf6eb 100%);
+  box-shadow: 0 18px 48px rgba(78, 52, 46, .08);
+}
+
+/* Filete superior de marca, igual que .register-form */
+.b2b-card::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: linear-gradient(90deg, var(--color-cacao), var(--color-caramel), var(--color-oro));
+  content: "";
+}
+
+.b2b-card--empty {
+  text-align: center;
+}
+
+.b2b-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.b2b-card__title {
+  margin: 0 0 4px;
+  color: var(--color-text-dark);
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 3vw, 1.6rem);
+  font-weight: 600;
+}
+
+.b2b-card__meta {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  letter-spacing: .02em;
+}
+
+.b2b-card__text {
+  margin: 0 0 12px;
+  color: var(--color-text-mid);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.b2b-card__note {
+  margin: 10px 0 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.b2b-card__action {
+  margin-top: 18px;
+}
+
+/* ── Etiquetas de estado ──────────────────────────────────────── */
+.b2b-estado {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  padding: 6px 12px;
+  border: 1px solid;
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.b2b-estado--pendiente {
+  border-color: #d8c18a;
+  background: #fdf6e3;
+  color: #7a5c14;
+}
+
+.b2b-estado--aprobada {
+  border-color: #b9d6b9;
+  background: #eef6ed;
+  color: #315b3c;
+}
+
+.b2b-estado--rechazada {
+  border-color: #e5b8ad;
+  background: #fff1ed;
+  color: #7a382d;
+}
+
+/* ── Aviso de motivo ──────────────────────────────────────────── */
+.b2b-aviso {
+  margin: 14px 0;
+  padding: 14px 16px;
+  border-left: 3px solid var(--color-oro-borde);
+  border-radius: var(--radius);
+  background: var(--color-ivory);
+}
+
+.b2b-aviso--rechazo {
+  border-left-color: #b65d4e;
+  background: #fff8f5;
+}
+
+.b2b-aviso__label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+}
+
+.b2b-aviso p {
+  margin: 0;
+  color: var(--color-text-mid);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ── Rejilla de datos enviados ────────────────────────────────── */
+.b2b-datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 16px 24px;
+  margin: 18px 0 0;
+}
+
+.b2b-datos__item dt {
+  margin-bottom: 4px;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+
+.b2b-datos__item dd {
+  margin: 0;
+  color: var(--color-text-dark);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 560px) {
+  .b2b-card__header {
+    flex-direction: column;
+  }
+
+  .b2b-card__action,
+  .b2b-card--empty .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   VM-02 (JODS-96) · Bandeja de verificación y decisión
+   ═══════════════════════════════════════════════════════════════
+
+   La bandeja reutiliza la tabla del panel (.data-table, de dashboard.css) y
+   las fichas de arriba. Aquí solo se define lo que no existía: las pestañas
+   de conteo, la fila de búsqueda y el bloque de decisiones. */
+
+.b2b-bandeja {
+  width: min(100%, 1120px);
+  margin: 0 auto;
+  padding: clamp(32px, 5vw, 56px) clamp(16px, 4vw, 32px) clamp(48px, 7vw, 80px);
+}
+
+.b2b-bandeja__head {
+  margin-bottom: 22px;
+}
+
+.b2b-bandeja__head .heading {
+  margin-bottom: 10px;
+}
+
+.b2b-bandeja__nota {
+  margin-top: 20px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* ── Pestañas de conteo por estado ─────────────────────────────── */
+.b2b-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 22px 0 18px;
+}
+
+.b2b-filtro {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 14px;
+  border: 1px solid rgba(196, 174, 136, .7);
+  border-radius: var(--radius-full);
+  background: var(--color-white);
+  color: var(--color-text-mid);
+  font-size: 12px;
+  letter-spacing: .04em;
+  text-decoration: none;
+  transition: border-color var(--ease-fast), background var(--ease-fast);
+}
+
+.b2b-filtro:hover,
+.b2b-filtro:focus-visible {
+  border-color: var(--color-cacao);
+  color: var(--color-cacao);
+}
+
+.b2b-filtro--activo {
+  border-color: var(--color-cacao);
+  background: var(--color-cacao);
+  color: var(--color-white);
+}
+
+.b2b-filtro--activo:hover,
+.b2b-filtro--activo:focus-visible {
+  color: var(--color-white);
+}
+
+.b2b-filtro__num {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: rgba(120, 80, 65, .12);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.b2b-filtro--activo .b2b-filtro__num {
+  background: rgba(255, 255, 255, .22);
+}
+
+/* ── Buscador ─────────────────────────────────────────────────── */
+.b2b-buscar {
+  margin-bottom: 6px;
+}
+
+.b2b-buscar label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.b2b-buscar__fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.b2b-buscar__fila input {
+  flex: 1 1 260px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(196, 174, 136, .8);
+  border-radius: var(--radius);
+  background: var(--color-white);
+  color: var(--color-text-dark);
+  font-family: var(--font-body);
+  font-size: 14px;
+}
+
+.b2b-buscar__fila input:focus {
+  border-color: var(--color-cacao);
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.b2b-buscar__limpiar {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── Tabla ────────────────────────────────────────────────────── */
+.b2b-tabla {
+  margin-top: 16px;
+}
+
+.b2b-tabla th {
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+
+.b2b-tabla td {
+  color: var(--color-text-mid);
+  font-size: 14px;
+  vertical-align: top;
+}
+
+.b2b-tabla__sub {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.b2b-tabla__accion {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.b2b-btn-mini {
+  padding: 7px 14px;
+  font-size: 11px;
+  letter-spacing: .06em;
+}
+
+.b2b-tabla__vacio {
+  padding: 34px 18px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.b2b-tabla__vacio p {
+  margin: 0 0 6px;
+  line-height: 1.6;
+}
+
+.b2b-tabla__vacio a {
+  color: var(--color-cacao);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── Bloque de decisión (ficha de revisión) ───────────────────── */
+.b2b-acciones {
+  margin: 8px 0 0;
+  padding: clamp(20px, 4vw, 30px);
+  border: 1px solid rgba(196, 174, 136, .7);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+}
+
+.b2b-acciones .b2b-card__title {
+  margin-bottom: 14px;
+}
+
+.b2b-acciones__bloque {
+  padding: 16px 0;
+  border-top: 1px solid rgba(196, 174, 136, .45);
+}
+
+.b2b-acciones__bloque:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.b2b-acciones__resumen {
+  color: var(--color-text-mid);
+  font-size: 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.b2b-acciones__resumen::-webkit-details-marker {
+  display: none;
+}
+
+.b2b-acciones__resumen::before {
+  margin-right: 8px;
+  content: "▸";
+}
+
+.b2b-acciones__bloque[open] .b2b-acciones__resumen::before {
+  content: "▾";
+}
+
+.b2b-acciones__resumen:hover,
+.b2b-acciones__resumen:focus-visible {
+  color: var(--color-cacao);
+}
+
+.b2b-acciones__bloque[open] .register-field {
+  margin: 16px 0 4px;
+}
+
+.b2b-acciones__nota {
+  padding: 14px 16px;
+  border-left: 3px solid var(--color-oro-borde);
+  border-radius: var(--radius);
+  background: var(--color-ivory);
+}
+
+/* ── Cola bajo la ficha de revisión ───────────────────────────── */
+/* Deliberadamente más pequeña y sin el filete de marca de las fichas: es una
+   ayuda para seguir trabajando, no el contenido principal de la pantalla. */
+.b2b-siguientes {
+  margin-top: 34px;
+  padding-top: 26px;
+  border-top: 1px solid rgba(196, 174, 136, .5);
+}
+
+.b2b-siguientes .b2b-card__title {
+  margin-bottom: 4px;
+  font-size: clamp(1.05rem, 2.4vw, 1.25rem);
+}
+
+.b2b-siguientes .b2b-tabla td,
+.b2b-siguientes .b2b-tabla th {
+  font-size: 13px;
+}
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .b2b-tabla thead {
+    display: none;
+  }
+
+  .b2b-tabla,
+  .b2b-tabla tbody,
+  .b2b-tabla tr,
+  .b2b-tabla td {
+    display: block;
+    width: 100%;
+  }
+
+  /* Cada fila se convierte en una ficha: los datos ya no caben en columnas. */
+  .b2b-tabla tr {
+    margin-bottom: 14px;
+    padding: 14px 16px;
+    border: 1px solid rgba(196, 174, 136, .7);
+    border-radius: var(--radius-lg);
+    background: var(--color-white);
+  }
+
+  .b2b-tabla td {
+    padding: 4px 0;
+    border: 0;
+  }
+
+  .b2b-tabla td[data-etiqueta]::before {
+    display: block;
+    margin-bottom: 2px;
+    color: var(--color-text-muted);
+    font-size: 10px;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    content: attr(data-etiqueta);
+  }
+
+  .b2b-tabla__accion {
+    margin-top: 10px;
+    text-align: left;
+  }
+
+  .b2b-btn-mini {
+    width: 100%;
+    justify-content: center;
+  }
+}

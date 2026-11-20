@@ -1,0 +1,25 @@
+{% comment %}
+  Etiqueta de estado de una solicitud mayorista.
+
+  Recibe `estado` con el código (PENDIENTE / APROBADA / RECHAZADA).
+  Usa `.b2b-estado` de static/css/mayoristas.css, que ya tienen las pantallas
+  del cliente: la misma solicitud se ve igual en la bandeja y en «Mi solicitud».
+
+  El icono del estado va con aria-hidden y el texto SIEMPRE está escrito: el
+  color nunca es lo único que comunica el estado (WCAG 1.4.1).
+{% endcomment %}
+{% if estado == 'PENDIENTE' %}
+  <span class="b2b-estado b2b-estado--pendiente">
+    <span aria-hidden="true">◔</span> Pendiente de aprobación
+  </span>
+{% elif estado == 'APROBADA' %}
+  <span class="b2b-estado b2b-estado--aprobada">
+    <span aria-hidden="true">✓</span> Aprobada
+  </span>
+{% elif estado == 'RECHAZADA' %}
+  <span class="b2b-estado b2b-estado--rechazada">
+    <span aria-hidden="true">✕</span> Rechazada
+  </span>
+{% else %}
+  <span class="b2b-estado">{{ estado }}</span>
+{% endif %}
