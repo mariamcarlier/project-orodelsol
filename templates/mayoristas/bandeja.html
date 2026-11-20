@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% comment %}
+  VM-02 · Bandeja de solicitudes de acceso mayorista (JODS-96).
+
+  Pantalla de trabajo, no de escaparate: quien entra aquí viene a decidir.
+  Por eso el orden es el de la cola (más antigua primero: la que lleva más
+  tiempo esperando) y no el del catálogo.
+
+  Jerarquía:
+    1. Cifras por estado (pestañas) — dan el tamaño de la cola de un vistazo.
+    2. Buscador — para localizar un NIT o una joyería concreta.
+    3. Tabla — la cola en sí.
+
+  Los filtros van por GET y en la propia URL: se pueden marcar, compartir y
+  recargar sin perder el contexto. Las acciones de decisión NO están aquí:
+  se hacen en la ficha, para que no se apruebe por error desde una tabla.
+
+  Estilos: dashboard.css y dashboard-enhancements.css, que ya usa el panel
+  del proyecto (.data-table, .dashboard-section). No se inventa una tabla
+  nueva.
+{% endcomment %}
+
+{% block title %}Solicitudes de mayoristas | Joyas Oro del Sol{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=6">
+<link rel="stylesheet" href="{% static 'css/dashboard-enhancements.css' %}?v=6">
+<link rel="stylesheet" href="{% static 'css/mayoristas.css' %}?v=2">
+{% endblock %}
+
+{% block content %}
+<section class="b2b-bandeja" aria-labelledby="b2b-bandeja-title">
+
+  <header class="b2b-bandeja__head">
+    <div>
+      <span class="eyebrow">Ventas al por mayor</span>
+      <h1 id="b2b-bandeja-title" class="heading">Solicitudes de <em>acceso</em></h1>
+      <p class="body-text">
+        Revisa la información de cada joyería o distribuidor antes de aprobar su
+        acceso al catálogo mayorista.
+      </p>
+    </div>
+  </header>
+
+  {% include "mayoristas/_migas.html" %}
+
+  {% if messages %}
+    <div class="register-alerts" aria-live="polite">
+      {% for message in messages %}
+        <div class="register-alert register-alert--{{ message.tags }}" role="alert">
+          <span class="register-alert__icon" aria-hidden="true">{% if message.tags == 'success' %}✓{% else %}!{% endif %}</span>
+          <span>{{ message }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {# ── Cifras por estado: enlaces, no botones de envío ── #}
+  <nav class="b2b-filtros" aria-label="Filtrar solicitudes por estado">
+    <a class="b2b-filtro{% if not estado_filtro %} b2b-filtro--activo{% endif %}"
+       href="{% url 'mayoristas:bandeja' %}{% if busqueda %}?q={{ busqueda|urlencode }}{% endif %}"
+       {% if not estado_filtro %}aria-current="page"{% endif %}>
+      Todas <span class="b2b-filtro__num">{{ resumen.TODAS }}</span>
+    </a>
+    {% for codigo, etiqueta in estados %}
+      <a class="b2b-filtro b2b-filtro--{{ codigo|lower }}{% if estado_filtro == codigo %} b2b-filtro--activo{% endif %}"
+         href="{% url 'mayoristas:bandeja' %}?estado={{ codigo }}{% if busqueda %}&q={{ busqueda|urlencode }}{% endif %}"
+         {% if estado_filtro == codigo %}aria-current="page"{% endif %}>
+        {{ etiqueta }}
+        <span class="b2b-filtro__num">{% if codigo == 'PENDIENTE' %}{{ resumen.PENDIENTE }}{% elif codigo == 'APROBADA' %}{{ resumen.APROBADA }}{% else %}{{ resumen.RECHAZADA }}{% endif %}</span>
+      </a>
+    {% endfor %}
+  </nav>
+
+  {# ── Búsqueda ── #}
+  <form class="b2b-buscar" method="get" action="{% url 'mayoristas:bandeja' %}" role="search">
+    {% if estado_filtro %}<input type="hidden" name="estado" value="{{ estado_filtro }}">{% endif %}
+    <label for="b2b-q">Buscar por nombre, NIT, ciudad o correo</label>
+    <div class="b2b-buscar__fila">
+      <input id="b2b-q" type="search" name="q" value="{{ busqueda }}"
+             placeholder="Joyería Aurora, 900123456…" autocomplete="off">
+      <button class="btn btn--primary" type="submit">Buscar</button>
+      {% if busqueda or estado_filtro %}
+        <a class="b2b-buscar__limpiar" href="{% url 'mayoristas:bandeja' %}">Limpiar</a>
+      {% endif %}
+    </div>
+  </form>
+
+  {% include "mayoristas/_tabla_solicitudes.html" %}
+
+  <p class="b2b-bandeja__nota">
+    Aprobar habilita el catálogo mayorista a esa cuenta. Rechazar exige un motivo,
+    que le llega al cliente por correo junto con la opción de volver a solicitar.
+  </p>
+</section>
+{% endblock %}

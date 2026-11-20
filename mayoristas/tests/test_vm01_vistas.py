@@ -350,3 +350,18 @@ class MiSolicitudTests(TestCase):
 
         s.refresh_from_db()
         self.assertEqual(s.estado, SolicitudMayorista.Estado.PENDIENTE)
+
+
+class EnlacesDelSitioTests(TestCase):
+    """El acceso a la solicitud debe ser encontrable, no una URL secreta."""
+
+    def test_el_home_ofrece_el_acceso_mayorista(self):
+        respuesta = self.client.get(reverse("core:inicio"))
+        self.assertContains(respuesta, reverse("mayoristas:solicitar_acceso"))
+
+    def test_anonimo_es_enviado_al_login_con_retorno(self):
+        respuesta = self.client.get(reverse("core:inicio"))
+        self.assertContains(
+            respuesta,
+            f"{reverse('core:iniciar_sesion')}?next={reverse('mayoristas:solicitar_acceso')}",
+        )

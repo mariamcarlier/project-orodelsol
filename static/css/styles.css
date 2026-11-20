@@ -542,6 +542,15 @@ button {
   margin-top: 7px;
 }
 
+/* Botón de acceso mayorista dentro del panel B2B (VM-01, JODS-95).
+   `.btn` es inline-flex y el reset global deja márgenes a cero: aquí solo
+   se alinea a la izquierda del panel. En móvil ocupa el ancho completo
+   (regla dentro del bloque responsive de 600px, al final del archivo). */
+.b2b__accion {
+  display: flex;
+  justify-content: flex-start;
+}
+
 
 /* ────────────────────────────────────────────────────────
    12. PROCESO
@@ -992,4 +1001,5 @@ button {
   .footer__bottom { flex-direction: column; align-items: center; text-align: center; font-size: 11px; }
   .hero__content  { padding: 0 28px 48px; }
   .hero__ctas     { flex-direction: column; align-items: flex-start; }
+  .b2b__accion .btn { width: 100%; justify-content: center; }
 }

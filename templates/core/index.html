@@ -215,6 +215,18 @@
           <li>Precios escalonados por volumen</li>
           <li>Catálogo exclusivo B2B disponible</li>
         </ul>
+        {% comment %}
+          VM-01 (JODS-95): el acceso al canal mayorista se pide desde aquí.
+          `.b2b__accion` no existía en styles.css; se añadió con ese nombre
+          (el espaciado superior lo da `.b2b__list { margin-bottom: 48px }`).
+        {% endcomment %}
+        <p class="b2b__accion">
+          {% if request.user.is_authenticated %}
+            <a class="btn btn--outline-gold" href="{% url 'mayoristas:solicitar_acceso' %}">Solicitar acceso mayorista</a>
+          {% else %}
+            <a class="btn btn--outline-gold" href="{% url 'core:iniciar_sesion' %}?next={% url 'mayoristas:solicitar_acceso' %}">Solicitar acceso mayorista</a>
+          {% endif %}
+        </p>
       </div>
     </section>
 

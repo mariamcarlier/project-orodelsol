@@ -1,0 +1,36 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+
+{% comment %}
+  Índice del admin con el acceso a la bandeja de solicitudes de mayoristas
+  (VM-02, JODS-96).
+
+  Se hereda de `admin/index.html` y solo se añade el enlace arriba: el resto
+  del índice queda exactamente igual. El enlace se muestra únicamente a quien
+  tiene el permiso del módulo, así que no aparece para el resto del personal.
+  Los estilos los pone el propio admin; no se carga CSS propio.
+{% endcomment %}
+
+{% block content %}
+  {% if perms.mayoristas.ver_bandeja_solicitudesmayoristas %}
+    <div class="module" style="margin-bottom: 20px;">
+      <table style="width: 100%;">
+        <caption style="text-align: left; padding: 8px;">
+          Ventas al por mayor
+        </caption>
+        <tr>
+          <th scope="row" style="padding: 8px;">
+            <a href="{% url 'mayoristas:bandeja' %}">
+              Revisar solicitudes de acceso mayorista
+            </a>
+          </th>
+          <td style="padding: 8px;">
+            Aprueba o rechaza las solicitudes pendientes y consulta las ya
+            revisadas.
+          </td>
+        </tr>
+      </table>
+    </div>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}

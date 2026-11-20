@@ -1,0 +1,121 @@
+{% comment %}
+  Tabla de solicitudes de la bandeja (VM-02, JODS-96).
+
+  Vive aparte porque la usan DOS pantallas: la bandeja completa y la ficha de
+  revisión tras decidir (patrón POST-redirect-GET sin salir del contexto de la
+  cola). Así no hay dos tablas que se puedan desincronizar.
+
+  Espera en el contexto: `solicitudes`, `estado_filtro`, `busqueda`.
+  En móvil cada fila se convierte en una ficha: las etiquetas de celda salen
+  de `data-etiqueta` (ver @media de mayoristas.css).
+{% endcomment %}
+  <div class="dashboard-table-wrap" role="region" aria-label="Tabla de solicitudes" tabindex="0">
+    <table class="data-table b2b-tabla">
+      <caption class="sr-only">
+        Solicitudes de acceso mayorista{% if estado_filtro %} filtradas por {{ estado_filtro|lower }}{% endif %}
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Enviada</th>
+          <th scope="col">Negocio</th>
+          <th scope="col">NIT o cédula</th>
+          <th scope="col">Ciudad</th>
+          <th scope="col">Estado</th>
+          <th scope="col"><span class="sr-only">Acciones</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for solicitud in solicitudes %}
+          <tr>
+            <td data-etiqueta="Enviada">{{ solicitud.creado_en|date:"d/m/Y" }}</td>
+            <td data-etiqueta="Negocio">
+              <strong>{{ solicitud.nombre_comercial }}</strong>
+              <span class="b2b-tabla__sub">{{ solicitud.usuario.email }}</span>
+            </td>
+            <td data-etiqueta="NIT o cédula">{{ solicitud.nit }}</td>
+            <td data-etiqueta="Ciudad">{{ solicitud.ciudad }}</td>
+            <td data-etiqueta="Estado">{% include "mayoristas/_etiqueta_estado.html" with estado=solicitud.estado %}</td>
+            <td class="b2b-tabla__accion">
+              <a class="btn btn--outline-gold b2b-btn-mini"
+                 href="{% url 'mayoristas:revision' solicitud.pk %}">
+                {% if solicitud.estado == 'PENDIENTE' %}Revisar{% else %}Ver ficha{% endif %}
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="b2b-tabla__vacio">
+              <p><strong>No hay solicitudes que mostrar.</strong></p>
+              <p>
+                {% if busqueda %}
+                  No encontramos coincidencias para «{{ busqueda }}».
+                  <a href="{% url 'mayoristas:bandeja' %}">Ver todas</a>.
+                {% elif estado_filtro %}
+                  No hay solicitudes en estado «{{ estado_filtro|lower }}».
+                  <a href="{% url 'mayoristas:bandeja' %}">Ver todas</a>.
+                {% else %}
+                  Cuando un cliente pida acceso al catálogo mayorista, su solicitud
+                  aparecerá aquí.
+                {% endif %}
+              </p>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="dashboard-table-wrap" role="region" aria-label="Tabla de solicitudes" tabindex="0">
+    <table class="data-table b2b-tabla">
+      <caption class="sr-only">
+        Solicitudes de acceso mayorista{% if estado_filtro %} filtradas por {{ estado_filtro|lower }}{% endif %}
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Enviada</th>
+          <th scope="col">Negocio</th>
+          <th scope="col">NIT o cédula</th>
+          <th scope="col">Ciudad</th>
+          <th scope="col">Estado</th>
+          <th scope="col"><span class="sr-only">Acciones</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for solicitud in solicitudes %}
+          <tr>
+            <td data-etiqueta="Enviada">{{ solicitud.creado_en|date:"d/m/Y" }}</td>
+            <td data-etiqueta="Negocio">
+              <strong>{{ solicitud.nombre_comercial }}</strong>
+              <span class="b2b-tabla__sub">{{ solicitud.usuario.email }}</span>
+            </td>
+            <td data-etiqueta="NIT o cédula">{{ solicitud.nit }}</td>
+            <td data-etiqueta="Ciudad">{{ solicitud.ciudad }}</td>
+            <td data-etiqueta="Estado">{% include "mayoristas/_etiqueta_estado.html" with estado=solicitud.estado %}</td>
+            <td class="b2b-tabla__accion">
+              <a class="btn btn--outline-gold b2b-btn-mini"
+                 href="{% url 'mayoristas:revision' solicitud.pk %}">
+                {% if solicitud.estado == 'PENDIENTE' %}Revisar{% else %}Ver ficha{% endif %}
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="b2b-tabla__vacio">
+              <p><strong>No hay solicitudes que mostrar.</strong></p>
+              <p>
+                {% if busqueda %}
+                  No encontramos coincidencias para «{{ busqueda }}».
+                  <a href="{% url 'mayoristas:bandeja' %}">Ver todas</a>.
+                {% elif estado_filtro %}
+                  No hay solicitudes en estado «{{ estado_filtro|lower }}».
+                  <a href="{% url 'mayoristas:bandeja' %}">Ver todas</a>.
+                {% else %}
+                  Cuando un cliente pida acceso al catálogo mayorista, su solicitud
+                  aparecerá aquí.
+                {% endif %}
+              </p>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
