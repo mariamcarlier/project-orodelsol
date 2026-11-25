@@ -16,6 +16,8 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 
+from .storage import almacenamiento_privado
+
 ESTADOS_ACTIVOS = ("PENDIENTE", "APROBADA")
 
 PATRON_NIT = re.compile(r"^\d{5,12}(-\d)?$")
@@ -187,128 +189,7 @@ class SolicitudMayorista(models.Model):
 # de datos. NO se siembra ningún porcentaje: el campo arranca en NULL y un
 # administrador lo define desde el panel. Mientras no haya porcentaje, el
 # sistema NO calcula nada y la pantalla lo dice (DEC-18).
-#
-# Por qué el porcentaje es NULL y no 0:
-#   ``0`` es un valor comercial válido («sin descuento»). Si se usara 0 para
-#   «no configurado», no habría forma de distinguir «este tramo no tiene
-#   descuento» de «este tramo está sin definir», y el catálogo mostraría un
-#   precio como si estuviera configurado cuando en realidad nadie lo decidió.
-
-
-class TramoPrecioReferencia(models.Model):
-    """Un rango de cantidad con su porcentaje de referencia (VM-16, JODS-110).
-
-    El porcentaje es opcional a propósito: mientras esté en NULL, el tramo
-    existe pero NO se aplica. Es la forma de que la estructura (los tres
-    rangos que acordó el negocio) exista sin inventar cifras comerciales.
-    """
-
-    class Alcance(models.TextChoices):
-        MAYORISTA = "MAYORISTA", "Mayorista"
-
-    nombre = models.CharField(
-        "nombre del tramo", max_length=60,
-        help_text="Cómo lo verá el equipo en el panel, por ejemplo «Medio mayorista».",
-    )
-    cantidad_minima = models.PositiveIntegerField(
-        "cantidad mínima",
-        help_text="Desde cuántas unidades aplica el tramo.",
-    )
-    cantidad_maxima = models.PositiveIntegerField(
-        "cantidad máxima", null=True, blank=True,
-        help_text=(
-            "Hasta cuántas unidades aplica. Déjalo vacío para «sin límite» "
-            "(el tramo de 60 o más)."
-        ),
-    )
-    porcentaje = models.DecimalField(
-        "porcentaje de referencia",
-        max_digits=5, decimal_places=2,
-        null=True, blank=True,
-        help_text=(
-            "Porcentaje que se muestra como referencia sobre el precio. "
-            "Déjalo vacío mientras no esté definido: sin porcentaje no se "
-            "calcula nada y no se inventa ninguna cifra."
-        ),
-    )
-    activo = models.BooleanField("activo", default=True)
-    creado_en = models.DateTimeField("creado en", auto_now_add=True)
-
-    class Meta:
-        ordering = ("cantidad_minima",)
-        verbose_name = "tramo de precio de referencia"
-        verbose_name_plural = "tramos de precio de referencia"
-        constraints = [
-            models.CheckConstraint(
-                condition=Q(cantidad_minima__gte=1),
-                name="tramo_cantidad_minima_positiva",
-            ),
-            models.CheckConstraint(
-                condition=Q(cantidad_maxima__isnull=True)
-                | Q(cantidad_maxima__gte=models.F("cantidad_minima")),
-                name="tramo_rango_coherente",
-            ),
-            models.CheckConstraint(
-                condition=Q(porcentaje__isnull=True)
-                | (Q(porcentaje__gte=0) & Q(porcentaje__lte=100)),
-                name="tramo_porcentaje_valido",
-            ),
-        ]
-
-    def __str__(self):
-        rango = (
-            f"{self.cantidad_minima}+"
-            if self.cantidad_maxima is None
-            else f"{self.cantidad_minima}–{self.cantidad_maxima}"
-        )
-        if self.porcentaje is None:
-            return f"{self.nombre} ({rango}, sin porcentaje)"
-        return f"{self.nombre} ({rango}, {self.porcentaje}%)"
-
-    @property
-    def configurado(self):
-        """True si el tramo tiene un porcentaje definido y puede aplicarse."""
-        return self.porcentaje is not None
-
-    @property
-    def rango_display(self):
-        """Texto del rango para pantalla: «10 – 29» o «60 o más»."""
-        if self.cantidad_maxima is None:
-            return f"{self.cantidad_minima} o más"
-        return f"{self.cantidad_minima} – {self.cantidad_maxima}"
-
-    def clean(self):
-        """Mensajes legibles; las restricciones de BD siguen detrás."""
-        errores = {}
-        if (
-            self.cantidad_maxima is not None
-            and self.cantidad_minima is not None
-            and self.cantidad_maxima < self.cantidad_minima
-        ):
-            errores["cantidad_maxima"] = (
-                "La cantidad máxima no puede ser menor que la mínima."
-            )
-        if self.porcentaje is not None and not (0 <= self.porcentaje <= 100):
-            errores["porcentaje"] = "El porcentaje debe estar entre 0 y 100."
-        if errores:
-            raise ValidationError(errores)
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# Días hábiles (RN-VM-06) · Calendario de festivos
-# ═══════════════════════════════════════════════════════════════════════
-# RN-VM-06 pide responder una cotización en 24–48 HORAS HÁBILES. «Hábil» no es «día de semana»: en Colombia hay festivos que caen en lunes y días que no cambian de fecha (Semana Santa). Por eso el cálculo necesita un calendario.
-
-# Los festivos NO se escriben en el código: se guardan en la base de datos, porque cambian cada año y quien debe poder corregirlos es el administrador, no un programador. La tabla arranca VACÍA y el cálculo, sin festivos cargados, solo descuenta fines de semana: es el comportamiento correctopara un año sin calendario, y la pantalla lo indica.
-
-
-class DiaNoHabil(models.Model):
-    """Un día que no cuenta como hábil (festivo o cierre) (RN-VM-06).
-
-    Solo los días que NO son sábado ni domingo necesitan estar aquí: el cálculo ya descuenta los fines de semana por su cuenta.
-    """
-
-    fecha = models.DateField("fecha", unique=True)
+@@ -328,24 +330,154 @@
     nombre = models.CharField(
         "nombre", max_length=120,
         help_text="Por ejemplo «Día de la Independencia» o «Cierre por inventario».",
@@ -333,3 +214,133 @@ class DiaNoHabil(models.Model):
                     )
                 }
             )
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# VM-19 (JODS-113) · Documentación del cliente mayorista
+# ═══════════════════════════════════════════════════════════════════════
+#
+# DEC-10: los documentos son sensibles y viven en almacenamiento PRIVADO. La
+# descarga pasa siempre por una vista con permisos; nunca hay una URL pública.
+# DEC-11: no se borran automáticamente. Si una persona vuelve a solicitar, sus
+# documentos anteriores siguen ahí como historial de lo que se revisó.
+# DEC-16: los tipos documentales son configurables y NO hay requisitos
+# obligatorios hasta que comercial los confirme. Por eso `TipoDocumento` no
+# trae datos sembrados y nada en el sistema exige tener documentos.
+# DEC-09: los carga el Administrador. El mayorista los consulta y descarga.
+
+
+class TipoDocumento(models.Model):
+    """Catálogo de tipos documentales (DEC-16), configurable en el panel.
+
+    Nace vacío: qué documentos se piden es una decisión comercial pendiente.
+    `obligatorio` existe para cuando se decida, pero **no está aplicado** en
+    ninguna validación todavía; dejarlo puesto con valor `False` y sin uso es
+    preferible a inventar una lista de requisitos.
+    """
+
+    nombre = models.CharField("nombre", max_length=80, unique=True)
+    descripcion = models.TextField("descripción", blank=True)
+    obligatorio = models.BooleanField(
+        "obligatorio",
+        default=False,
+        help_text=(
+            "Reservado para cuando comercial confirme qué documentos son "
+            "imprescindibles. Hoy no se exige ninguno."
+        ),
+    )
+    activo = models.BooleanField("activo", default=True)
+
+    class Meta:
+        ordering = ("nombre",)
+        verbose_name = "tipo de documento"
+        verbose_name_plural = "tipos de documento"
+
+    def __str__(self):
+        return self.nombre
+
+
+def ruta_documento_mayorista(instancia, nombre_original):
+    """`upload_to`: delega en el almacén privado (ver `mayoristas/storage.py`)."""
+    from .storage import ruta_documento
+
+    return ruta_documento(instancia, nombre_original)
+
+
+class DocumentoSolicitud(models.Model):
+    """Un archivo adjunto a una solicitud mayorista (VM-19, JODS-113).
+
+    Decisión de diseño: el documento se enlaza a la SOLICITUD, no al usuario.
+    Así, cuando alguien vuelve a solicitar tras un rechazo (DEC-08), los
+    documentos de la solicitud anterior quedan asociados a esa solicitud y no
+    se mezclan con los de la nueva. Es el historial que un revisor necesita.
+
+    El archivo NO tiene URL pública (DEC-10): `archivo.url` no es utilizable y
+    la descarga se hace por `mayoristas:descargar_documento`, que comprueba
+    permisos. No hay `on_delete=CASCADE` desde el tipo documental: borrar un
+    tipo no puede borrar documentos ya recibidos (DEC-11); se usa PROTECT.
+    """
+
+    solicitud = models.ForeignKey(
+        SolicitudMayorista,
+        on_delete=models.CASCADE,
+        related_name="documentos",
+        verbose_name="solicitud",
+    )
+    tipo = models.ForeignKey(
+        TipoDocumento,
+        on_delete=models.PROTECT,
+        related_name="documentos",
+        verbose_name="tipo de documento",
+        null=True,
+        blank=True,
+        help_text="Opcional mientras no haya tipos configurados (DEC-16).",
+    )
+    archivo = models.FileField(
+        "archivo",
+        upload_to=ruta_documento_mayorista,
+        storage=almacenamiento_privado,
+        max_length=255,
+    )
+    nombre_original = models.CharField("nombre original", max_length=255, blank=True)
+    descripcion = models.CharField("descripción", max_length=200, blank=True)
+    subido_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="documentos_subidos",
+        verbose_name="subido por",
+    )
+    subido_en = models.DateTimeField("subido en", auto_now_add=True)
+
+    class Meta:
+        ordering = ("-subido_en",)
+        verbose_name = "documento de solicitud"
+        verbose_name_plural = "documentos de solicitud"
+
+    def __str__(self):
+        return f"{self.nombre_original or 'documento'} · {self.solicitud_id}"
+
+    def save(self, *args, **kwargs):
+        """Guarda el nombre original la primera vez, para poder mostrarlo."""
+        if not self.nombre_original and self.archivo:
+            self.nombre_original = self.archivo.name.rsplit("/", 1)[-1][:255]
+        super().save(*args, **kwargs)
+
+    @property
+    def extension(self):
+        """Extensión en minúsculas, para el icono de la lista."""
+        nombre = self.nombre_original or (self.archivo.name if self.archivo else "")
+        return nombre.rsplit(".", 1)[-1].lower() if "." in nombre else ""
+
+    @property
+    def tamano_legible(self):
+        """Tamaño en KB o MB, para mostrarlo sin números largos."""
+        try:
+            bytes_archivo = self.archivo.size
+        except (OSError, ValueError):
+            return "—"
+        if bytes_archivo >= 1024 * 1024:
+            return f"{bytes_archivo / (1024 * 1024):.1f} MB"
+        return f"{max(bytes_archivo // 1024, 1)} KB"

@@ -359,3 +359,117 @@ class CatalogoMayoristaView(AccesoMayoristaMixin, TemplateView):
             }
         )
         return contexto
+    
+# ═══════════════════════════════════════════════════════════════════════
+# VM-19 (JODS-113) · Documentos de la solicitud
+# ═══════════════════════════════════════════════════════════════════════
+# Tres vistas, tres permisos distintos:
+#
+#   SubirDocumentoView    → solo ADMINISTRACIÓN (DEC-09).
+#   DocumentosSolicitudView → el dueño de la solicitud o administración.
+#   DescargarDocumentoView → el dueño de la solicitud o administración.
+#
+# DEC-10: NINGUNA de ellas construye una URL de archivo. La descarga lee del almacén privado y devuelve el contenido con `FileResponse`, así que el navegador nunca recibe una ruta que pueda reutilizar sin permiso.
+
+
+def _puede_ver_solicitud(usuario, solicitud):
+    """El dueño de la solicitud o alguien de administración."""
+    if usuario.rol_efectivo == "ADMIN":
+        return True
+    return solicitud.usuario_id == usuario.pk
+
+
+class DocumentosSolicitudView(LoginRequiredMixin, TemplateView):
+    """Lista los documentos de una solicitud con enlaces de descarga."""
+
+    template_name = "mayoristas/documentos.html"
+
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        solicitud = get_object_or_404(
+            SolicitudMayorista.objects.select_related("usuario"), pk=self.kwargs["pk"]
+        )
+        if not _puede_ver_solicitud(self.request.user, solicitud):
+            raise PermissionDenied("No tiene acceso a esta solicitud.")
+
+        from .models import TipoDocumento
+
+        contexto.update(
+            {
+                "solicitud": solicitud,
+                "documentos": solicitud.documentos.select_related("tipo", "subido_por"),
+                "tipos": TipoDocumento.objects.filter(activo=True),
+                "es_admin": self.request.user.rol_efectivo == "ADMIN",
+                "breadcrumbs": _migas_bandeja("Documentos"),
+            }
+        )
+        return contexto
+
+
+class DescargarDocumentoView(LoginRequiredMixin, View):
+    """Entrega un documento **solo** a quien puede ver su solicitud (DEC-10).
+
+    `FileResponse` sirve el archivo desde el almacén privado: el cliente recibe el contenido, nunca una ruta pública ni una URL firmada que pueda reenviar. `as_attachment=True` fuerza la descarga en vez de abrirlo en el navegador, para que un PDF con scripts no se ejecute en el dominio.
+    """
+
+    def get(self, request, pk):
+        from .models import DocumentoSolicitud
+
+        documento = get_object_or_404(
+            DocumentoSolicitud.objects.select_related("solicitud"), pk=pk
+        )
+        if not _puede_ver_solicitud(request.user, documento.solicitud):
+            raise PermissionDenied("No tiene acceso a este documento.")
+
+        if not documento.archivo:
+            raise Http404("El documento no tiene archivo.")
+
+        try:
+            archivo = documento.archivo.open("rb")
+        except FileNotFoundError as exc:
+            # El registro existe pero el archivo no: pasa si se restauró la
+            # base de datos sin el volumen privado. Se dice tal cual en vez de
+            # devolver un 500 opaco.
+            raise Http404(
+                "El archivo no está disponible en el almacenamiento."
+            ) from exc
+
+        nombre = documento.nombre_original or documento.archivo.name.rsplit("/", 1)[-1]
+        respuesta = FileResponse(archivo, as_attachment=True, filename=nombre)
+        return respuesta
+
+
+class SubirDocumentoView(BandejaPermissionMixin, View):
+    """Subida de un documento. **Solo administración** (DEC-09).
+
+    El mayorista no puede subir nada: si falta un papel, lo pide a su asesor y es administración quien lo adjunta. Es la misma regla que ya rige la revisión de solicitudes y evita que alguien se autoapruebe adjuntando un archivo.
+
+    GET no existe: se devuelve 405 porque la subida solo tiene sentido como POST con CSRF.
+    """
+
+    def post(self, request, pk):
+        from .models import TipoDocumento
+
+        solicitud = get_object_or_404(SolicitudMayorista, pk=pk)
+        archivo = request.FILES.get("archivo")
+        tipo_id = request.POST.get("tipo") or None
+        descripcion = request.POST.get("descripcion", "")
+
+        tipo = None
+        if tipo_id:
+            tipo = TipoDocumento.objects.filter(pk=tipo_id, activo=True).first()
+
+        documento, errores = servicios.adjuntar_documento(
+            solicitud,
+            archivo,
+            tipo=tipo,
+            descripcion=descripcion,
+            usuario=request.user,
+        )
+        if errores:
+            messages.error(request, " ".join(errores))
+        else:
+            messages.success(
+                request, f"Documento «{documento.nombre_original}» adjuntado."
+            )
+        return redirect("mayoristas:documentos", pk=solicitud.pk)

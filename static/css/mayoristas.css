@@ -639,3 +639,82 @@
 .b2b-catalogo .product-card__media {
   position: relative;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   VM-19 (JODS-113) · Documentos
+   ═══════════════════════════════════════════════════════════════ */
+
+.b2b-doc__nombre {
+  display: block;
+  color: var(--color-text-dark);
+  font-size: 13px;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.b2b-doc__desc {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.b2b-doc__num {
+  color: var(--color-text-mid);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.b2b-doc__bajar {
+  color: var(--color-cacao);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.b2b-doc__bajar:hover { color: var(--color-oro-borde); }
+
+/* Mensajes flash del módulo */
+.b2b-mensajes {
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+}
+
+.b2b-mensajes__item {
+  margin-bottom: 8px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--color-oro-borde);
+  border-radius: var(--radius-sm);
+  background: var(--color-ivory);
+  color: var(--color-text-dark);
+  font-size: 13px;
+}
+
+.b2b-mensajes__item--error {
+  border-left-color: #a33;
+  background: #fdf0f0;
+}
+
+.b2b-mensajes__item--success {
+  border-left-color: #3a7a4a;
+  background: #f0f7f1;
+}
+
+.b2b-field__hint {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.b2b-field__opcional {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.b2b-documentos .data-table-wrapper {
+  overflow-x: auto;
+}

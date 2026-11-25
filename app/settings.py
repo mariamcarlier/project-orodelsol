@@ -187,6 +187,12 @@ STORAGES = {
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Documentos privados del canal mayorista (VM-19, DEC-10). Directorio HERMANO de MEDIA_ROOT y fuera de MEDIA_URL: nada de lo que se guarde aquí se sirve por URL. La descarga pasa por una vista que comprueba permisos (ver mayoristas/storage.py).
+PRIVATE_MEDIA_ROOT = Path(os.getenv("PRIVATE_MEDIA_ROOT", BASE_DIR / "media-privado"))
+
+# Tamaño máximo de un documento que sube el administrador (10 MB). Un RUT o una Cámara de Comercio en PDF no llegan ni a 2 MB; el tope evita que alguien llene el disco con un archivo enorme.
+DOCUMENTO_MAX_BYTES = 10 * 1024 * 1024
+
 # ENVIO DE CORREOS ELECTRÓNICOS (FORZADO A SMTP GMAIL)
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
@@ -211,4 +217,3 @@ CSRF_COOKIE_SECURE = False
 
 # Optimización para pruebas (tests)
 if "test" in sys.argv:
-    PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
