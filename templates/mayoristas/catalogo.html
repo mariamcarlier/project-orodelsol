@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% comment %}
+  VM-03 · Catálogo mayorista (JODS-97).
+
+  Reglas que esta pantalla hace visibles:
+
+  - DEC-01: solo aparecen piezas con al menos una variante activa con stock.
+    Un producto agotado no se enseña «en fabricación» ni con un aviso de
+    llegada: simplemente no está.
+  - DEC-03: TODO precio va seguido de «Precio de referencia — sujeto a
+    cotización». Sin esa aclaración, un precio B2B parecería una oferta en
+    firme y no lo es.
+  - DEC-18: si no hay tramos con porcentaje configurado, se dice «Tramos
+    pendientes de configuración» y NO se muestra ningún descuento calculado.
+
+  El precio de cada tarjeta es «Desde»: el menor precio final de sus
+  variantes disponibles. La cifra viene de `precio_desde`, calculada en el
+  selector con la misma fórmula que `VarianteProducto.precio_final`.
+
+  Estilos: se reutilizan `.product-card` de catalogo.css, que es la tarjeta
+  que ya usa la tienda, y las fichas `.b2b-card` del módulo. No se define una
+  tarjeta nueva.
+{% endcomment %}
+
+{% block title %}Catálogo mayorista | Joyas Oro del Sol{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/catalogo.css' %}?v=4">
+<link rel="stylesheet" href="{% static 'css/mayoristas.css' %}?v=3">
+{% endblock %}
+
+{% block content %}
+<section class="b2b-page b2b-catalogo" aria-labelledby="b2b-catalogo-title">
+
+  <div class="b2b-page__intro">
+    <span class="eyebrow">Canal mayorista</span>
+    <h1 id="b2b-catalogo-title" class="heading">Catálogo <em>mayorista</em></h1>
+    <p class="body-text">
+      Piezas disponibles para distribución. Los precios son de referencia:
+      cada pedido se cotiza según cantidades y condiciones.
+    </p>
+  </div>
+
+  {% include "mayoristas/_migas.html" %}
+
+  {% comment %}
+    Aviso permanente de DEC-03. Va ARRIBA, antes de cualquier cifra, para que
+    nadie lea un precio sin haber leído antes la aclaración.
+  {% endcomment %}
+  <p class="b2b-aviso b2b-aviso--referencia" role="note">
+    <strong>Precio de referencia — sujeto a cotización.</strong>
+    Ningún precio de esta página es una oferta en firme.
+  </p>
+
+  {% comment %}
+    DEC-18: sin porcentajes configurados no se calcula nada. Se dice de forma
+    explícita en lugar de esconder la sección, porque el equipo necesita saber
+    que falta configuración y no que el catálogo no tiene tramos.
+  {% endcomment %}
+  {% if not hay_tramos %}
+    <p class="b2b-aviso b2b-aviso--pendiente" role="note">
+      <strong>Tramos pendientes de configuración.</strong>
+      No se aplica ningún descuento por cantidad hasta que se definan los
+      porcentajes en el panel de administración.
+    </p>
+  {% else %}
+    <div class="b2b-tramos">
+      <h2 class="b2b-tramos__title">Descuentos por cantidad</h2>
+      <ul class="b2b-tramos__lista">
+        {% for tramo in tramos %}
+          <li>
+            <span class="b2b-tramos__rango">{{ tramo.rango_display }} u.</span>
+            {% if tramo.porcentaje is not None %}
+              <span class="b2b-tramos__pct">{{ tramo.porcentaje|floatformat:"-2" }} %</span>
+            {% else %}
+              <span class="b2b-tramos__sin">Sin definir</span>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="b2b-card__note">{{ referencia_aviso|default:"" }}</p>
+    </div>
+  {% endif %}
+
+  <form class="b2b-buscar" method="get" action="{% url 'mayoristas:catalogo' %}" role="search">
+    <label for="b2b-catalogo-q">Buscar en el catálogo</label>
+    <div class="b2b-buscar__fila">
+      <input id="b2b-catalogo-q" type="search" name="q" value="{{ busqueda }}"
+             placeholder="Nombre, colección o detalle" autocomplete="off">
+      <button class="btn btn--primary" type="submit">Buscar</button>
+      {% if busqueda %}
+        <a class="b2b-buscar__limpiar" href="{% url 'mayoristas:catalogo' %}">Limpiar</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <p class="catalog-results__count" aria-live="polite">
+    {{ total }} pieza{{ total|pluralize:"s" }} disponible{{ total|pluralize:"s" }}
+    {% if busqueda %}para «{{ busqueda }}»{% endif %}
+  </p>
+
+  {% if productos %}
+    <div class="products-grid catalog-grid">
+      {% for producto in productos %}
+        <article class="product-card">
+          <div class="product-card__media">
+            {% if producto.imagen_url %}
+              <img src="{{ producto.imagen_url }}" alt="{{ producto.nombre }}" loading="lazy">
+            {% else %}
+              <img src="{% static 'img/coleccion-almadorada.webp' %}" alt="{{ producto.nombre }}" loading="lazy">
+            {% endif %}
+            <span class="b2b-card__badge">
+              {{ producto.variantes_disponibles }} variante{{ producto.variantes_disponibles|pluralize:"s" }}
+            </span>
+          </div>
+          <div class="product-card__info">
+            <span class="product-card__label">
+              {{ producto.detalle }}{% if producto.coleccion %} · {{ producto.coleccion.nombre }}{% endif %}
+            </span>
+            <h2 class="product-card__name">{{ producto.nombre }}</h2>
+            <p class="product-card__price">
+              <span class="b2b-desde">Desde</span>
+              <strong>COP ${{ producto.precio_desde|floatformat:0 }}</strong>
+            </p>
+            <p class="b2b-referencia">Precio de referencia — sujeto a cotización</p>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    {% comment %}
+      Estado vacío honesto. Puede pasar por dos motivos muy distintos y se
+      dicen los dos: no hay coincidencias, o no hay stock. NUNCA se sugiere
+      «en fabricación» ni se promete disponibilidad.
+    {% endcomment %}
+    <div class="b2b-card b2b-card--empty">
+      <h2 class="b2b-card__title">No hay piezas para mostrar</h2>
+      <p class="b2b-card__text">
+        {% if busqueda %}
+          No encontramos piezas que coincidan con «{{ busqueda }}».
+          <a href="{% url 'mayoristas:catalogo' %}">Ver todo el catálogo</a>.
+        {% else %}
+          En este momento no hay piezas con existencias disponibles para el
+          canal mayorista. El catálogo se actualiza a medida que se repone el
+          inventario.
+        {% endif %}
+      </p>
+    </div>
+  {% endif %}
+
+  <p class="b2b-page__back">
+    <a href="{% url 'mayoristas:mi_solicitud' %}">Ver el estado de mi cuenta</a>
+  </p>
+</section>
+{% endblock %}

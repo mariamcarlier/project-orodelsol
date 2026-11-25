@@ -27,4 +27,10 @@ urlpatterns = [
         views.RechazarSolicitudView.as_view(),
         name="rechazar",
     ),
+    # ── VM-03 (JODS-97): catálogo mayorista ──
+    path(
+        "catalogo/",
+        views.CatalogoMayoristaView.as_view(),
+        name="catalogo",
+    ),
 ]

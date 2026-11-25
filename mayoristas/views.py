@@ -31,7 +31,7 @@ normal que solo tenga esos dos. La decisión nunca toca `is_staff` ni
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import Http404
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -323,3 +323,64 @@ class RechazarSolicitudView(BandejaPermissionMixin, View):
                 "Le enviamos el motivo a su correo.",
             )
         return redirect("mayoristas:revision", pk=pk)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# VM-03 (JODS-97) · Catálogo mayorista
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Solo entra quien tiene acceso B2B: rol MAYORISTA aprobado o administración.
+# Un CLIENTE no ve precios de referencia ni la existencia del catálogo: recibe
+# 403, no un catálogo vacío, para que no parezca que la tienda está sin
+# producto.
+#
+# DEC-03: CADA precio que se enseña va acompañado de «Precio de referencia —
+# sujeto a cotización». No es un detalle de diseño: es la regla de negocio.
+
+class AccesoMayoristaMixin(LoginRequiredMixin):
+    """Exige sesión y acceso B2B (rol MAYORISTA o cuenta de administración).
+
+    Se comprueba con `rol_efectivo`, que ya resuelve el caso del superusuario
+    creado con `createsuperuser` (queda en CLIENTE pero cuenta como ADMIN).
+    """
+
+    raise_exception = False
+    permission_denied_message = (
+        "Esta sección es solo para cuentas mayoristas aprobadas."
+    )
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        if request.user.rol_efectivo not in ("MAYORISTA", "ADMIN"):
+            raise PermissionDenied(self.permission_denied_message)
+        return super().dispatch(request, *args, **kwargs)
+
+
+class CatalogoMayoristaView(AccesoMayoristaMixin, TemplateView):
+    """Listado de productos disponibles para mayoristas (DEC-01).
+
+    El aviso de «Tramos pendientes de configuración» (DEC-18) se resuelve aquí
+    y no en la plantilla: la plantilla no debe saber si hay tramos, solo
+    pintar lo que recibe.
+    """
+
+    template_name = "mayoristas/catalogo.html"
+
+    def get_context_data(self, **kwargs):
+        contexto = super().get_context_data(**kwargs)
+        busqueda = self.request.GET.get("q", "").strip()
+        productos = selectors.catalogo_mayorista(busqueda)
+        from mayoristas import selectors as _selectors
+
+        contexto.update(
+            {
+                "productos": productos,
+                "busqueda": busqueda,
+                "total": productos.count(),
+                "tramos": _selectors.tramos_de_referencia(),
+                "hay_tramos": _selectors.hay_tramos_configurados(),
+                "breadcrumbs": _migas_bandeja("Catálogo mayorista"),
+            }
+        )
+        return contexto

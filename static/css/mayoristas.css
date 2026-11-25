@@ -530,3 +530,114 @@
     justify-content: center;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   VM-03 (JODS-97) · Catálogo mayorista
+   ═══════════════════════════════════════════════════════════════
+
+   Se apoya en `.product-card` de catalogo.css (la tarjeta de la tienda) y
+   solo añade lo propio del canal B2B: los avisos de referencia y de tramos
+   pendientes, el «Desde» y la etiqueta de variantes. */
+
+.b2b-aviso--referencia {
+  border-left-color: var(--color-oro-borde);
+  background: var(--color-ivory);
+}
+
+.b2b-aviso--referencia strong {
+  color: var(--color-cacao);
+}
+
+/* DEC-18: aviso visible, no un gris que se ignore. */
+.b2b-aviso--pendiente {
+  border-left-color: #b8860b;
+  background: #fdf6e3;
+}
+
+.b2b-aviso--pendiente strong {
+  color: #7a5c14;
+}
+
+/* ── Tramos de descuento ──────────────────────────────────────── */
+.b2b-tramos {
+  margin: 18px 0 26px;
+  padding: 16px 18px;
+  border: 1px solid rgba(196, 174, 136, .6);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+}
+
+.b2b-tramos__title {
+  margin: 0 0 10px;
+  color: var(--color-text-dark);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.b2b-tramos__lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.b2b-tramos__lista li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 13px;
+}
+
+.b2b-tramos__rango {
+  color: var(--color-text-mid);
+  font-variant-numeric: tabular-nums;
+}
+
+.b2b-tramos__pct {
+  color: var(--color-cacao);
+  font-weight: 600;
+}
+
+.b2b-tramos__sin {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-style: italic;
+}
+
+/* ── Tarjeta: «Desde» y aviso de referencia ──────────────────── */
+.b2b-desde {
+  display: block;
+  margin-bottom: 1px;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.b2b-referencia {
+  margin: 6px 0 0;
+  color: var(--color-text-muted);
+  font-size: 10.5px;
+  line-height: 1.4;
+}
+
+/* Etiqueta de variantes sobre la imagen. */
+.b2b-card__badge {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  padding: 4px 9px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, .92);
+  color: var(--color-text-mid);
+  font-size: 10px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.b2b-catalogo .product-card__media {
+  position: relative;
+}
