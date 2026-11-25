@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% comment %}
+  VM-02 · Bandeja de solicitudes de acceso mayorista (JODS-96).
+
+  Pantalla de trabajo, no de escaparate: quien entra aquí viene a decidir.
+  Por eso el orden es el de la cola (más antigua primero: la que lleva más
+  tiempo esperando) y no el del catálogo.
+
+  Jerarquía:
+    1. Cifras por estado (pestañas) — dan el tamaño de la cola de un vistazo.
+    2. Buscador — para localizar un NIT o una joyería concreta.
+    3. Tabla — la cola en sí.
+
+  Los filtros van por GET y en la propia URL: se pueden marcar, compartir y recargar sin perder el contexto. Las acciones de decisión NO están aquí: se hacen en la ficha, para que no se apruebe por error desde una tabla.
+
+  Estilos: dashboard.css y dashboard-enhancements.css, que ya usa el panel del proyecto (.data-table, .dashboard-section). No se inventa una tabla nueva.
+{% endcomment %}
+
+{% block title %}Solicitudes de mayoristas | Joyas Oro del Sol{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=6">
+<link rel="stylesheet" href="{% static 'css/dashboard-enhancements.css' %}?v=6">
+<link rel="stylesheet" href="{% static 'css/mayoristas.css' %}?v=3">
+{% endblock %}
+
+{% block content %}

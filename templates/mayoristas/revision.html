@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% comment %}
+  VM-02 · Ficha de revisión de una solicitud mayorista (JODS-96).
+
+  Esta es la pantalla donde se decide. Reglas de la interfaz:
+
+  - Si la solicitud ya está decidida, NO se muestran botones: el servicio rechazaría la acción (DEC-08) y un botón que siempre falla es peor que no tenerlo.
+  - «Aprobar» y «Rechazar» son POST con su propia ruta, nunca enlaces: un GET no puede cambiar el estado (DEC-06).
+  - «Rechazar» abre el campo de motivo; el motivo es obligatorio y se ve tal como lo va a leer el cliente, porque se le manda por correo.
+  - Quien solo tiene permiso de VER entra sin botones; el backend lo vuelve a omprobar aunque alguien fabricase el formulario a mano.
+
+  Los datos se presentan con `.b2b-datos`, la misma rejilla que usa el cliente en «Mi solicitud», para que las dos partes vean lo mismo.
+{% endcomment %}
+
+{% block title %}Revisar solicitud | Joyas Oro del Sol{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/registrar.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'css/mayoristas.css' %}?v=3">
+{% endblock %}
+
+{% block content %}
+<section class="b2b-page" aria-labelledby="b2b-revision-title">
+
+  <div class="b2b-page__intro">
+    <span class="eyebrow">Verificación de acceso mayorista</span>
+    <h1 id="b2b-revision-title" class="heading">Solicitud de <em>{{ solicitud.nombre_comercial }}</em></h1>
+    <p class="body-text">
+      Enviada el {{ solicitud.creado_en|date:"d/m/Y" }} a las {{ solicitud.creado_en|date:"H:i" }}.
+      Comprueba que los datos coinciden con el negocio antes de decidir.
+    </p>
+  </div>
+
+  {% include "mayoristas/_migas.html" %}
+
+  {% if messages %}
+    <div class="register-alerts" aria-live="polite">
+      {% for message in messages %}
+        <div class="register-alert register-alert--{{ message.tags }}" role="alert">
+          <span class="register-alert__icon" aria-hidden="true">{% if message.tags == 'success' %}✓{% else %}!{% endif %}</span>
+          <span>{{ message }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {# ── Estado actual ── #}
+  <div class="b2b-card">
+    <header class="b2b-card__header">
+      <div>
+        <h2 class="b2b-card__title">Estado de la solicitud</h2>
+        <p class="b2b-card__meta">
+          {% if solicitud.revisado_por %}
+            Revisada por {{ solicitud.revisado_por.nombre_visible }}
+            el {{ solicitud.revisado_en|date:"d/m/Y" }}
+          {% else %}
+            Aún sin revisar
+          {% endif %}
+        </p>
+      </div>
+      {% include "mayoristas/_etiqueta_estado.html" with estado=solicitud.estado %}
+    </header>
+
+    {% if solicitud.estado == 'APROBADA' %}
+      <p class="b2b-card__text">
+        La cuenta <strong>{{ solicitud.usuario.email }}</strong> tiene el rol
+        mayorista desde el {{ solicitud.revisado_en|date:"d/m/Y" }}.
+      </p>
+      {% if solicitud.usuario.rol != 'MAYORISTA' %}
+        <p class="b2b-card__note">
+          Nota: el autor de esta solicitud es una cuenta de administración, así que
+          no se le cambió el rol.
+        </p>
+      {% endif %}
+    {% elif solicitud.estado == 'RECHAZADA' %}
+      <p class="b2b-card__text">Esta solicitud fue rechazada.</p>
+      {% if solicitud.motivo_rechazo %}
+        <div class="b2b-aviso b2b-aviso--rechazo">
+          <span class="b2b-aviso__label">Motivo enviado al cliente</span>
+          <p>{{ solicitud.motivo_rechazo|linebreaksbr }}</p>
+        </div>
+      {% endif %}
+      <p class="b2b-card__note">
+        El cliente puede volver a solicitar con el mismo NIT: el rechazo no ocupa
+        el NIT ni la cuenta.
+      </p>
+    {% else %}
+      <p class="b2b-card__text">
+        Al aprobar, la cuenta pasa a tener el rol <strong>Mayorista</strong> y la
+        persona recibe un correo de confirmación. Al rechazar, se le envía el motivo
+        que escribas y puede volver a solicitar.
+      </p>
+    {% endif %}
+  </div>
+
+  {# ── Datos declarados ── #}
+  <div class="b2b-card b2b-card--datos">
+    <h2 class="b2b-card__title">Datos declarados</h2>
+    <dl class="b2b-datos">
+      <div class="b2b-datos__item">
+        <dt>Tipo de persona</dt>
+        <dd>{{ solicitud.get_tipo_persona_display }}</dd>
+      </div>
+      <div class="b2b-datos__item">
+        <dt>NIT o cédula</dt>
+        <dd>{{ solicitud.nit }}</dd>
+      </div>
+      <div class="b2b-datos__item">
+        <dt>Nombre comercial</dt>
+        <dd>{{ solicitud.nombre_comercial }}</dd>
+      </div>
+      <div class="b2b-datos__item">
+        <dt>Representante legal</dt>
+        <dd>{{ solicitud.representante_legal }}</dd>
+      </div>
+      <div class="b2b-datos__item">
+        <dt>Ciudad</dt>
+        <dd>{{ solicitud.ciudad }}</dd>
+      </div>
+      <div class="b2b-datos__item">
+        <dt>Teléfono</dt>
+        <dd>{{ solicitud.telefono }}</dd>
+      </div>
+      <div class="b2b-datos__item">
+        <dt>Correo de contacto</dt>
+        <dd>{{ solicitud.correo }}</dd>
+      </div>
+      {% if solicitud.canal_venta %}
+        <div class="b2b-datos__item">
+          <dt>Dónde vende</dt>
+          <dd>{{ solicitud.canal_venta }}</dd>
+        </div>
+      {% endif %}
+      {% if solicitud.referido %}
+        <div class="b2b-datos__item">
+          <dt>Referido por</dt>
+          <dd>{{ solicitud.referido }}</dd>
+        </div>
+      {% endif %}
+      <div class="b2b-datos__item">
+        <dt>Cuenta del solicitante</dt>
+        <dd>{{ solicitud.usuario.get_username }} · {{ solicitud.usuario.email }}</dd>
+      </div>
+      <div class="b2b-datos__item">
+        <dt>Rol actual de la cuenta</dt>
+        <dd>{{ solicitud.usuario.tipo_cuenta }}</dd>
+      </div>
+    </dl>
+    <p class="b2b-card__note">
+      El aviso de la decisión se envía a <strong>{{ solicitud.usuario.email }}</strong>,
+      el correo de la cuenta. El «correo de contacto» de arriba se muestra solo como
+      dato declarado: no está verificado y no se usa para notificar.
+    </p>
+  </div>
+
+  {# ── Acciones ── #}
+  {% if puede_decidir %}
+    <div class="b2b-acciones">
+      <h2 class="b2b-card__title">Decidir</h2>
+
+      <form method="post" action="{% url 'mayoristas:aprobar' solicitud.pk %}" class="b2b-acciones__bloque">
+        {% csrf_token %}
+        <button class="btn btn--primary" type="submit">
+          Aprobar acceso <span aria-hidden="true">✓</span>
+        </button>
+        <p class="b2b-card__note">
+          Habilita el catálogo mayorista y avisa a la persona por correo.
+        </p>
+      </form>
+
+      <details class="b2b-acciones__bloque" {% if form_rechazo.errors %}open{% endif %}>
+        <summary class="b2b-acciones__resumen">Rechazar esta solicitud</summary>
+        <form method="post" action="{% url 'mayoristas:rechazar' solicitud.pk %}">
+          {% csrf_token %}
+          {% if form_rechazo.non_field_errors %}
+            <div class="register-alert register-alert--error" role="alert">
+              <span class="register-alert__icon" aria-hidden="true">!</span>
+              <span>{{ form_rechazo.non_field_errors|striptags }}</span>
+            </div>
+          {% endif %}
+          <div class="register-field{% if form_rechazo.motivo.errors %} register-field--invalid{% endif %}">
+            <label for="{{ form_rechazo.motivo.id_for_label }}">
+              {{ form_rechazo.motivo.label }}<span aria-hidden="true"> *</span>
+            </label>
+            {{ form_rechazo.motivo }}
+            {% if form_rechazo.motivo.help_text %}
+              <p class="register-field__help">{{ form_rechazo.motivo.help_text }}</p>
+            {% endif %}
+            {% for error in form_rechazo.motivo.errors %}
+              <p class="register-field__error" role="alert">{{ error }}</p>
+            {% endfor %}
+          </div>
+          <button class="btn btn--outline-gold" type="submit">
+            Rechazar y notificar
+          </button>
+        </form>
+      </details>
+    </div>
+  {% elif puede_gestionar and solicitud.estado != 'PENDIENTE' %}
+    <p class="b2b-card__note b2b-acciones__nota">
+      Esta solicitud ya fue revisada. Las decisiones no se repiten: si el negocio
+      necesita volver a intentarlo, debe enviar una solicitud nueva.
+    </p>
+  {% endif %}
+
+  {# ── Siguiente de la cola ──
+     Tras decidir, la persona no tiene que volver a la bandeja para seguir
+     con la siguiente: el POST redirige aquí y la cola queda debajo. Se
+     atenúa para que no compita con la ficha, que es el foco de la pantalla. #}
+  {% if solicitudes %}
+    <section class="b2b-siguientes" aria-labelledby="b2b-siguientes-title">
+      <h2 id="b2b-siguientes-title" class="b2b-card__title">Cola de solicitudes</h2>
+      {% include "mayoristas/_tabla_solicitudes.html" %}
+    </section>
+  {% endif %}
+
+  <p class="b2b-page__back">
+    <a href="{% url 'mayoristas:bandeja' %}">← Volver a la bandeja</a>
+  </p>
+</section>
+{% endblock %}
