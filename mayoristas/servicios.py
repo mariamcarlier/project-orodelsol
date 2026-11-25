@@ -300,3 +300,117 @@ def precio_con_tramo(precio_base, cantidad):
         ),
         "calculado": True,
     }
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# VM-19 (JODS-113) · Documentos
+# ═══════════════════════════════════════════════════════════════════════
+#
+# DEC-09: sube el Administrador; el mayorista solo consulta y descarga.
+# DEC-10: el archivo va al almacén privado, nunca a MEDIA_ROOT.
+#
+# La validación vive aquí y no en el formulario porque una misma regla tiene
+# que valer también si mañana se sube desde la API o desde un comando. El
+# formulario además la llama, para dar el error en el campo.
+
+EXTENSIONES_PERMITIDAS = {"pdf", "jpg", "jpeg", "png", "webp"}
+
+
+def extension_de(nombre):
+    """Extensión en minúsculas sin el punto, o cadena vacía."""
+    from pathlib import Path
+
+    return Path(nombre or "").suffix.lower().lstrip(".")
+
+
+def validar_documento(archivo):
+    """Valida extensión, tamaño y que el archivo no venga vacío.
+
+    Devuelve una lista de errores legibles. Lista vacía = válido.
+
+    Por qué extensión y no MIME: el `content_type` lo pone el navegador y se
+    puede falsear; la extensión no impide un archivo malicioso, pero el
+    almacén es privado y solo el administrador sube, así que el riesgo real
+    aquí es operativo (que no se pueda abrir), no un ataque. Se rechaza lo
+    que no se pueda revisar.
+    """
+    from django.conf import settings
+
+    errores = []
+    if archivo is None:
+        return ["No se recibió ningún archivo."]
+
+    extension = extension_de(getattr(archivo, "name", ""))
+    if extension not in EXTENSIONES_PERMITIDAS:
+        permitidas = ", ".join(sorted(EXTENSIONES_PERMITIDAS))
+        errores.append(
+            f"Formato «{extension or 'sin extensión'}» no admitido. "
+            f"Se aceptan: {permitidas}."
+        )
+
+    limite = getattr(settings, "DOCUMENTO_MAX_BYTES", 10 * 1024 * 1024)
+    tamano = getattr(archivo, "size", 0) or 0
+    if tamano == 0:
+        errores.append("El archivo está vacío.")
+    elif tamano > limite:
+        errores.append(
+            f"El archivo pesa {tamano / (1024 * 1024):.1f} MB y el máximo es "
+            f"{limite / (1024 * 1024):.0f} MB."
+        )
+    return errores
+
+
+@transaction.atomic
+def adjuntar_documento(solicitud, archivo, *, tipo=None, descripcion="", usuario=None):
+    """Adjunta un documento a una solicitud. **Solo lo llama el Administrador.**
+
+    El control de quién puede llamarlo está en la vista (`SoloAdministrador`).
+    Aquí se valida el archivo y se crea el registro. `usuario` se guarda como
+    autor para que quede rastro de quién subió qué, que es lo que se necesita
+    el día que se audite una solicitud.
+
+    Returns:
+        (documento, errores). Si hay errores, `documento` es None y no se
+        escribe nada en disco ni en base de datos.
+    """
+    from .models import DocumentoSolicitud
+
+    errores = validar_documento(archivo)
+    if errores:
+        return None, errores
+
+    documento = DocumentoSolicitud.objects.create(
+        solicitud=solicitud,
+        tipo=tipo,
+        archivo=archivo,
+        nombre_original=getattr(archivo, "name", "")[:255],
+        descripcion=(descripcion or "").strip()[:200],
+        subido_por=usuario,
+    )
+    return documento, []
+
+
+@transaction.atomic
+def eliminar_documento(documento, usuario=None):
+    """Baja de un documento: borra el registro y el archivo del almacén.
+
+    DEC-11 prohíbe el borrado AUTOMÁTICO, no el manual y deliberado. Esto se
+    usa cuando el administrador retira un archivo equivocado (subió el del
+    cliente que no era). Queda constancia en el log de Django; no hay borrado
+    en cascada desde ningún otro sitio.
+    """
+    if not documento.archivo:
+        documento.delete()
+        return
+
+    # Se borra con el storage DEL CAMPO, no con el global: así funciona igual
+    # en producción y en las pruebas, que apuntan a un directorio temporal.
+    storage = documento.archivo.storage
+    nombre = documento.archivo.name
+    documento.delete()
+    try:
+        storage.delete(nombre)
+    except OSError:
+        # El registro ya no está; si el archivo físico ya no existía, no es un
+        # error que deba romper la operación.
+        pass

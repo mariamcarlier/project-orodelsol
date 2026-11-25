@@ -33,4 +33,20 @@ urlpatterns = [
         views.CatalogoMayoristaView.as_view(),
         name="catalogo",
     ),
+    # ── VM-19 (JODS-113): documentos de la solicitud ──
+    path(
+        "bandeja/<int:pk>/documentos/",
+        views.DocumentosSolicitudView.as_view(),
+        name="documentos",
+    ),
+    path(
+        "bandeja/<int:pk>/documentos/subir/",
+        views.SubirDocumentoView.as_view(),
+        name="subir_documento",
+    ),
+    path(
+        "documentos/<int:pk>/descargar/",
+        views.DescargarDocumentoView.as_view(),
+        name="descargar_documento",
+    ),
 ]

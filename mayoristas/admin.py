@@ -12,8 +12,16 @@ rechazar sin motivo, re-revisar una decisión tomada).
 """
 
 from django.contrib import admin
+from django.urls import reverse
+from django.utils.html import format_html
 
-from .models import DiaNoHabil, SolicitudMayorista, TramoPrecioReferencia
+from .models import (
+    DiaNoHabil,
+    DocumentoSolicitud,
+    SolicitudMayorista,
+    TipoDocumento,
+    TramoPrecioReferencia,
+)
 
 
 @admin.register(SolicitudMayorista)
@@ -110,3 +118,46 @@ class DiaNoHabilAdmin(admin.ModelAdmin):
     ordering = ("fecha",)
     search_fields = ("nombre",)
     date_hierarchy = "fecha"
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# VM-19 (JODS-113) · Tipos de documento y documentos
+# ═══════════════════════════════════════════════════════════════════════
+
+
+@admin.register(TipoDocumento)
+class TipoDocumentoAdmin(admin.ModelAdmin):
+    """Tipos documentales (DEC-16). El administrador los crea cuando los
+    defina comercial; no se siembra ninguno."""
+
+    list_display = ("nombre", "obligatorio", "activo", "documentos_recibidos")
+    list_filter = ("obligatorio", "activo")
+    list_editable = ("obligatorio", "activo")
+    search_fields = ("nombre", "descripcion")
+
+    @admin.display(description="Documentos recibidos")
+    def documentos_recibidos(self, obj):
+        return obj.documentos.count()
+
+
+@admin.register(DocumentoSolicitud)
+class DocumentoSolicitudAdmin(admin.ModelAdmin):
+    """Documentos adjuntos.
+
+    El archivo NO es un enlace a un medio público: `descargar` apunta a la
+    vista autorizada, para que ni siquiera desde el admin se genere una URL
+    servible del almacén privado (DEC-10).
+    """
+
+    list_display = ("nombre_original", "solicitud", "tipo", "subido_en", "descargar")
+    list_filter = ("tipo", "subido_en")
+    search_fields = ("nombre_original", "descripcion", "solicitud__nombre_comercial")
+    readonly_fields = ("nombre_original", "subido_por", "subido_en", "descargar")
+    autocomplete_fields = ("solicitud",)
+
+    @admin.display(description="Archivo")
+    def descargar(self, obj):
+        if not obj.pk:
+            return "—"
+        url = reverse("mayoristas:descargar_documento", args=[obj.pk])
+        return format_html('<a href="{}">Descargar</a>', url)

@@ -24,6 +24,8 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 
+from .storage import almacenamiento_privado
+
 ESTADOS_ACTIVOS = ("PENDIENTE", "APROBADA")
 
 PATRON_NIT = re.compile(r"^\d{5,12}(-\d)?$")
@@ -349,3 +351,133 @@ class DiaNoHabil(models.Model):
                     )
                 }
             )
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# VM-19 (JODS-113) · Documentación del cliente mayorista
+# ═══════════════════════════════════════════════════════════════════════
+#
+# DEC-10: los documentos son sensibles y viven en almacenamiento PRIVADO. La
+# descarga pasa siempre por una vista con permisos; nunca hay una URL pública.
+# DEC-11: no se borran automáticamente. Si una persona vuelve a solicitar, sus
+# documentos anteriores siguen ahí como historial de lo que se revisó.
+# DEC-16: los tipos documentales son configurables y NO hay requisitos
+# obligatorios hasta que comercial los confirme. Por eso `TipoDocumento` no
+# trae datos sembrados y nada en el sistema exige tener documentos.
+# DEC-09: los carga el Administrador. El mayorista los consulta y descarga.
+
+
+class TipoDocumento(models.Model):
+    """Catálogo de tipos documentales (DEC-16), configurable en el panel.
+
+    Nace vacío: qué documentos se piden es una decisión comercial pendiente.
+    `obligatorio` existe para cuando se decida, pero **no está aplicado** en
+    ninguna validación todavía; dejarlo puesto con valor `False` y sin uso es
+    preferible a inventar una lista de requisitos.
+    """
+
+    nombre = models.CharField("nombre", max_length=80, unique=True)
+    descripcion = models.TextField("descripción", blank=True)
+    obligatorio = models.BooleanField(
+        "obligatorio",
+        default=False,
+        help_text=(
+            "Reservado para cuando comercial confirme qué documentos son "
+            "imprescindibles. Hoy no se exige ninguno."
+        ),
+    )
+    activo = models.BooleanField("activo", default=True)
+
+    class Meta:
+        ordering = ("nombre",)
+        verbose_name = "tipo de documento"
+        verbose_name_plural = "tipos de documento"
+
+    def __str__(self):
+        return self.nombre
+
+
+def ruta_documento_mayorista(instancia, nombre_original):
+    """`upload_to`: delega en el almacén privado (ver `mayoristas/storage.py`)."""
+    from .storage import ruta_documento
+
+    return ruta_documento(instancia, nombre_original)
+
+
+class DocumentoSolicitud(models.Model):
+    """Un archivo adjunto a una solicitud mayorista (VM-19, JODS-113).
+
+    Decisión de diseño: el documento se enlaza a la SOLICITUD, no al usuario.
+    Así, cuando alguien vuelve a solicitar tras un rechazo (DEC-08), los
+    documentos de la solicitud anterior quedan asociados a esa solicitud y no
+    se mezclan con los de la nueva. Es el historial que un revisor necesita.
+
+    El archivo NO tiene URL pública (DEC-10): `archivo.url` no es utilizable y
+    la descarga se hace por `mayoristas:descargar_documento`, que comprueba
+    permisos. No hay `on_delete=CASCADE` desde el tipo documental: borrar un
+    tipo no puede borrar documentos ya recibidos (DEC-11); se usa PROTECT.
+    """
+
+    solicitud = models.ForeignKey(
+        SolicitudMayorista,
+        on_delete=models.CASCADE,
+        related_name="documentos",
+        verbose_name="solicitud",
+    )
+    tipo = models.ForeignKey(
+        TipoDocumento,
+        on_delete=models.PROTECT,
+        related_name="documentos",
+        verbose_name="tipo de documento",
+        null=True,
+        blank=True,
+        help_text="Opcional mientras no haya tipos configurados (DEC-16).",
+    )
+    archivo = models.FileField(
+        "archivo",
+        upload_to=ruta_documento_mayorista,
+        storage=almacenamiento_privado,
+        max_length=255,
+    )
+    nombre_original = models.CharField("nombre original", max_length=255, blank=True)
+    descripcion = models.CharField("descripción", max_length=200, blank=True)
+    subido_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="documentos_subidos",
+        verbose_name="subido por",
+    )
+    subido_en = models.DateTimeField("subido en", auto_now_add=True)
+
+    class Meta:
+        ordering = ("-subido_en",)
+        verbose_name = "documento de solicitud"
+        verbose_name_plural = "documentos de solicitud"
+
+    def __str__(self):
+        return f"{self.nombre_original or 'documento'} · {self.solicitud_id}"
+
+    def save(self, *args, **kwargs):
+        """Guarda el nombre original la primera vez, para poder mostrarlo."""
+        if not self.nombre_original and self.archivo:
+            self.nombre_original = self.archivo.name.rsplit("/", 1)[-1][:255]
+        super().save(*args, **kwargs)
+
+    @property
+    def extension(self):
+        """Extensión en minúsculas, para el icono de la lista."""
+        nombre = self.nombre_original or (self.archivo.name if self.archivo else "")
+        return nombre.rsplit(".", 1)[-1].lower() if "." in nombre else ""
+
+    @property
+    def tamano_legible(self):
+        """Tamaño en KB o MB, para mostrarlo sin números largos."""
+        try:
+            bytes_archivo = self.archivo.size
+        except (OSError, ValueError):
+            return "—"
+        if bytes_archivo >= 1024 * 1024:
+            return f"{bytes_archivo / (1024 * 1024):.1f} MB"
+        return f"{max(bytes_archivo // 1024, 1)} KB"

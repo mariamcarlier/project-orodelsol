@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% comment %}
+  VM-19 · Documentos de una solicitud (JODS-113).
+
+  Reglas que esta pantalla hace visibles:
+
+  - DEC-09: SOLO administración ve el formulario de subida. El mayorista
+    entra a consultar y descargar, y no se le enseña un control que no puede
+    usar.
+  - DEC-10: no hay ni un solo enlace directo a un archivo. Todas las
+    descargas pasan por `mayoristas:descargar_documento`, que comprueba
+    permisos en cada petición.
+  - DEC-11: no hay botón de «borrar» en la lista. Retirar un documento es
+    una acción deliberada de administración desde el panel, no algo que se
+    pulse por error.
+  - DEC-16: si no hay tipos configurados, el desplegable lo dice y el
+    formulario sigue funcionando (el tipo es opcional). No se inventa una
+    lista de documentos exigidos.
+{% endcomment %}
+
+{% block title %}Documentos · {{ solicitud.nombre_comercial }} | Oro del Sol{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=6">
+<link rel="stylesheet" href="{% static 'css/dashboard-enhancements.css' %}?v=6">
+<link rel="stylesheet" href="{% static 'css/mayoristas.css' %}?v=3">
+{% endblock %}
+
+{% block content %}
+<section class="b2b-page b2b-documentos" aria-labelledby="b2b-doc-title">
+
+  <div class="b2b-page__intro">
+    <span class="eyebrow">Documentación</span>
+    <h1 id="b2b-doc-title" class="heading">Documentos de <em>{{ solicitud.nombre_comercial }}</em></h1>
+    <p class="body-text">
+      Archivos adjuntos de esta solicitud. Están en almacenamiento privado:
+      solo quien puede ver la solicitud puede abrirlos.
+    </p>
+  </div>
+
+  {% include "mayoristas/_migas.html" %}
+
+  {% if messages %}
+    <ul class="b2b-mensajes" role="status">
+      {% for message in messages %}
+        <li class="b2b-mensajes__item b2b-mensajes__item--{{ message.tags }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  {% comment %}
+    Lista de documentos. Si está vacía NO se muestra una tabla sin filas:
+    se explica que aún no hay nada y qué pasa a continuación.
+  {% endcomment %}
+  {% if documentos %}
+    <div class="b2b-card">
+      <h2 class="b2b-card__title">Archivos adjuntos</h2>
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <caption class="sr-only">Documentos adjuntos a la solicitud</caption>
+          <thead>
+            <tr>
+              <th scope="col">Archivo</th>
+              <th scope="col">Tipo</th>
+              <th scope="col">Tamaño</th>
+              <th scope="col">Subido</th>
+              <th scope="col"><span class="sr-only">Descargar</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for documento in documentos %}
+              <tr>
+                <td>
+                  <span class="b2b-doc__nombre">{{ documento.nombre_original|default:"documento" }}</span>
+                  {% if documento.descripcion %}
+                    <span class="b2b-doc__desc">{{ documento.descripcion }}</span>
+                  {% endif %}
+                </td>
+                <td>{{ documento.tipo.nombre|default:"Sin clasificar" }}</td>
+                <td class="b2b-doc__num">{{ documento.tamano_legible }}</td>
+                <td class="b2b-doc__num">{{ documento.subido_en|date:"d/m/Y" }}</td>
+                <td>
+                  {% comment %}
+                    Enlace a la VISTA, nunca al archivo. El `pk` es del
+                    registro, no de una ruta de disco.
+                  {% endcomment %}
+                  <a class="b2b-doc__bajar"
+                     href="{% url 'mayoristas:descargar_documento' documento.pk %}">
+                    Descargar
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% else %}
+    <div class="b2b-card b2b-card--empty">
+      <h2 class="b2b-card__title">Todavía no hay documentos</h2>
+      <p class="b2b-card__text">
+        {% if es_admin %}
+          Adjunte aquí los documentos que reciba del mayorista. Solo
+          administración puede subirlos, y quedan en almacenamiento privado.
+        {% else %}
+          Cuando administración adjunte la documentación de su solicitud,
+          aparecerá en esta página. No hace falta que envíe nada por correo.
+        {% endif %}
+      </p>
+    </div>
+  {% endif %}
+
+  {% comment %}
+    Formulario de subida: SOLO para administración (DEC-09). `enctype`
+    multipart es imprescindible; sin él el navegador envía el nombre del
+    archivo y no el archivo.
+  {% endcomment %}
+  {% if es_admin %}
+    <div class="b2b-card">
+      <h2 class="b2b-card__title">Adjuntar un documento</h2>
+      <p class="b2b-card__text">
+        Formatos admitidos: PDF, JPG, PNG o WEBP. Tamaño máximo 10 MB.
+      </p>
+      <form method="post"
+            action="{% url 'mayoristas:subir_documento' solicitud.pk %}"
+            enctype="multipart/form-data"
+            class="b2b-form">
+        {% csrf_token %}
+        <div class="b2b-field">
+          <label for="doc-archivo">Archivo</label>
+          <input id="doc-archivo" type="file" name="archivo" required
+                 accept=".pdf,.jpg,.jpeg,.png,.webp">
+        </div>
+        <div class="b2b-field">
+          <label for="doc-tipo">Tipo</label>
+          <select id="doc-tipo" name="tipo">
+            <option value="">Sin clasificar</option>
+            {% for tipo in tipos %}
+              <option value="{{ tipo.pk }}">{{ tipo.nombre }}</option>
+            {% endfor %}
+          </select>
+          {% if not tipos %}
+            <span class="b2b-field__hint">
+              No hay tipos configurados todavía. Puede adjuntarlo sin
+              clasificar y asignarle tipo más adelante.
+            </span>
+          {% endif %}
+        </div>
+        <div class="b2b-field">
+          <label for="doc-desc">Descripción <span class="b2b-field__opcional">(opcional)</span></label>
+          <input id="doc-desc" type="text" name="descripcion" maxlength="200"
+                 placeholder="Ej.: Cámara de Comercio 2026">
+        </div>
+        <button class="btn btn--primary" type="submit">Adjuntar documento</button>
+      </form>
+    </div>
+  {% endif %}
+
+  <p class="b2b-page__back">
+    <a href="{% url 'mayoristas:mi_solicitud' %}">Volver al estado de mi cuenta</a>
+  </p>
+</section>
+{% endblock %}
