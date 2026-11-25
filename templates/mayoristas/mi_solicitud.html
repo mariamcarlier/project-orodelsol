@@ -79,16 +79,42 @@
       {% if solicitud.estado == 'PENDIENTE' %}
         <p class="b2b-card__text">
           Estamos revisando tu información. Te escribiremos a
-          <strong>{{ request.user.email }}</strong> en cuanto tomemos una decisión.
+          <strong>{{ solicitud.correo }}</strong> en cuanto tomemos una decisión.
         </p>
+        {% comment %}
+          VM-04 (RN-VM-06). El plazo se calcula en días hábiles reales
+          descontando fines de semana y los festivos que administración haya
+          registrado. Nunca se presenta como garantía: un plazo incumplido
+          desgasta más que uno no prometido.
+        {% endcomment %}
+        {% if plazo %}
+          <div class="b2b-plazo" role="note">
+            <span class="b2b-plazo__label">Plazo de respuesta estimado</span>
+            <p class="b2b-plazo__fechas">
+              Entre el <strong>{{ plazo.desde|date:"d/m/Y" }}</strong>
+              y el <strong>{{ plazo.hasta|date:"d/m/Y" }}</strong>
+              <span class="b2b-plazo__sla">(24–48 horas hábiles)</span>
+            </p>
+            <p class="b2b-plazo__aviso">{{ plazo.aviso }}</p>
+          </div>
+        {% endif %}
       {% elif solicitud.estado == 'APROBADA' %}
         <p class="b2b-card__text">
           ¡Bienvenida al canal mayorista! Tu cuenta ya tiene el rol
           <strong>Mayorista</strong>.
         </p>
         <p class="b2b-card__note">
-          El catálogo mayorista con precios de referencia se habilita en la siguiente
-          entrega (VM-03). Mientras tanto, tu cuenta sigue funcionando con normalidad.
+          Ya puedes consultar el catálogo mayorista con precios de referencia.
+          Los precios están sujetos a cotización: el pedido se cierra con tu
+          asesor.
+        </p>
+        <p class="b2b-card__actions">
+          <a class="btn btn--primary b2b-card__action" href="{% url 'mayoristas:catalogo' %}">
+            Ver catálogo mayorista
+          </a>
+          <a class="btn btn--ghost b2b-card__action" href="{% url 'mayoristas:documentos' solicitud.pk %}">
+            Mis documentos
+          </a>
         </p>
       {% elif solicitud.estado == 'RECHAZADA' %}
         <p class="b2b-card__text">No pudimos aprobar esta solicitud.</p>

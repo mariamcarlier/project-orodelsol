@@ -720,3 +720,91 @@
 .b2b-documentos .data-table-wrapper {
   overflow-x: auto;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   VM-04 (JODS-108) · Plazo de respuesta (RN-VM-06)
+   ═══════════════════════════════════════════════════════════════
+
+   El plazo no es un error ni una alerta: es información. Por eso usa el
+   tono neutro del módulo y no rojo. Solo el aviso de calendario pendiente
+   se marca un poco, porque sí es una advertencia. */
+
+.b2b-plazo {
+  margin: 16px 0 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(196, 174, 136, .5);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+}
+
+.b2b-plazo--revision {
+  max-width: 460px;
+}
+
+.b2b-plazo__label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+
+.b2b-plazo__fechas {
+  margin: 0;
+  color: var(--color-text-dark);
+  font-size: 13.5px;
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums;
+}
+
+.b2b-plazo__fechas strong {
+  color: var(--color-cacao);
+  font-weight: 600;
+}
+
+.b2b-plazo__sla {
+  color: var(--color-text-muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+/* El aviso se separa del dato pero no compite con él. */
+.b2b-plazo__aviso {
+  margin: 8px 0 0;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(196, 174, 136, .45);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+/* ── Columna de la bandeja ──────────────────────────────────── */
+.b2b-plazo__mini {
+  color: var(--color-text-mid);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.b2b-plazo__mini--na {
+  color: var(--color-text-muted);
+  opacity: .6;
+}
+
+.b2b-tabla__plazo {
+  white-space: nowrap;
+}
+
+.b2b-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0 0;
+}
+
+@media (max-width: 560px) {
+  .b2b-plazo__fechas { font-size: 12.5px; }
+  .b2b-plazo__sla { display: block; margin-top: 2px; }
+}

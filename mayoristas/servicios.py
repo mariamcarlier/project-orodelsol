@@ -10,6 +10,7 @@ transacción.
 """
 
 import logging
+from datetime import timedelta
 
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
@@ -414,3 +415,82 @@ def eliminar_documento(documento, usuario=None):
         # El registro ya no está; si el archivo físico ya no existía, no es un
         # error que deba romper la operación.
         pass
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# VM-04 (JODS-108) · Plazo de respuesta (RN-VM-06)
+# ═══════════════════════════════════════════════════════════════════════
+#
+# RN-VM-06: «24–48 horas hábiles». VM-16 dejó el cálculo puro en
+# `festivos.py`; aquí se decide CÓMO se presenta, que es lo que esta historia
+# añade. Tres decisiones:
+#
+# 1. No se prometen plazos garantizados. Se dice la ventana y se añade que es
+#    orientativa: un plazo que se incumple es peor que uno que no se prometió.
+# 2. Si el calendario está vacío, se avisa. El cálculo solo descuenta fines de
+#    semana; sin ese aviso, la fecha parecería exacta.
+# 3. Una solicitud ya decidida NO muestra plazo: ya se respondió y seguir
+#    enseñando «responderemos entre el X y el Y» confunde.
+
+
+ESTADOS_ABIERTOS = ("PENDIENTE",)
+
+
+def plazo_de(solicitud):
+    """Plazo de respuesta para una solicitud, o None si ya está decidida.
+
+    Args:
+        solicitud: `SolicitudMayorista`.
+
+    Returns:
+        dict de `festivos.plazo_de_respuesta` más:
+          - ``aplicable``: True si la solicitud sigue esperando respuesta.
+          - ``aviso``: frase corta para la pantalla, o cadena vacía.
+        o ``None`` si no procede mostrar plazo.
+    """
+    from . import festivos
+
+    if solicitud is None or solicitud.estado not in ESTADOS_ABIERTOS:
+        return None
+
+    datos = festivos.plazo_de_respuesta(solicitud.creado_en.date())
+    datos["aplicable"] = True
+    if datos["calendario_cargado"]:
+        datos["aviso"] = (
+            "Plazo orientativo, contado en días hábiles y descontando el "
+            "calendario de festivos."
+        )
+    else:
+        datos["aviso"] = (
+            "Plazo orientativo. El calendario de festivos aún no está "
+            "cargado, así que solo se descuentan sábados y domingos; la "
+            "fecha real puede ser anterior."
+        )
+    return datos
+
+
+def dias_restantes(plazo):
+    """Días hábiles que faltan hasta el máximo del plazo, para el indicador.
+
+    Devuelve 0 si ya se pasó, y None si no hay plazo.
+    """
+    from django.utils import timezone
+
+    from . import festivos
+
+    if not plazo:
+        return None
+    hoy = timezone.localdate()
+    if hoy >= plazo["hasta"]:
+        return 0
+    # Se cuentan los días hábiles que FALTAN, sin contar hoy: si el máximo es
+    # mañana y mañana es hábil, queda 1 día. Contar el propio día de hoy
+    # inflaría el número y haría que el indicador nunca llegara a 0.
+    suma = 0
+    fecha = hoy
+    conjunto = festivos.conjunto_festivos(hoy.year, hoy.year + 1)
+    while fecha < plazo["hasta"]:
+        fecha += timedelta(days=1)
+        if festivos.es_habil(fecha, conjunto):
+            suma += 1
+    return suma

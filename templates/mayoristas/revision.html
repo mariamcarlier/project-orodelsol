@@ -37,6 +37,24 @@
       Enviada el {{ solicitud.creado_en|date:"d/m/Y" }} a las {{ solicitud.creado_en|date:"H:i" }}.
       Comprueba que los datos coinciden con el negocio antes de decidir.
     </p>
+
+    {% comment %}
+      VM-04 (RN-VM-06): quien revisa es quien tiene que cumplir el plazo, así
+      que lo ve en la misma cabecera en la que ve de cuándo es la solicitud.
+      Solo aparece mientras sigue pendiente: una vez decidida, el plazo ya no
+      existe.
+    {% endcomment %}
+    {% if plazo %}
+      <div class="b2b-plazo b2b-plazo--revision" role="note">
+        <span class="b2b-plazo__label">Plazo de respuesta</span>
+        <p class="b2b-plazo__fechas">
+          Entre el <strong>{{ plazo.desde|date:"d/m/Y" }}</strong>
+          y el <strong>{{ plazo.hasta|date:"d/m/Y" }}</strong>
+          <span class="b2b-plazo__sla">(24–48 horas hábiles)</span>
+        </p>
+        <p class="b2b-plazo__aviso">{{ plazo.aviso }}</p>
+      </div>
+    {% endif %}
   </div>
 
   {% include "mayoristas/_migas.html" %}

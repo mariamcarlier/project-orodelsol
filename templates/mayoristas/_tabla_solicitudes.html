@@ -21,6 +21,7 @@
           <th scope="col">NIT o cédula</th>
           <th scope="col">Ciudad</th>
           <th scope="col">Estado</th>
+            <th scope="col">Plazo</th>
           <th scope="col"><span class="sr-only">Acciones</span></th>
         </tr>
       </thead>
@@ -35,6 +36,17 @@
             <td data-etiqueta="NIT o cédula">{{ solicitud.nit }}</td>
             <td data-etiqueta="Ciudad">{{ solicitud.ciudad }}</td>
             <td data-etiqueta="Estado">{% include "mayoristas/_etiqueta_estado.html" with estado=solicitud.estado %}</td>
+            {% comment %}
+              VM-04 (RN-VM-06): plazo solo para las pendientes. En una
+              solicitud ya decidida no se muestra, porque ya se respondió.
+            {% endcomment %}
+            <td data-etiqueta="Plazo" class="b2b-tabla__plazo">
+              {% if solicitud.plazo %}
+                <span class="b2b-plazo__mini">hasta {{ solicitud.plazo.hasta|date:"d/m" }}</span>
+              {% else %}
+                <span class="b2b-plazo__mini b2b-plazo__mini--na">—</span>
+              {% endif %}
+            </td>
             <td class="b2b-tabla__accion">
               <a class="btn btn--outline-gold b2b-btn-mini"
                  href="{% url 'mayoristas:revision' solicitud.pk %}">
@@ -44,7 +56,7 @@
           </tr>
         {% empty %}
           <tr>
-            <td colspan="6" class="b2b-tabla__vacio">
+            <td colspan="7" class="b2b-tabla__vacio">
               <p><strong>No hay solicitudes que mostrar.</strong></p>
               <p>
                 {% if busqueda %}
@@ -76,6 +88,7 @@
           <th scope="col">NIT o cédula</th>
           <th scope="col">Ciudad</th>
           <th scope="col">Estado</th>
+            <th scope="col">Plazo</th>
           <th scope="col"><span class="sr-only">Acciones</span></th>
         </tr>
       </thead>
@@ -90,6 +103,17 @@
             <td data-etiqueta="NIT o cédula">{{ solicitud.nit }}</td>
             <td data-etiqueta="Ciudad">{{ solicitud.ciudad }}</td>
             <td data-etiqueta="Estado">{% include "mayoristas/_etiqueta_estado.html" with estado=solicitud.estado %}</td>
+            {% comment %}
+              VM-04 (RN-VM-06): plazo solo para las pendientes. En una
+              solicitud ya decidida no se muestra, porque ya se respondió.
+            {% endcomment %}
+            <td data-etiqueta="Plazo" class="b2b-tabla__plazo">
+              {% if solicitud.plazo %}
+                <span class="b2b-plazo__mini">hasta {{ solicitud.plazo.hasta|date:"d/m" }}</span>
+              {% else %}
+                <span class="b2b-plazo__mini b2b-plazo__mini--na">—</span>
+              {% endif %}
+            </td>
             <td class="b2b-tabla__accion">
               <a class="btn btn--outline-gold b2b-btn-mini"
                  href="{% url 'mayoristas:revision' solicitud.pk %}">
@@ -99,7 +123,7 @@
           </tr>
         {% empty %}
           <tr>
-            <td colspan="6" class="b2b-tabla__vacio">
+            <td colspan="7" class="b2b-tabla__vacio">
               <p><strong>No hay solicitudes que mostrar.</strong></p>
               <p>
                 {% if busqueda %}

@@ -123,6 +123,7 @@ def mi_solicitud(request):
             "puede_volver_a_solicitar": (
                 solicitud is not None and solicitud.estado == "RECHAZADA"
             ),
+            "plazo": servicios.plazo_de(solicitud),
             "breadcrumbs": _migas("Estado de mi solicitud"),
         },
     )
@@ -183,9 +184,15 @@ class BandejaSolicitudesView(BandejaPermissionMixin, TemplateView):
         estado_filtro = (self.request.GET.get("estado") or "").upper()
         busqueda = self.request.GET.get("q") or ""
 
+        # VM-04: el plazo se adjunta a cada solicitud (no a un dict aparte)
+        # para que la plantilla no necesite un filtro de búsqueda por clave.
+        solicitudes = list(selectors.bandeja_solicitudes(estado_filtro, busqueda))
+        for solicitud in solicitudes:
+            solicitud.plazo = servicios.plazo_de(solicitud)
+
         contexto.update(
             {
-                "solicitudes": selectors.bandeja_solicitudes(estado_filtro, busqueda),
+                "solicitudes": solicitudes,
                 "resumen": selectors.resumen_bandeja(),
                 "estado_filtro": (
                     estado_filtro if estado_filtro in selectors.ESTADOS_FILTRO else ""
@@ -228,6 +235,7 @@ class DetalleSolicitudView(BandejaPermissionMixin, DetailView):
                     and solicitud.estado == SolicitudMayorista.Estado.PENDIENTE
                 ),
                 "form_rechazo": RechazoSolicitudForm(),
+                "plazo": servicios.plazo_de(solicitud),
                 # La cola, corta: tras decidir se sigue con la siguiente sin
                 # volver a la bandeja (el POST redirige aquí mismo).
                 "solicitudes": self._cola(solicitud),
