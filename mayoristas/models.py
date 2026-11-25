@@ -185,3 +185,167 @@ class SolicitudMayorista(models.Model):
 
     def __str__(self):
         return f"{self.nombre_comercial} ({self.get_estado_display()})"
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# VM-16 (JODS-110) · Tramos de precio de referencia
+# ═══════════════════════════════════════════════════════════════════════
+#
+# DEC-02: los tramos (10–29, 30–59, 60+) SON CONFIGURABLES y viven en la base
+# de datos. NO se siembra ningún porcentaje: el campo arranca en NULL y un
+# administrador lo define desde el panel. Mientras no haya porcentaje, el
+# sistema NO calcula nada y la pantalla lo dice (DEC-18).
+#
+# Por qué el porcentaje es NULL y no 0:
+#   ``0`` es un valor comercial válido («sin descuento»). Si se usara 0 para
+#   «no configurado», no habría forma de distinguir «este tramo no tiene
+#   descuento» de «este tramo está sin definir», y el catálogo mostraría un
+#   precio como si estuviera configurado cuando en realidad nadie lo decidió.
+
+
+class TramoPrecioReferencia(models.Model):
+    """Un rango de cantidad con su porcentaje de referencia (VM-16, JODS-110).
+
+    El porcentaje es opcional a propósito: mientras esté en NULL, el tramo
+    existe pero NO se aplica. Es la forma de que la estructura (los tres
+    rangos que acordó el negocio) exista sin inventar cifras comerciales.
+    """
+
+    class Alcance(models.TextChoices):
+        MAYORISTA = "MAYORISTA", "Mayorista"
+
+    nombre = models.CharField(
+        "nombre del tramo", max_length=60,
+        help_text="Cómo lo verá el equipo en el panel, por ejemplo «Medio mayorista».",
+    )
+    cantidad_minima = models.PositiveIntegerField(
+        "cantidad mínima",
+        help_text="Desde cuántas unidades aplica el tramo.",
+    )
+    cantidad_maxima = models.PositiveIntegerField(
+        "cantidad máxima", null=True, blank=True,
+        help_text=(
+            "Hasta cuántas unidades aplica. Déjalo vacío para «sin límite» "
+            "(el tramo de 60 o más)."
+        ),
+    )
+    porcentaje = models.DecimalField(
+        "porcentaje de referencia",
+        max_digits=5, decimal_places=2,
+        null=True, blank=True,
+        help_text=(
+            "Porcentaje que se muestra como referencia sobre el precio. "
+            "Déjalo vacío mientras no esté definido: sin porcentaje no se "
+            "calcula nada y no se inventa ninguna cifra."
+        ),
+    )
+    activo = models.BooleanField("activo", default=True)
+    creado_en = models.DateTimeField("creado en", auto_now_add=True)
+
+    class Meta:
+        ordering = ("cantidad_minima",)
+        verbose_name = "tramo de precio de referencia"
+        verbose_name_plural = "tramos de precio de referencia"
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(cantidad_minima__gte=1),
+                name="tramo_cantidad_minima_positiva",
+            ),
+            models.CheckConstraint(
+                condition=Q(cantidad_maxima__isnull=True)
+                | Q(cantidad_maxima__gte=models.F("cantidad_minima")),
+                name="tramo_rango_coherente",
+            ),
+            models.CheckConstraint(
+                condition=Q(porcentaje__isnull=True)
+                | (Q(porcentaje__gte=0) & Q(porcentaje__lte=100)),
+                name="tramo_porcentaje_valido",
+            ),
+        ]
+
+    def __str__(self):
+        rango = (
+            f"{self.cantidad_minima}+"
+            if self.cantidad_maxima is None
+            else f"{self.cantidad_minima}–{self.cantidad_maxima}"
+        )
+        if self.porcentaje is None:
+            return f"{self.nombre} ({rango}, sin porcentaje)"
+        return f"{self.nombre} ({rango}, {self.porcentaje}%)"
+
+    @property
+    def configurado(self):
+        """True si el tramo tiene un porcentaje definido y puede aplicarse."""
+        return self.porcentaje is not None
+
+    @property
+    def rango_display(self):
+        """Texto del rango para pantalla: «10 – 29» o «60 o más»."""
+        if self.cantidad_maxima is None:
+            return f"{self.cantidad_minima} o más"
+        return f"{self.cantidad_minima} – {self.cantidad_maxima}"
+
+    def clean(self):
+        """Mensajes legibles; las restricciones de BD siguen detrás."""
+        errores = {}
+        if (
+            self.cantidad_maxima is not None
+            and self.cantidad_minima is not None
+            and self.cantidad_maxima < self.cantidad_minima
+        ):
+            errores["cantidad_maxima"] = (
+                "La cantidad máxima no puede ser menor que la mínima."
+            )
+        if self.porcentaje is not None and not (0 <= self.porcentaje <= 100):
+            errores["porcentaje"] = "El porcentaje debe estar entre 0 y 100."
+        if errores:
+            raise ValidationError(errores)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Días hábiles (RN-VM-06) · Calendario de festivos
+# ═══════════════════════════════════════════════════════════════════════
+#
+# RN-VM-06 pide responder una cotización en 24–48 HORAS HÁBILES. «Hábil» no es
+# «día de semana»: en Colombia hay festivos que caen en lunes y días que no
+# cambian de fecha (Semana Santa). Por eso el cálculo necesita un calendario.
+#
+# Los festivos NO se escriben en el código: se guardan en la base de datos,
+# porque cambian cada año y quien debe poder corregirlos es el administrador,
+# no un programador. La tabla arranca VACÍA y el cálculo, sin festivos
+# cargados, solo descuenta fines de semana: es el comportamiento correcto
+# para un año sin calendario, y la pantalla lo indica.
+
+
+class DiaNoHabil(models.Model):
+    """Un día que no cuenta como hábil (festivo o cierre) (RN-VM-06).
+
+    Solo los días que NO son sábado ni domingo necesitan estar aquí: el
+    cálculo ya descuenta los fines de semana por su cuenta.
+    """
+
+    fecha = models.DateField("fecha", unique=True)
+    nombre = models.CharField(
+        "nombre", max_length=120,
+        help_text="Por ejemplo «Día de la Independencia» o «Cierre por inventario».",
+    )
+
+    class Meta:
+        ordering = ("fecha",)
+        verbose_name = "día no hábil"
+        verbose_name_plural = "días no hábiles"
+
+    def __str__(self):
+        return f"{self.fecha:%d/%m/%Y} · {self.nombre}"
+
+    def clean(self):
+        """Un sábado o domingo no necesita registrarse: ya no es hábil."""
+        if self.fecha and self.fecha.weekday() >= 5:
+            raise ValidationError(
+                {
+                    "fecha": (
+                        "Los sábados y domingos ya no cuentan como hábiles. "
+                        "No hace falta registrarlos."
+                    )
+                }
+            )

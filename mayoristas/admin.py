@@ -13,7 +13,7 @@ rechazar sin motivo, re-revisar una decisión tomada).
 
 from django.contrib import admin
 
-from .models import SolicitudMayorista
+from .models import DiaNoHabil, SolicitudMayorista, TramoPrecioReferencia
 
 
 @admin.register(SolicitudMayorista)
@@ -74,3 +74,39 @@ class SolicitudMayoristaAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         """No se crean solicitudes desde el admin: las crea el cliente."""
         return False
+
+
+@admin.register(TramoPrecioReferencia)
+class TramoPrecioReferenciaAdmin(admin.ModelAdmin):
+    """Configuración de los tramos B2B (DEC-02).
+
+    El porcentaje se deja VACÍO a propósito: es una decisión comercial, no una
+    decisión técnica. Mientras esté vacío el tramo no se aplica y el catálogo
+    avisa «Tramos pendientes de configuración» (DEC-18).
+    """
+
+    list_display = (
+        "nombre",
+        "rango_display",
+        "porcentaje",
+        "configurado",
+        "activo",
+    )
+    list_filter = ("activo",)
+    ordering = ("cantidad_minima",)
+    search_fields = ("nombre",)
+    list_editable = ("activo",)
+
+    def get_readonly_fields(self, request, obj=None):
+        # Una vez usado en cotizaciones, el rango no se reescribe a la ligera.
+        return ()
+
+
+@admin.register(DiaNoHabil)
+class DiaNoHabilAdmin(admin.ModelAdmin):
+    """Calendario de festivos para el SLA de 24–48 h hábiles (RN-VM-06)."""
+
+    list_display = ("fecha", "nombre")
+    ordering = ("fecha",)
+    search_fields = ("nombre",)
+    date_hierarchy = "fecha"

@@ -237,3 +237,66 @@ def notificar_decision(solicitud):
             solicitud.pk,
             destinatario,
         )
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# VM-16 (JODS-110) · Precio de referencia con tramo
+# ═══════════════════════════════════════════════════════════════════════
+#
+# DEC-18: sin porcentaje configurado NO se calcula. Este servicio devuelve
+# ``None`` en ``precio_con_tramo`` y la plantilla enseña el aviso. No hay
+# ningún valor por defecto escondido: si no hay cifra comercial, no hay cifra.
+
+
+def precio_con_tramo(precio_base, cantidad):
+    """Aplica el tramo que corresponde a `cantidad` sobre `precio_base`.
+
+    Args:
+        precio_base: `Decimal` con el precio unitario (ya sea el «Desde» del
+            catálogo o el de una línea de cotización).
+        cantidad: unidades. Nunca se inventa un tramo para cantidades fuera
+            de rango.
+
+    Returns:
+        dict con:
+          - ``tramo``: el `TramoPrecioReferencia` aplicado, o None.
+          - ``porcentaje``: el porcentaje aplicado, o None.
+          - ``precio_unitario``: precio con el descuento, o el base si no hay
+            tramo.
+          - ``total``: ``precio_unitario × cantidad``.
+          - ``calculado``: False si no había tramo configurado (DEC-18).
+
+    No guarda nada ni toca la base de datos más allá de leer los tramos.
+    """
+    from decimal import Decimal, ROUND_HALF_UP
+
+    from . import selectors
+
+    precio_base = Decimal(precio_base or 0)
+    cantidad = int(cantidad or 0)
+    tramo = selectors.tramo_para_cantidad(cantidad)
+
+    if tramo is None or tramo.porcentaje is None:
+        return {
+            "tramo": None,
+            "porcentaje": None,
+            "precio_unitario": precio_base,
+            "total": (precio_base * cantidad).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            ),
+            "calculado": False,
+        }
+
+    factor = (Decimal("100") - tramo.porcentaje) / Decimal("100")
+    unitario = (precio_base * factor).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+    return {
+        "tramo": tramo,
+        "porcentaje": tramo.porcentaje,
+        "precio_unitario": unitario,
+        "total": (unitario * cantidad).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        ),
+        "calculado": True,
+    }
